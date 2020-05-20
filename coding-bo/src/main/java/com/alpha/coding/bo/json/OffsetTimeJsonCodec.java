@@ -38,7 +38,7 @@ public class OffsetTimeJsonCodec implements ObjectSerializer, ObjectDeserializer
     private static final List<String> NUMERIC_AUTO_FORMATS = Arrays.asList("yyyyMMddHHmmss",
             "yyyyMMddHH", "yyyyMMdd");
     private static final List<String> STRING_AUTO_FORMATS = Arrays.asList("yyyy-MM-dd HH:mm:ss.SSS",
-            "yyyy-MM-dd HH:mm:ss", "yyyy-MM-dd HH:mm", "yyyy-MM-dd HH", "yyyy-MM-dd");
+            "yyyy-MM-dd HH:mm:ss", "yyyy-MM-dd HH:mm", "yyyy-MM-dd HH", "yyyy-MM-dd", "dd/MM/yyyy");
 
     private static ConcurrentMap<Class<? extends Supplier<Long>>, Supplier<Long>> supplierCache =
             new ConcurrentHashMap<>();
@@ -64,7 +64,7 @@ public class OffsetTimeJsonCodec implements ObjectSerializer, ObjectDeserializer
             }
             String format = annotation.timeFormat() == null || annotation.timeFormat().length() == 0 ? DEFAULT_FORMAT :
                     annotation.timeFormat();
-            return (T) smartParse(input, format, supplierCache.get(clz).get()); // 使用注解提供的便宜量提供函数得到时差偏移量解析
+            return (T) smartParse(input, format, supplierCache.get(clz).get()); // 使用注解提供的偏移量提供函数得到时差偏移量解析
         }
     }
 
@@ -103,7 +103,6 @@ public class OffsetTimeJsonCodec implements ObjectSerializer, ObjectDeserializer
      *
      * @param object    目标对象
      * @param fieldName 字段名
-     *
      * @return JsonFeature
      */
     private JsonFeature parseJsonFeature(Object object, Object fieldName) {
@@ -124,7 +123,6 @@ public class OffsetTimeJsonCodec implements ObjectSerializer, ObjectDeserializer
      * @param date                 时间
      * @param targetFormat         目标格式
      * @param timezoneOffsetMillis 目标时区与标准时区的时间差(毫秒)
-     *
      * @return java.lang.String
      */
     private String formatDate(Date date, String targetFormat, Long timezoneOffsetMillis) {
@@ -145,7 +143,6 @@ public class OffsetTimeJsonCodec implements ObjectSerializer, ObjectDeserializer
      * @param dateStr              时间字符串
      * @param targetFormat         目标格式
      * @param timezoneOffsetMillis 目标时区与标准时区的时间差(毫秒)
-     *
      * @return java.util.Date
      */
     private Date smartParse(String dateStr, String targetFormat, Long timezoneOffsetMillis) {
@@ -174,7 +171,6 @@ public class OffsetTimeJsonCodec implements ObjectSerializer, ObjectDeserializer
      * @param dateStr  时间字符串
      * @param formats  格式
      * @param timeZone 时区
-     *
      * @return java.util.Date
      */
     private Date multiParse(String dateStr, @NotNull Collection<String> formats, TimeZone timeZone) {
@@ -198,7 +194,6 @@ public class OffsetTimeJsonCodec implements ObjectSerializer, ObjectDeserializer
      * isNumeric 判读一个字符串是否是数字
      *
      * @param str 输入字符串
-     *
      * @return boolean
      */
     private static boolean isNumeric(String str) {

@@ -1,0 +1,3 @@
+- {cacheName: s30, spec: "initialCapacity=100,maximumSize=500,expireAfterWrite=30s"}
+- {cacheName: m1, spec: "initialCapacity=100,maximumSize=500,expireAfterWrite=1m"}
+- {cacheName: m2, spec: "initialCapacity=100,maximumSize=200,expireAfterWrite=2m"}

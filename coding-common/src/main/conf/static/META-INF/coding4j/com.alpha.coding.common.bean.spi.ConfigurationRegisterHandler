@@ -1,0 +1,9 @@
+EnableFileInjectRegisterHandler=com.alpha.coding.common.bean.fileinject.EnableFileInjectRegisterHandler
+EnableAutoDefineBeanHandler=com.alpha.coding.common.bean.define.EnableAutoDefineBeanHandler
+EnableAutoConfigEventBusHandler=com.alpha.coding.common.event.EnableAutoConfigEventBusHandler
+EnableRedisIntegrationHandler=com.alpha.coding.common.redis.EnableRedisIntegrationHandler
+AopDefinitionHandler=com.alpha.coding.common.aop.AopDefinitionHandler
+EnableLogMonitorHandler=com.alpha.coding.common.log.EnableLogMonitorHandler
+EnableAutoDataSourceHandler=com.alpha.coding.common.datasource.EnableAutoDataSourceHandler
+EnableMybatisAutoConfigHandler=com.alpha.coding.common.mybatis.EnableMybatisAutoConfigHandler
+EnableActiveMQAutoConfigHandler=com.alpha.coding.common.activemq.EnableActiveMQAutoConfigHandler

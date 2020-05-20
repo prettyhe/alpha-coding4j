@@ -1,0 +1,12 @@
+redis:
+  host: 127.0.0.1
+  port: 6379
+  password:
+  db: 0
+  timeout: 5000
+  pool:
+    max_active: 60
+    max_idle: 30
+    max_wait: 30
+    test_on_borrow: true
+    test_on_return: true

@@ -1,0 +1,4 @@
+MDCTraceConsumerFilter=com.alpha.coding.common.trace.dubbo.MDCTraceConsumerFilter
+MDCTraceProviderFilter=com.alpha.coding.common.trace.dubbo.MDCTraceProviderFilter
+ComLogMonitorFilter=com.alpha.coding.common.log.dubbo.LogMonitorFilter
+LocaleRecognizeFilter=com.alpha.coding.common.dubbo.filter.LocaleRecognizeFilter

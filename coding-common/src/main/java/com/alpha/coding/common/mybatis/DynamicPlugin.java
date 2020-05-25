@@ -36,9 +36,11 @@ import lombok.extern.slf4j.Slf4j;
                 ResultHandler.class})})
 public class DynamicPlugin implements Interceptor {
 
+    private static final String FORCE_USE_WRITE_DATA_SOURCE_SQL = "forceUseWriteDataSourceSql";
+
     private static final String REGEX = ".*insert\\u0020.*|.*delete\\u0020.*|.*update\\u0020.*";
 
-    private static final Map<String, DynamicDataSourceGlobal> cacheMap = new ConcurrentHashMap<>();
+    private static final Map<String, DynamicDataSourceGlobal> CACHE_MAP = new ConcurrentHashMap<>();
 
     /**
      * custom Properties
@@ -54,29 +56,39 @@ public class DynamicPlugin implements Interceptor {
 
             DynamicDataSourceGlobal dynamicDataSourceGlobal = null;
 
-            if ((dynamicDataSourceGlobal = cacheMap.get(ms.getId())) == null) {
-                //读方法
-                if (ms.getSqlCommandType().equals(SqlCommandType.SELECT)) {
-                    //!selectKey 为自增id查询主键(SELECT LAST_INSERT_ID() )方法，使用主库
-                    if (ms.getId().contains(SelectKeyGenerator.SELECT_KEY_SUFFIX)) {
-                        dynamicDataSourceGlobal = DynamicDataSourceGlobal.WRITE;
-                    } else {
-                        BoundSql boundSql = ms.getSqlSource().getBoundSql(objects[1]);
-                        String sql = boundSql.getSql().toLowerCase(Locale.CHINA).replaceAll("[\\t\\n\\r]", " ");
-                        if (sql.matches(REGEX)) {
+            if ((dynamicDataSourceGlobal = CACHE_MAP.get(ms.getId())) == null) {
+                // 是否强制使用写数据源
+                final String[] forceUseWriteDataSourceSql = getForceUseWriteDataSourceSql();
+                if (forceUseWriteDataSourceSql != null) {
+                    for (String sql : forceUseWriteDataSourceSql) {
+                        if (ms.getId().matches(sql)) {
                             dynamicDataSourceGlobal = DynamicDataSourceGlobal.WRITE;
-                        } else {
-                            dynamicDataSourceGlobal = DynamicDataSourceGlobal.READ;
+                            break;
                         }
                     }
-                } else {
-                    dynamicDataSourceGlobal = DynamicDataSourceGlobal.WRITE;
                 }
-                if (log.isDebugEnabled()) {
-                    log.warn("SetMethod[{}] use [{}] Strategy, SqlCommandType [{}]..", ms.getId(),
-                            dynamicDataSourceGlobal.name(), ms.getSqlCommandType().name());
+                if (dynamicDataSourceGlobal != DynamicDataSourceGlobal.WRITE) {
+                    // 读方法
+                    if (ms.getSqlCommandType().equals(SqlCommandType.SELECT)) {
+                        // !selectKey 为自增id查询主键(SELECT LAST_INSERT_ID() )方法，使用主库
+                        if (ms.getId().contains(SelectKeyGenerator.SELECT_KEY_SUFFIX)) {
+                            dynamicDataSourceGlobal = DynamicDataSourceGlobal.WRITE;
+                        } else {
+                            BoundSql boundSql = ms.getSqlSource().getBoundSql(objects[1]);
+                            String sql = boundSql.getSql().toLowerCase(Locale.CHINA).replaceAll("[\\t\\n\\r]", " ");
+                            if (sql.matches(REGEX)) {
+                                dynamicDataSourceGlobal = DynamicDataSourceGlobal.WRITE;
+                            } else {
+                                dynamicDataSourceGlobal = DynamicDataSourceGlobal.READ;
+                            }
+                        }
+                    } else {
+                        dynamicDataSourceGlobal = DynamicDataSourceGlobal.WRITE;
+                    }
                 }
-                cacheMap.put(ms.getId(), dynamicDataSourceGlobal);
+                log.warn("设置方法[{}] use [{}] Strategy, SqlCommandType [{}]..", ms.getId(),
+                        dynamicDataSourceGlobal.name(), ms.getSqlCommandType().name());
+                CACHE_MAP.put(ms.getId(), dynamicDataSourceGlobal);
             }
             DynamicDataSourceHolder.putDataSource(dynamicDataSourceGlobal);
         }
@@ -95,5 +107,15 @@ public class DynamicPlugin implements Interceptor {
     @Override
     public void setProperties(Properties properties) {
         this.properties = properties;
+    }
+
+    public String[] getForceUseWriteDataSourceSql() {
+        if (this.properties == null) {
+            return null;
+        }
+        if (this.properties.containsKey(FORCE_USE_WRITE_DATA_SOURCE_SQL)) {
+            return (String[]) this.properties.get(FORCE_USE_WRITE_DATA_SOURCE_SQL);
+        }
+        return null;
     }
 }

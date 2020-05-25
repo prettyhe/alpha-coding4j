@@ -60,11 +60,6 @@ public class EnableMybatisAutoConfigHandler implements ConfigurationRegisterHand
         showSQLDefinitionBuilder.addPropertyValue("properties", showSQLProperties);
         context.getRegistry().registerBeanDefinition("auto_ShowSqlInterceptor",
                 showSQLDefinitionBuilder.getBeanDefinition());
-        // 注册 dynamicPlugin
-        BeanDefinitionBuilder dynamicPluginDefinitionBuilder =
-                BeanDefinitionBuilder.genericBeanDefinition(DynamicPlugin.class);
-        context.getRegistry().registerBeanDefinition("auto_DynamicPlugin",
-                dynamicPluginDefinitionBuilder.getBeanDefinition());
         // 注册mybatis相关配置
         for (AnnotationAttributes attributes : annotationAttributes) {
             final AnnotationAttributes dataSource = attributes.getAnnotation("dataSource");
@@ -102,7 +97,18 @@ public class EnableMybatisAutoConfigHandler implements ConfigurationRegisterHand
             sqlSessionFactoryBeanBuilder.addPropertyValue("typeAliasesPackage",
                     attributes.getString("typeAliasesPackage"));
             final List<String> plugins = new ArrayList<>();
-            plugins.add("auto_DynamicPlugin");
+            // 注册 dynamicPlugin
+            BeanDefinitionBuilder dynamicPluginDefinitionBuilder =
+                    BeanDefinitionBuilder.genericBeanDefinition(DynamicPlugin.class);
+            final String[] forceUseWriteDataSourceSqls = attributes.getStringArray("forceUseWriteDataSourceSql");
+            if (forceUseWriteDataSourceSqls != null && forceUseWriteDataSourceSqls.length > 0) {
+                final Properties dynamicPluginProperties = new Properties();
+                dynamicPluginProperties.put("forceUseWriteDataSourceSql", forceUseWriteDataSourceSqls);
+                dynamicPluginDefinitionBuilder.addPropertyValue("properties", dynamicPluginProperties);
+            }
+            context.getRegistry().registerBeanDefinition(prefix + "DynamicPlugin",
+                    dynamicPluginDefinitionBuilder.getBeanDefinition());
+            plugins.add(prefix + "DynamicPlugin");
             if (attributes.getBoolean("enablePageHandlerInterceptor")) {
                 plugins.add("auto_PageHandlerInterceptor");
             }

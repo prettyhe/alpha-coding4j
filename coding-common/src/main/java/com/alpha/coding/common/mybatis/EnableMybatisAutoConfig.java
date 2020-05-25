@@ -66,4 +66,9 @@ public @interface EnableMybatisAutoConfig {
      */
     String[] extPlugins() default {};
 
+    /**
+     * 强制使用(写数据源)的sqlId正则
+     */
+    String[] forceUseWriteDataSourceSql() default {};
+
 }

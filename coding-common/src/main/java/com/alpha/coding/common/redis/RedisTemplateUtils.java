@@ -97,7 +97,6 @@ public class RedisTemplateUtils {
      * @param key           锁定的key
      * @param uqVal         获取锁客户端的位移标识
      * @param expireSeconds 锁定时长
-     *
      * @return 是否获取锁
      */
     public static boolean lock(final RedisTemplate redisTemplate, final String key,
@@ -114,7 +113,6 @@ public class RedisTemplateUtils {
      * @param redisTemplate redisTemplate
      * @param key           锁定的key
      * @param uqVal         获取锁客户端的位移标识
-     *
      * @return 是否释放锁
      */
     public static boolean unlock(RedisTemplate redisTemplate, String key, String uqVal) {
@@ -131,13 +129,13 @@ public class RedisTemplateUtils {
      * @param key           锁定的key
      * @param expireSeconds 锁定时间
      * @param callback      锁定期间回调
-     *
      * @return 执行结果元组(是否成功获取锁, 回调执行结果)
      */
     public static <T> Tuple<Boolean, T> doInLockReturnOnLockFail(RedisTemplate redisTemplate, String key,
                                                                  long expireSeconds, RedisLockCallback<T> callback) {
-        String valueId = UUID.randomUUID().toString().replaceAll("-", "")
-                + "-" + (System.currentTimeMillis() + expireSeconds * 1000);
+        final String valueId = System.currentTimeMillis() + "-"
+                + UUID.randomUUID().toString().replaceAll("-", "")
+                + "-" + expireSeconds * 1000;
         if (!lock(redisTemplate, key, valueId, expireSeconds)) {
             return new Tuple<>(false, null);
         }
@@ -155,20 +153,20 @@ public class RedisTemplateUtils {
      * @param key           锁定的key
      * @param expireSeconds 锁定时间
      * @param callback      锁定期间回调
-     *
      * @return 执行结果元组(是否成功获取锁, 回调执行结果)
      */
     public static <T> Tuple<Boolean, T> doInLockAutoRenewalReturnOnLockFail(RedisTemplate redisTemplate, String key,
                                                                             long expireSeconds,
                                                                             RedisLockCallback<T> callback) {
-        String valueId = UUID.randomUUID().toString().replaceAll("-", "")
-                + "-" + (System.currentTimeMillis() + expireSeconds * 1000);
+        final String valueId = System.currentTimeMillis() + "-"
+                + UUID.randomUUID().toString().replaceAll("-", "")
+                + "-" + expireSeconds * 1000;
         if (!lock(redisTemplate, key, valueId, expireSeconds)) {
             return new Tuple<>(false, null);
         }
         final AtomicBoolean run = new AtomicBoolean(true);
         try {
-            autoRenewal(redisTemplate, key, expireSeconds, run);
+            autoRenewal(redisTemplate, key, valueId, expireSeconds, run);
             return new Tuple<>(true, callback.execute());
         } finally {
             run.set(false);
@@ -184,13 +182,13 @@ public class RedisTemplateUtils {
      * @param expireSeconds   锁定时间
      * @param tryLockInterval 尝试获取锁的时间间隔，默认100ms
      * @param callback        锁定期间回调
-     *
      * @return 回调执行结果
      */
     public static <T> T doInLock(RedisTemplate redisTemplate, String key,
                                  long expireSeconds, Integer tryLockInterval, RedisLockCallback<T> callback) {
-        String valueId = UUID.randomUUID().toString().replaceAll("-", "")
-                + "-" + (System.currentTimeMillis() + expireSeconds * 1000);
+        final String valueId = System.currentTimeMillis() + "-"
+                + UUID.randomUUID().toString().replaceAll("-", "")
+                + "-" + expireSeconds * 1000;
         int interval = tryLockInterval == null ? 100 : tryLockInterval;
         while (true) {
             if (!lock(redisTemplate, key, valueId, expireSeconds)) {
@@ -217,14 +215,14 @@ public class RedisTemplateUtils {
      * @param expireSeconds   锁定时间
      * @param tryLockInterval 尝试获取锁的时间间隔，默认100ms
      * @param callback        锁定期间回调
-     *
      * @return 回调执行结果
      */
     public static <T> T doInLockAutoRenewal(RedisTemplate redisTemplate, String key,
                                             long expireSeconds, Integer tryLockInterval,
                                             RedisLockCallback<T> callback) {
-        String valueId = UUID.randomUUID().toString().replaceAll("-", "")
-                + "-" + (System.currentTimeMillis() + expireSeconds * 1000);
+        final String valueId = System.currentTimeMillis() + "-"
+                + UUID.randomUUID().toString().replaceAll("-", "")
+                + "-" + expireSeconds * 1000;
         int interval = tryLockInterval == null ? 100 : tryLockInterval;
         while (true) {
             if (!lock(redisTemplate, key, valueId, expireSeconds)) {
@@ -237,7 +235,7 @@ public class RedisTemplateUtils {
             }
             final AtomicBoolean run = new AtomicBoolean(true);
             try {
-                autoRenewal(redisTemplate, key, expireSeconds, run);
+                autoRenewal(redisTemplate, key, valueId, expireSeconds, run);
                 return callback.execute();
             } finally {
                 run.set(false);
@@ -246,10 +244,11 @@ public class RedisTemplateUtils {
         }
     }
 
-    private static void autoRenewal(RedisTemplate redisTemplate, String key, long expireSeconds, AtomicBoolean run) {
+    private static void autoRenewal(final RedisTemplate redisTemplate, final String key, final String value,
+                                    final long expireSeconds, final AtomicBoolean run) {
         final long delay = (expireSeconds * 1000) * 2 / 3;
         if (delay > 0) {
-            TimerTask renewalTask = new SelfRefTimerTask(rt -> {
+            TimerTask renewalTask = new SelfRefTimerTask((final TimerTask rt) -> {
                 try {
                     if (run != null && run.get()) {
                         if (log.isDebugEnabled()) {
@@ -257,21 +256,22 @@ public class RedisTemplateUtils {
                         }
                         redisTemplate.expire(key, expireSeconds, TimeUnit.SECONDS);
                     } else {
-                        TimerTask cancelTask = new SelfRefTimerTask(ct -> {
+                        TimerTask cancelTask = new SelfRefTimerTask((TimerTask ct) -> {
                             try {
                                 if (log.isDebugEnabled()) {
-                                    log.debug("cancel RENEWAL task for key={}", key);
+                                    log.debug("cancel RENEWAL task for key={},value={}", key, value);
                                 }
                                 rt.cancel(); // 取消续期任务
                                 CANCEL_TASK_MAP.put(TASK_CNT.getAndIncrement(), ct);
                             } catch (Throwable e) {
-                                log.error("cancel RENEWAL run fail for key={},msg={}", key, e.getMessage());
+                                log.error("cancel RENEWAL run fail for key={},value={},msg={}",
+                                        key, value, e.getMessage());
                             }
                         });
-                        LOCK_RENEWAL_TIMER.schedule(cancelTask, 10);
+                        LOCK_RENEWAL_TIMER.schedule(cancelTask, 0);
                     }
                 } catch (Throwable e) {
-                    log.error("RENEWAL run fail for key={},msg={}", key, e.getMessage());
+                    log.error("RENEWAL run fail for key={},value={},msg={}", key, value, e.getMessage());
                 }
             });
             LOCK_RENEWAL_TIMER.scheduleAtFixedRate(renewalTask, delay, delay); // 定时续期

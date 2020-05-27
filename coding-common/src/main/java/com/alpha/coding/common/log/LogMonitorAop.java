@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 import com.alibaba.fastjson.JSON;
+import com.alpha.coding.bo.base.MapThreadLocalAdaptor;
 import com.alpha.coding.common.utils.MD5Utils;
 import com.alpha.coding.common.utils.StringUtils;
 
@@ -91,6 +92,9 @@ public class LogMonitorAop {
         final Logger log = LoggerFactory.getLogger(declaringClass);
         // 获取log条件信息，包括logType，request和response是否需要打印
         final LogCondition logCondition = getMethodLogMonitorAnnotation(method);
+        if (logCondition.getExtraMsgSupplier() != null) {
+            MapThreadLocalAdaptor.put("CURR_ExtraMsgSupplier", logCondition.getExtraMsgSupplier());
+        }
         final String className = declaringClass.getSimpleName();
         final String methodName = method.getName();
         final Class<?> returnType = method.getReturnType();
@@ -143,6 +147,9 @@ public class LogMonitorAop {
                 logor.doLog(context);
             } catch (Exception e) {
                 log.error("log monitor error", e);
+            }
+            if (logCondition.getExtraMsgSupplier() != null) {
+                MapThreadLocalAdaptor.remove("CURR_ExtraMsgSupplier");
             }
         }
     }

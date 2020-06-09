@@ -34,8 +34,9 @@ public class EnableAutoDataSourceHandler implements ConfigurationRegisterHandler
             return;
         }
         for (AnnotationAttributes attributes : annotationAttributes) {
-            final String prefix = attributes.getString("prefix");
-            DataSourceRegisterUtils.register(context, prefix);
+            DataSourceRegisterUtils.register(context, new CreateDataSourceEnv()
+                    .setPrefix(attributes.getString("prefix"))
+                    .setType(attributes.getString("type")));
         }
     }
 

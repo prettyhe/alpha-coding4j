@@ -35,14 +35,14 @@ public class IdentityBeanFactory implements ApplicationContextAware, Initializin
         }
         for (Class<? extends IdentityBean> r : beanTable.rowKeySet()) {
             for (Map.Entry<Object, IdentityBean> entry : beanTable.row(r).entrySet()) {
-                log.info("IdentityBean: clz={},id={},v={}",
+                log.info("IdentityBean: type={},id={},v={}",
                         r.getName(), entry.getKey(), entry.getValue().getClass().getName());
             }
         }
         initForAnnotationIdentityBean();
         for (Class<?> r : annaBeanTable.rowKeySet()) {
             for (Map.Entry<Object, Object> entry : annaBeanTable.row(r).entrySet()) {
-                log.info("@IdentityBean: clz={},id={},v={}",
+                log.info("@IdentityBean: type={},id={},v={}",
                         r.getName(), entry.getKey(), entry.getValue().getClass().getName());
             }
         }
@@ -81,8 +81,8 @@ public class IdentityBeanFactory implements ApplicationContextAware, Initializin
                 }
             }
         } catch (Exception e) {
-            log.error("handleAnnotationIdentityBean error for name={},bean={},clz={}",
-                    beanName, v.getClass(), clz, e);
+            log.error("handleAnnotationIdentityBean error for name={},bean={},type={}",
+                    beanName, v.getClass().getName(), clz.getName(), e);
         }
     }
 

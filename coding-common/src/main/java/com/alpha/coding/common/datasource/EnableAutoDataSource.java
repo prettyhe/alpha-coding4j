@@ -27,4 +27,9 @@ public @interface EnableAutoDataSource {
      */
     String prefix();
 
+    /**
+     * 类型，如mysql、db2
+     */
+    String type() default "mysql";
+
 }

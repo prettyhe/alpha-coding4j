@@ -1,7 +1,9 @@
 package com.alpha.coding.common.datasource;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -22,12 +24,13 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class DataSourceRegisterUtils {
 
-    public static void register(RegisterBeanDefinitionContext context, String prefix) {
+    public static void register(RegisterBeanDefinitionContext context, CreateDataSourceEnv createDataSourceEnv) {
+        final String prefix = createDataSourceEnv.getPrefix();
         final Environment env = context.getEnvironment();
         // 注册 读 DruidDataSource，beanName="#prefix + 'ReadDataSource'"
         BeanDefinitionBuilder readDefinitionBuilder =
                 BeanDefinitionBuilder.genericBeanDefinition(DruidDataSource.class);
-        buildDruidDataSourceBeanDefinitionBuilder(readDefinitionBuilder, env, prefix, "read");
+        buildDruidDataSourceBeanDefinitionBuilder(readDefinitionBuilder, env, createDataSourceEnv, "read");
         readDefinitionBuilder.addPropertyValue("url", env.getProperty(prefix + "." + "read.jdbc.url"));
         readDefinitionBuilder.addPropertyValue("username", env.getProperty(prefix + "." + "read.jdbc.username"));
         readDefinitionBuilder.addPropertyValue("password", env.getProperty(prefix + "." + "read.jdbc.password"));
@@ -37,7 +40,7 @@ public class DataSourceRegisterUtils {
         // 注册 写 DruidDataSource，beanName="#prefix + 'WriteDataSource'"
         BeanDefinitionBuilder writeDefinitionBuilder =
                 BeanDefinitionBuilder.genericBeanDefinition(DruidDataSource.class);
-        buildDruidDataSourceBeanDefinitionBuilder(writeDefinitionBuilder, env, prefix, "write");
+        buildDruidDataSourceBeanDefinitionBuilder(writeDefinitionBuilder, env, createDataSourceEnv, "write");
         writeDefinitionBuilder.addPropertyValue("url", env.getProperty(prefix + "." + "write.jdbc.url"));
         writeDefinitionBuilder.addPropertyValue("username", env.getProperty(prefix + "." + "write.jdbc.username"));
         writeDefinitionBuilder.addPropertyValue("password", env.getProperty(prefix + "." + "write.jdbc.password"));
@@ -48,59 +51,72 @@ public class DataSourceRegisterUtils {
 
     private static void buildDruidDataSourceBeanDefinitionBuilder(BeanDefinitionBuilder builder,
                                                                   Environment environment,
-                                                                  String prefix, String readWrite) {
+                                                                  CreateDataSourceEnv createDataSourceEnv,
+                                                                  String readWrite) {
         Function<String, List<String>> keysFunction = k -> Arrays.asList(
-                prefix + "." + readWrite + "." + k,
-                prefix + "." + k,
+                createDataSourceEnv.getPrefix() + "." + readWrite + "." + k,
+                createDataSourceEnv.getPrefix() + "." + k,
                 k
         );
+        final Map<String, Object> propertyMap = new HashMap<>();
         builder.setInitMethodName("init").setDestroyMethodName("close");
         setIfAbsent(builder, environment, "driverClassName",
-                keysFunction.apply("jdbc.driverClass"), null, null);
+                keysFunction.apply("jdbc.driverClass"), null, null, propertyMap);
+        if ("com.ibm.db2.jcc.DB2Driver".equals(propertyMap.get("driverClassName"))) {
+            createDataSourceEnv.setType("db2");
+        }
         setIfAbsent(builder, environment, "initialSize",
-                keysFunction.apply("jdbc.initialSize"), Integer.class, 0);
+                keysFunction.apply("jdbc.initialSize"), Integer.class, 0, propertyMap);
         setIfAbsent(builder, environment, "minIdle",
-                keysFunction.apply("jdbc.maxIdle"), Integer.class, 1);
+                keysFunction.apply("jdbc.maxIdle"), Integer.class, 1, propertyMap);
         setIfAbsent(builder, environment, "maxActive",
-                keysFunction.apply("jdbc.maxActive"), Integer.class, 1);
+                keysFunction.apply("jdbc.maxActive"), Integer.class, 1, propertyMap);
         setIfAbsent(builder, environment, "maxWait",
-                keysFunction.apply("jdbc.maxWait"), Long.class, 60000L);
+                keysFunction.apply("jdbc.maxWait"), Long.class, 60000L, propertyMap);
         setIfAbsent(builder, environment, "timeBetweenEvictionRunsMillis",
-                keysFunction.apply("jdbc.timeBetweenEvictionRunsMillis"), Long.class, 60000L);
+                keysFunction.apply("jdbc.timeBetweenEvictionRunsMillis"), Long.class, 60000L, propertyMap);
         setIfAbsent(builder, environment, "minEvictableIdleTimeMillis",
-                keysFunction.apply("jdbc.minEvictableIdleTimeMillis"), Long.class, 300000L);
-        setIfAbsent(builder, environment, "validationQuery",
-                keysFunction.apply("jdbc.validationQuery"), null, "SELECT 'x' from dual");
+                keysFunction.apply("jdbc.minEvictableIdleTimeMillis"), Long.class, 300000L, propertyMap);
+        // db2的配置特殊处理
+        if (!"db2".equals(createDataSourceEnv.getType())) {
+            setIfAbsent(builder, environment, "validationQuery",
+                    keysFunction.apply("jdbc.validationQuery"), null, "SELECT 'x' from dual", propertyMap);
+        }
         setIfAbsent(builder, environment, "testWhileIdle",
-                keysFunction.apply("jdbc.testWhileIdle"), Boolean.class, true);
+                keysFunction.apply("jdbc.testWhileIdle"), Boolean.class, true, propertyMap);
         setIfAbsent(builder, environment, "testOnBorrow",
-                keysFunction.apply("jdbc.testOnBorrow"), Boolean.class, true);
+                keysFunction.apply("jdbc.testOnBorrow"), Boolean.class, true, propertyMap);
         setIfAbsent(builder, environment, "testOnBorrow",
-                keysFunction.apply("jdbc.testOnBorrow"), Boolean.class, true);
+                keysFunction.apply("jdbc.testOnBorrow"), Boolean.class, true, propertyMap);
     }
 
     private static <T> BeanDefinitionBuilder setIfAbsent(BeanDefinitionBuilder builder, Environment environment,
                                                          String property, List<String> keys, Class<T> clz,
-                                                         T defaultVal) {
+                                                         T defaultVal, Map<String, Object> propertyMap) {
         if (keys == null || keys.size() == 0) {
             if (defaultVal != null) {
                 builder.addPropertyValue(property, defaultVal);
+                propertyMap.put(property, defaultVal);
             }
             return builder;
         }
         // 使用存在的第一个
         final Optional<String> first = keys.stream().filter(k -> environment.containsProperty(k)).findFirst();
         first.ifPresent(k -> {
+            Object val = null;
             if (clz != null && defaultVal != null) {
-                builder.addPropertyValue(property, environment.getProperty(k, clz, defaultVal));
+                val = environment.getProperty(k, clz, defaultVal);
             } else if (clz != null) {
-                builder.addPropertyValue(property, environment.getProperty(k, clz));
+                val = environment.getProperty(k, clz);
             } else {
-                builder.addPropertyValue(property, environment.getProperty(k));
+                val = environment.getProperty(k);
             }
+            builder.addPropertyValue(property, val);
+            propertyMap.put(property, val);
         });
         if (!first.isPresent() && defaultVal != null) {
             builder.addPropertyValue(property, defaultVal);
+            propertyMap.put(property, defaultVal);
         }
         return builder;
     }

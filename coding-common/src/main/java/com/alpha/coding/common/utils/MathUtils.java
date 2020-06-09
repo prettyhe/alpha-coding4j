@@ -1,5 +1,6 @@
 package com.alpha.coding.common.utils;
 
+import java.lang.reflect.Type;
 import java.math.BigDecimal;
 
 /**
@@ -101,6 +102,35 @@ public class MathUtils {
             return (P) bigDecimal;
         } else {
             throw new UnsupportedOperationException("not support for " + clz);
+        }
+    }
+
+    /**
+     * 转换为数值
+     *
+     * @param val 数值或数值字符串
+     */
+    public static Number convertToNumber(Object val, Type type) {
+        if (val == null) {
+            return null;
+        }
+        BigDecimal bigDecimal = val instanceof BigDecimal ? (BigDecimal) val : new BigDecimal(String.valueOf(val));
+        if (int.class.equals(type) || Integer.class.equals(type)) {
+            return new Integer(bigDecimal.intValue());
+        } else if (long.class.equals(type) || Long.class.equals(type)) {
+            return new Long(bigDecimal.longValue());
+        } else if (short.class.equals(type) || Short.class.equals(type)) {
+            return new Short(bigDecimal.shortValue());
+        } else if (float.class.equals(type) || Float.class.equals(type)) {
+            return new Float(bigDecimal.floatValue());
+        } else if (double.class.equals(type) || Double.class.equals(type)) {
+            return new Double(bigDecimal.doubleValue());
+        } else if (byte.class.equals(type) || Byte.class.equals(type)) {
+            return new Byte(bigDecimal.byteValue());
+        } else if (BigDecimal.class.equals(type)) {
+            return bigDecimal;
+        } else {
+            throw new UnsupportedOperationException("not support for " + type);
         }
     }
 

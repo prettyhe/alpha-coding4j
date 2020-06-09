@@ -213,7 +213,7 @@ public class DefineBeanFactory implements ApplicationContextAware, InitializingB
                 : clazz.getName() + "_" + (index == null ? "" : index + "_") + define.getSrcLocation();
         defaultListableBeanFactory.applyBeanPostProcessorsAfterInitialization(bean, beanName);
         defaultListableBeanFactory.registerSingleton(beanName, bean);
-        log.info("BeanDefine definition: name={},class={},src={}", beanName, clazz, define.getSrcLocation());
+        log.info("BeanDefine definition: name={},type={},src={}", beanName, clazz.getName(), define.getSrcLocation());
         nameBeanMap.put(beanName, applicationContext.getBean(beanName));
     }
 

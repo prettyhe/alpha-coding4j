@@ -14,6 +14,7 @@ import org.springframework.util.ClassUtils;
 
 import com.alpha.coding.common.bean.spi.ConfigurationRegisterHandler;
 import com.alpha.coding.common.bean.spi.RegisterBeanDefinitionContext;
+import com.alpha.coding.common.datasource.CreateDataSourceEnv;
 import com.alpha.coding.common.datasource.DataSourceRegisterUtils;
 import com.alpha.coding.common.utils.ListUtils;
 import com.alpha.coding.common.utils.SpringAnnotationConfigUtils;
@@ -65,7 +66,8 @@ public class EnableMybatisAutoConfigHandler implements ConfigurationRegisterHand
             final AnnotationAttributes dataSource = attributes.getAnnotation("dataSource");
             final String prefix = dataSource.getString("prefix");
             // 注册 读 & 写 DataSource
-            DataSourceRegisterUtils.register(context, prefix);
+            DataSourceRegisterUtils.register(context, new CreateDataSourceEnv().setPrefix(prefix)
+                    .setType(dataSource.getString("type")));
             // 注册 DynamicDataSource
             BeanDefinitionBuilder dataSourceBeanDefinitionBuilder =
                     BeanDefinitionBuilder.genericBeanDefinition(DynamicDataSource.class);

@@ -1,7 +1,9 @@
 package com.alpha.coding.common.http.rest;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,6 +32,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import com.alibaba.fastjson.JSON;
 import com.alpha.coding.common.http.HttpUtils;
+import com.alpha.coding.common.utils.ReflectionUtils;
 
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -176,7 +179,13 @@ public class HttpAPIHandler implements InvocationHandler, InitializingBean {
                                 || Collection.class.isAssignableFrom(parameter.getType())) {
                             urlParams.put(parameter.getName() + "[]", JSON.toJSONString(arg));
                         } else {
-                            urlParams.putAll(convertToMapByJson(arg));
+                            try {
+                                Map<String, Object> extraParams = new HashMap<>();
+                                expendObjectToUrlParams(arg, extraParams);
+                                urlParams.putAll(extraParams);
+                            } catch (IllegalAccessException e) {
+                                throw e;
+                            }
                         }
                     }
                 } else {
@@ -248,9 +257,20 @@ public class HttpAPIHandler implements InvocationHandler, InitializingBean {
                 return restTemplate.postForObjectGeneric(url, body,
                         method.getGenericReturnType(), method.getReturnType(), headerMap);
             } else if (RequestMethod.PUT.equals(httpMethod)) {
-                restTemplate.put(url, args[0]);
+                if (args == null || args.length == 0) {
+                    restTemplate.put(url, null);
+                }
+                Object body = null;
+                for (int i = 0; i < args.length; i++) {
+                    if (args[i] instanceof ServletRequest || args[i] instanceof ServletResponse) {
+                        continue;
+                    }
+                    body = args[i];
+                    break;
+                }
+                restTemplate.put(url, body);
             } else if (RequestMethod.DELETE.equals(httpMethod)) {
-                restTemplate.delete(url, convertToMapByJson(args[0]));
+                restTemplate.delete(url, (Map<String, ?>) null);
             } else if (RequestMethod.PATCH.equals(httpMethod)) {
                 if (args == null || args.length == 0) {
                     return restTemplate.patchForObjectGeneric(url, null, method.getReturnType(), headerMap);
@@ -275,8 +295,38 @@ public class HttpAPIHandler implements InvocationHandler, InitializingBean {
         return null;
     }
 
-    private Map<String, ?> convertToMapByJson(Object object) {
-        return JSON.parseObject(JSON.toJSONString(object));
+    /**
+     * 展开对象到url参数
+     */
+    private void expendObjectToUrlParams(Object object, Map<String, Object> params) throws IllegalAccessException {
+        if (object == null || object.getClass().equals(Object.class)) {
+            return;
+        }
+        final List<Field> fields = ReflectionUtils.getAllFields(object.getClass()).stream()
+                .filter(p -> !Modifier.isStatic(p.getModifiers()))
+                .filter(p -> {
+                    ReflectionUtils.makeAccessible(p);
+                    return p.isAccessible();
+                }).collect(Collectors.toList());
+        for (Field field : fields) {
+            final Object val = field.get(object);
+            if (val == null) {
+                continue;
+            }
+            int type = 0;
+            if (field.getType().isPrimitive() || val instanceof String || val instanceof Number) {
+                type = 1;
+            } else if (field.getType().isArray() || Collection.class.isAssignableFrom(field.getType())) {
+                type = 2;
+            }
+            if (type == 0) {
+                expendObjectToUrlParams(val, params);
+            } else if (type == 1) {
+                params.put(field.getName(), val);
+            } else if (type == 2) {
+                params.put(field.getName() + "[]", val);
+            }
+        }
     }
 
 }

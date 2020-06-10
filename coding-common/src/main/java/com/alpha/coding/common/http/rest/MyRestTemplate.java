@@ -68,9 +68,8 @@ public class MyRestTemplate extends RestTemplate {
         return execute(url, HttpMethod.GET, requestCallback, responseExtractor, uriVariables);
     }
 
-    public <T> T getForObjectGeneric(URI url, Type responseType,
-                                     Map<String, String[]> headerMap,
-                                     Class<T> responseClass) throws RestClientException {
+    public <T> T getForObjectGeneric(URI url, Type responseType, Class<T> responseClass,
+                                     Map<String, String[]> headerMap) throws RestClientException {
         RequestCallback requestCallback = acceptHeaderRequestCallback(responseType, headerMap);
         HttpMessageConverterExtractor<T> responseExtractor =
                 new HttpMessageConverterExtractor<>(responseType, getMessageConverters(), logger);

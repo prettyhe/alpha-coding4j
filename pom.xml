@@ -71,7 +71,7 @@
         <coding4j.jsoup.version>1.11.2</coding4j.jsoup.version>
         <coding4j.aspectjweaver.version>1.8.13</coding4j.aspectjweaver.version>
         <coding4j.javax.el-api.version>3.0.0</coding4j.javax.el-api.version>
-        <coding4j.mysql.version>5.1.45</coding4j.mysql.version>
+        <coding4j.mysql.version>8.0.16</coding4j.mysql.version>
         <coding4j.javassist.version>3.18.1-GA</coding4j.javassist.version>
         <coding4j.disruptor.version>3.4.2</coding4j.disruptor.version>
         <coding4j.validation-api.version>2.0.1.Final</coding4j.validation-api.version>

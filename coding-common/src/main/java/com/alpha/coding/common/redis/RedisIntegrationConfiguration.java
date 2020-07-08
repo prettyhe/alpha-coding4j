@@ -67,6 +67,14 @@ public class RedisIntegrationConfiguration implements EnvironmentAware {
         return new JedisConnectionFactory(redisStandaloneConfiguration(), jedisClientConfiguration);
     }
 
+    @Bean
+    @Lazy
+    public RedisTemplate<Object, Object> redisTemplate() {
+        RedisTemplate<Object, Object> template = new RedisTemplate<>();
+        template.setConnectionFactory(jedisConnectionFactory());
+        return template;
+    }
+
     @Lazy
     @Bean("stringRedisTemplate")
     public RedisTemplate stringRedisTemplate() {

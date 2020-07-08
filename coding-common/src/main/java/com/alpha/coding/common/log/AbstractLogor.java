@@ -7,13 +7,12 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.util.Map;
-
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpSession;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import com.alibaba.fastjson.JSON;
 import com.alpha.coding.common.utils.StringUtils;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 import lombok.extern.slf4j.Slf4j;
@@ -46,6 +45,14 @@ public abstract class AbstractLogor implements Logor {
     protected static final String RESPONSE_KEY = "res";
     protected static final String EXCEPTION_TYPE_KEY = "expType";
     protected static final String EXCEPTION_MSG_KEY = "expMsg";
+
+    private static final ConcurrentMap<String, Boolean> CAN_NOT_JSON_MAP = new ConcurrentHashMap<>(64);
+
+    static {
+        CAN_NOT_JSON_MAP.put("javax.servlet.ServletRequest", true);
+        CAN_NOT_JSON_MAP.put("javax.servlet.ServletResponse", true);
+        CAN_NOT_JSON_MAP.put("javax.servlet.http.HttpSession", true);
+    }
 
     /**
      * 钩子方法，子类需要实现
@@ -130,7 +137,7 @@ public abstract class AbstractLogor implements Logor {
 
     protected String getFormatStr(String[] paramNames, Object[] params, Annotation[][] parameterAnnotations) {
 
-        final StringBuilder paramStr = new StringBuilder();
+        final StringBuffer paramStr = new StringBuffer();
 
         if (params == null || params.length == 0) {
             return EMPTY;
@@ -162,7 +169,7 @@ public abstract class AbstractLogor implements Logor {
             } catch (Throwable throwable) {
                 log.warn("format parameter name={}, class={} fail",
                         paramNames != null && paramNames.length > i ? paramNames[i] : null,
-                        params[i].getClass());
+                        params[i].getClass().getName());
             }
         }
 
@@ -170,11 +177,30 @@ public abstract class AbstractLogor implements Logor {
     }
 
     protected boolean canNotJson(Object obj) {
-        if (obj instanceof ServletRequest || obj instanceof ServletResponse || obj instanceof HttpSession
-                || obj instanceof InputStream || obj instanceof OutputStream) {
+        if (obj == null) {
+            return false;
+        }
+        if (obj instanceof InputStream || obj instanceof OutputStream) {
             return true;
         }
-        return false;
+        final Class<?> clz = obj.getClass();
+        if (CAN_NOT_JSON_MAP.containsKey(clz.getName())) {
+            return true;
+        }
+        boolean add = false;
+        for (String key : Lists.newArrayList(CAN_NOT_JSON_MAP.keySet())) {
+            try {
+                add = Class.forName(key).isAssignableFrom(clz);
+                if (add) {
+                    break;
+                }
+            } catch (ClassNotFoundException e) {
+            }
+        }
+        if (add) {
+            CAN_NOT_JSON_MAP.put(clz.getName(), true);
+        }
+        return add;
     }
 
 }

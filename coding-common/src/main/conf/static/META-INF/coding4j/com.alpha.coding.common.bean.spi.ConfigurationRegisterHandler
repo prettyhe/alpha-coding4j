@@ -7,3 +7,4 @@ EnableLogMonitorHandler=com.alpha.coding.common.log.EnableLogMonitorHandler
 EnableAutoDataSourceHandler=com.alpha.coding.common.datasource.EnableAutoDataSourceHandler
 EnableMybatisAutoConfigHandler=com.alpha.coding.common.mybatis.EnableMybatisAutoConfigHandler
 EnableActiveMQAutoConfigHandler=com.alpha.coding.common.activemq.EnableActiveMQAutoConfigHandler
+EnableAutoMyRestApiHandler=com.alpha.coding.common.http.rest.EnableAutoMyRestApiHandler

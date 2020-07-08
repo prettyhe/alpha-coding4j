@@ -47,11 +47,14 @@ public class RedisTemplateUtils {
             if (taskIds.size() > 0) {
                 for (Long taskId : taskIds) {
                     try {
-                        CANCEL_TASK_MAP.get(taskId).cancel();
+                        final TimerTask task = CANCEL_TASK_MAP.get(taskId);
+                        if (task != null) {
+                            task.cancel();
+                        }
+                        CANCEL_TASK_MAP.remove(taskId);
                     } catch (Exception e) {
                         //
                     }
-                    CANCEL_TASK_MAP.remove(taskId);
                 }
             }
             LOCK_RENEWAL_TIMER.purge();
@@ -119,6 +122,9 @@ public class RedisTemplateUtils {
         DefaultRedisScript<Long> script = RedisScriptGenerator.generator("del-by-val.lua", Long.class);
         final Object ret = redisTemplate
                 .execute(script, Collections.singletonList(key), new Object[] {uqVal});
+        if (log.isDebugEnabled()) {
+            log.debug("unlock result:{} for key:{}, val:{}", ret, key, uqVal);
+        }
         return ret == null ? false : UNLOCK_SUCCESS.equals(String.valueOf(ret));
     }
 
@@ -252,14 +258,17 @@ public class RedisTemplateUtils {
                 try {
                     if (run != null && run.get()) {
                         if (log.isDebugEnabled()) {
-                            log.debug("RENEWAL for key={}", key);
+                            log.debug("(seq:{}) RENEWAL for key={},value={}",
+                                    ((SelfRefTimerTask) rt).getSeq(), key, value);
                         }
                         redisTemplate.expire(key, expireSeconds, TimeUnit.SECONDS);
                     } else {
                         TimerTask cancelTask = new SelfRefTimerTask((TimerTask ct) -> {
                             try {
                                 if (log.isDebugEnabled()) {
-                                    log.debug("cancel RENEWAL task for key={},value={}", key, value);
+                                    log.debug("(seq:{}) cancel RENEWAL task(seq:{}) for key={},value={}",
+                                            ((SelfRefTimerTask) ct).getSeq(), ((SelfRefTimerTask) rt).getSeq(),
+                                            key, value);
                                 }
                                 rt.cancel(); // 取消续期任务
                                 CANCEL_TASK_MAP.put(TASK_CNT.getAndIncrement(), ct);
@@ -268,7 +277,7 @@ public class RedisTemplateUtils {
                                         key, value, e.getMessage());
                             }
                         });
-                        LOCK_RENEWAL_TIMER.schedule(cancelTask, 0);
+                        LOCK_RENEWAL_TIMER.schedule(cancelTask, 50);
                     }
                 } catch (Throwable e) {
                     log.error("RENEWAL run fail for key={},value={},msg={}", key, value, e.getMessage());

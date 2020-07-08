@@ -8,29 +8,35 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * SyncInvoke
+ * RedisSync
  *
  * @version 1.0
- * Date: 2020-02-21
+ * Date: 2020/7/7
  */
-@Target({ElementType.METHOD})
+@Target({ElementType.METHOD, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @Inherited
 @Documented
-public @interface SyncInvoke {
+public @interface RedisSync {
 
     /**
-     * key，SpEL表达式
+     * 是否启用
      */
-    String key() default "";
+    boolean enable() default false;
 
     /**
-     * 最长等待时间,-1表示无限等待
+     * 过期时间
      */
-    long maxAwait() default -1;
+    long expireSeconds() default 5;
 
     /**
-     * Redis同步配置
+     * 快速失败
      */
-    RedisSync redisSync();
+    boolean failFast() default true;
+
+    /**
+     * RedisTemplate的beanName
+     */
+    String redisTemplateBean() default "stringRedisTemplate";
+
 }

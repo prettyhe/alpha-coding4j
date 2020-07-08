@@ -3,6 +3,7 @@ package com.alpha.coding.bo.executor;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TimerTask;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 import org.slf4j.MDC;
@@ -15,12 +16,20 @@ import org.slf4j.MDC;
  */
 public class SelfRefTimerTask extends TimerTask {
 
+    private static final AtomicLong COUNT = new AtomicLong(0L);
+
+    private final long seq;
     private Consumer<TimerTask> consumeCommand;
     private Map<String, String> superMDCContext;
 
     public SelfRefTimerTask(Consumer<TimerTask> consumeCommand) {
+        this.seq = COUNT.incrementAndGet();
         this.consumeCommand = consumeCommand;
         safeRun(() -> superMDCContext = new HashMap<>(MDC.getCopyOfContextMap()));
+    }
+
+    public long getSeq() {
+        return this.seq;
     }
 
     @Override

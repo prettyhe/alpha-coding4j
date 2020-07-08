@@ -24,6 +24,10 @@ public class ScheduleDelegator {
         this.executorService = executorService;
     }
 
+    public static ScheduleDelegator build(ScheduledExecutorService executorService) {
+        return new ScheduleDelegator(executorService);
+    }
+
     /**
      * 任务调度
      *
@@ -57,6 +61,9 @@ public class ScheduleDelegator {
                             log.debug("ScheduledTask-{}-run-{} start", task.getTaskId(), runCount.get() + 1);
                         }
                         task.run();
+                    } catch (Throwable throwable) {
+                        log.error("ScheduledTask-{}-run-{} fail", task.getTaskId(), runCount.get() + 1, throwable);
+                        throw throwable;
                     } finally {
                         runCount.incrementAndGet();
                         if (log.isDebugEnabled()) {

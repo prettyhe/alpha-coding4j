@@ -5,6 +5,7 @@ package com.alpha.coding.common.log;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -20,6 +21,7 @@ import org.slf4j.MDC;
 
 import com.alibaba.fastjson.JSON;
 import com.alpha.coding.bo.base.MapThreadLocalAdaptor;
+import com.alpha.coding.common.aop.assist.AopHelper;
 import com.alpha.coding.common.utils.MD5Utils;
 import com.alpha.coding.common.utils.StringUtils;
 
@@ -87,15 +89,22 @@ public class LogMonitorAop {
             return joinPoint.proceed();
         }
         // 进行log切面
-        Class<?> declaringClass = method.getDeclaringClass();
+        Class<?> targetClass = method.getDeclaringClass();
+        try {
+            final Object target = AopHelper.getTarget(joinPoint.getTarget());
+            if (!Proxy.isProxyClass(target.getClass())) {
+                targetClass = target.getClass();
+            }
+        } catch (Exception e) {
+        }
         // 获取执行class的slf4j logger对象
-        final Logger log = LoggerFactory.getLogger(declaringClass);
+        final Logger log = LoggerFactory.getLogger(targetClass);
         // 获取log条件信息，包括logType，request和response是否需要打印
         final LogCondition logCondition = getMethodLogMonitorAnnotation(method);
         if (logCondition.getExtraMsgSupplier() != null) {
             MapThreadLocalAdaptor.put("CURR_ExtraMsgSupplier", logCondition.getExtraMsgSupplier());
         }
-        final String className = declaringClass.getSimpleName();
+        final String className = targetClass.getSimpleName();
         final String methodName = method.getName();
         final Class<?> returnType = method.getReturnType();
         final Object[] params = joinPoint.getArgs();
@@ -182,7 +191,7 @@ public class LogMonitorAop {
         logCondition.setRequestLog(this.isRequestLog != null && this.isRequestLog.booleanValue());
         logCondition.setResponseLog(this.isResponseLog != null && this.isResponseLog.booleanValue());
         logCondition.setCustomLogType(this.customLogType);
-        logCondition.setUseItsLog(useItsLog);
+        logCondition.setUseItsLog(this.useItsLog);
         if (StringUtils.isNotBlank(this.excludeInfoKeys)) {
             Set<String> keys = new HashSet<>();
             for (String key : this.excludeInfoKeys.split(",")) {
@@ -209,5 +218,4 @@ public class LogMonitorAop {
             return UUID.randomUUID().toString().replaceAll("-", "").toLowerCase();
         }
     }
-
 }

@@ -70,6 +70,9 @@ public interface Converter {
         if (val instanceof Map) {
             return new JSONObject((Map) val);
         }
+        if (val instanceof String) {
+            return JSON.parseObject((String) val);
+        }
         return (JSONObject) JSON.toJSON(val);
     };
 

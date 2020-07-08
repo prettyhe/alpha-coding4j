@@ -127,8 +127,8 @@ public class ContextWarmUpInitializer implements ApplicationListener<ContextRefr
                 final ScheduledExecutorService executor =
                         NamedExecutorPool.newScheduledThreadPool("WarmUpSchPool", scheduledTasks.size());
                 executorServiceList.add(executor);
+                ScheduleDelegator delegator = new ScheduleDelegator(executor);
                 for (final ScheduledTask task : scheduledTasks) {
-                    ScheduleDelegator delegator = new ScheduleDelegator(executor);
                     delegator.schedule(task, warmUpAopProvider == null ? null : warmUpAopProvider.apply(task));
                 }
             }

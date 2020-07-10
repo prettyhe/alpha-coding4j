@@ -356,14 +356,14 @@ public class DateUtils {
      * 获取指定时间那天的开始时间：00:00:00
      */
     public static Date getDayStart(Date date) {
-        return parse(format(date, "yyyy-MM-dd") + " 00:00:00");
+        return date == null ? null : parse(format(date, "yyyy-MM-dd") + " 00:00:00");
     }
 
     /**
      * 获取指定时间那天的结束时间：23:59:59
      */
     public static Date getDayEnd(Date date) {
-        return parse(format(date, "yyyy-MM-dd") + " 23:59:59");
+        return date == null ? null : parse(format(date, "yyyy-MM-dd") + " 23:59:59");
     }
 
     /**

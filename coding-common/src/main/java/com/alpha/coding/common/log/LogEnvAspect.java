@@ -10,8 +10,8 @@ import org.slf4j.MDC;
 import org.slf4j.spi.MDCAdapter;
 
 import com.alpha.coding.bo.constant.Keys;
+import com.alpha.coding.bo.trace.TimestampBase62UUIDTraceIdGenerator;
 import com.alpha.coding.bo.trace.TraceIdGenerator;
-import com.alpha.coding.bo.trace.UUIDTraceIdGenerator;
 import com.google.common.collect.Maps;
 
 import lombok.Data;
@@ -29,7 +29,7 @@ public class LogEnvAspect {
 
     private static final String KEYS_EXIST_MAP_KEY = "keysExistMap";
     private List<String> keys = Arrays.asList("system", "appName", "host", "port", "module", "pid");
-    private TraceIdGenerator traceIdGenerator = UUIDTraceIdGenerator.getInstance();
+    private TraceIdGenerator traceIdGenerator = TimestampBase62UUIDTraceIdGenerator.getInstance();
 
     /**
      * 执行切面逻辑

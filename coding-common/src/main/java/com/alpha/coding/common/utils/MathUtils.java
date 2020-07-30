@@ -141,8 +141,19 @@ public class MathUtils {
      * @param precision 精度，百分后小数点位数
      */
     public static String percentFormat(BigDecimal bd, int precision) {
+        return percentFormatWithDefault(bd, precision, "");
+    }
+
+    /**
+     * 格式化成百分数:0.00255 -(precision=2)-> 0.26%
+     *
+     * @param bd         原始数据
+     * @param precision  精度，百分后小数点位数
+     * @param defaultVal 默认值
+     */
+    public static String percentFormatWithDefault(BigDecimal bd, int precision, String defaultVal) {
         if (bd == null) {
-            return "";
+            return defaultVal;
         }
         BigDecimal divide = bd.multiply(HUNDRED).divide(BigDecimal.ONE, precision, BigDecimal.ROUND_HALF_UP);
         return divide.toString() + "%";

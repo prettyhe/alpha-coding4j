@@ -6,12 +6,9 @@ package com.alpha.coding.common.log;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
 
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
@@ -19,10 +16,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
-import com.alibaba.fastjson.JSON;
 import com.alpha.coding.bo.base.MapThreadLocalAdaptor;
+import com.alpha.coding.bo.trace.TimestampBase62UUIDTraceIdGenerator;
 import com.alpha.coding.common.aop.assist.AopHelper;
-import com.alpha.coding.common.utils.MD5Utils;
 import com.alpha.coding.common.utils.StringUtils;
 
 import lombok.Data;
@@ -205,15 +201,7 @@ public class LogMonitorAop {
 
     private String genTraceId(ProceedingJoinPoint joinPoint) {
         try {
-            MethodSignature signature = (MethodSignature) joinPoint.getSignature();
-            Method method = signature.getMethod();
-            Class<?> declaringClass = method.getDeclaringClass();
-            Map map = new HashMap();
-            map.put("interface", declaringClass.getName());
-            map.put("signature", signature.getName());
-            map.put("timestamp", System.currentTimeMillis());
-            map.put("random", ThreadLocalRandom.current().nextInt(1000000, 9999999));
-            return MD5Utils.md5(JSON.toJSONString(map));
+            return TimestampBase62UUIDTraceIdGenerator.getInstance().traceId();
         } catch (Exception e) {
             return UUID.randomUUID().toString().replaceAll("-", "").toLowerCase();
         }

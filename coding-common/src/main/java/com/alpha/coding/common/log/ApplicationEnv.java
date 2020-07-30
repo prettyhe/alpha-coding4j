@@ -6,12 +6,20 @@ import java.net.NetworkInterface;
 import java.util.Enumeration;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import javax.management.Query;
 
+import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
+import org.springframework.context.ApplicationListener;
+import org.springframework.context.event.ContextRefreshedEvent;
+
+import com.alibaba.dubbo.config.ProtocolConfig;
 
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -26,7 +34,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Data
 @Accessors(chain = true)
-public class ApplicationEnv implements InitializingBean {
+public class ApplicationEnv implements InitializingBean, ApplicationListener<ContextRefreshedEvent> {
 
     private String system;
     private String appName;
@@ -35,11 +43,12 @@ public class ApplicationEnv implements InitializingBean {
     private String module;
     private String pid;
     private Map<String, String> extraMap;
+    private Supplier<String> portSupplier = new HttpPortSupplier();
 
     public ApplicationEnv() {
         this.host = getLocalHostName();
-        this.port = getLocalPort();
         this.pid = getCurrentPid();
+        this.port = portSupplier.get();
     }
 
     private String getLocalHostName() {
@@ -80,7 +89,17 @@ public class ApplicationEnv implements InitializingBean {
         return null;
     }
 
-    private String getLocalPort() {
+    private String getCurrentPid() {
+        try {
+            String jvmName = ManagementFactory.getRuntimeMXBean().getName();
+            return jvmName.split("@")[0];
+        } catch (Throwable e) {
+            log.error("getCurrentPid fail", e);
+        }
+        return null;
+    }
+
+    private static String getLocalHttpPort() {
         try {
             MBeanServer beanServer = ManagementFactory.getPlatformMBeanServer();
             Set<ObjectName> objectNames = beanServer.queryNames(new ObjectName("*:type=Connector,*"),
@@ -95,12 +114,25 @@ public class ApplicationEnv implements InitializingBean {
         return null;
     }
 
-    private String getCurrentPid() {
+    private static String getLocalDubboPort(ApplicationContext applicationContext) {
         try {
-            String jvmName = ManagementFactory.getRuntimeMXBean().getName();
-            return jvmName.split("@")[0];
-        } catch (Throwable e) {
-            log.error("getCurrentPid fail", e);
+            if (Class.forName("com.alibaba.dubbo.config.ProtocolConfig") != null) {
+                final Map<String, ProtocolConfig> beans = applicationContext.getBeansOfType(ProtocolConfig.class);
+                Integer port = null;
+                if (beans != null && !beans.isEmpty()) {
+                    for (Map.Entry<String, ProtocolConfig> entry : beans.entrySet()) {
+                        if (entry.getValue().getPort() != null) {
+                            port = entry.getValue().getPort();
+                            break;
+                        }
+                    }
+                }
+                if (port != null) {
+                    return String.valueOf(port);
+                }
+            }
+        } catch (Exception ex) {
+            log.error("getDubboPort fail, {}", ex.getMessage());
         }
         return null;
     }
@@ -119,14 +151,52 @@ public class ApplicationEnv implements InitializingBean {
         }
     }
 
-    @Override
-    public void afterPropertiesSet() throws Exception {
-        initSystemProperties();
-    }
-
     private void putIfAbsentToSystemProperty(String key, String value) {
-        if (System.getProperty(key) == null) {
+        if ("".equals(System.getProperty(key, ""))) {
             System.setProperty(key, value == null ? "" : value);
         }
     }
+
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        initSystemProperties();
+        log.info("ApplicationEnv is system={},appName={},host={},port={},module={},pid={},extraMap={}",
+                system, appName, host, port, module, pid, extraMap);
+    }
+
+    @Override
+    public void onApplicationEvent(ContextRefreshedEvent contextRefreshedEvent) {
+        this.port = portSupplier.get();
+        putIfAbsentToSystemProperty("port", this.port);
+    }
+
+    /**
+     * Http 端口获取
+     */
+    public static class HttpPortSupplier implements Supplier<String> {
+
+        @Override
+        public String get() {
+            return getLocalHttpPort();
+        }
+    }
+
+    /**
+     * Dubbo 端口获取
+     */
+    public static class DubboPortSupplier implements Supplier<String>, ApplicationContextAware {
+
+        private ApplicationContext applicationContext;
+
+        @Override
+        public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+            this.applicationContext = applicationContext;
+        }
+
+        @Override
+        public String get() {
+            return getLocalDubboPort(this.applicationContext);
+        }
+    }
+
 }

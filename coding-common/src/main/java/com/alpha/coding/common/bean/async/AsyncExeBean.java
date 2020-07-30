@@ -6,6 +6,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
@@ -16,6 +17,7 @@ import com.google.common.collect.Lists;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -27,36 +29,31 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class AsyncExeBean implements InitializingBean, DisposableBean {
 
-    private static final String poolName = "async";
-    private static final String monitorPoolName = "async-monitor";
+    private static final String POOL_NAME = "async";
 
     @Getter
     @Setter
+    @Accessors(chain = true)
     private AsyncConfiguration asyncConfiguration = new AsyncConfiguration();
 
     @Setter
+    @Accessors(chain = true)
     private Executor executor;
 
     @Setter
-    private ExeCallback callback;
+    @Accessors(chain = true)
+    private Consumer<List> callback;
 
     @Setter
-    private MonitorCallback monitorCallback;
+    @Accessors(chain = true)
+    private Runnable monitorCallback;
 
     private volatile boolean initialized;
-    private Executor monitor = NamedExecutorPool.newFixedThreadPool(monitorPoolName, 1);
+    private Executor monitor;
     private BlockingQueue queue;
     @Getter
     private volatile boolean running;
-    private AtomicInteger runningCnt = new AtomicInteger();
-
-    public interface ExeCallback {
-        void process(List list);
-    }
-
-    public interface MonitorCallback {
-        void wakeUp();
-    }
+    private final AtomicInteger runningCnt = new AtomicInteger();
 
     public AsyncExeBean() {
         if (!initialized) {
@@ -83,7 +80,10 @@ public class AsyncExeBean implements InitializingBean, DisposableBean {
             }
         }
         if (executor == null) {
-            executor = NamedExecutorPool.newFixedThreadPool(poolName, asyncConfiguration.getCoreExeSize());
+            executor = NamedExecutorPool.newFixedThreadPool(POOL_NAME, asyncConfiguration.getCoreExeSize());
+        }
+        if (monitor == null) {
+            monitor = NamedExecutorPool.newFixedThreadPool(POOL_NAME + "-monitor", 1);
         }
         initialized = true;
     }
@@ -116,6 +116,22 @@ public class AsyncExeBean implements InitializingBean, DisposableBean {
         }
     }
 
+    public boolean add(Object obj) throws AsyncException {
+        if (running) {
+            return queue.add(obj);
+        } else {
+            throw new AsyncException("cannot add to not yet started");
+        }
+    }
+
+    public boolean offer(Object obj) throws AsyncException {
+        if (running) {
+            return queue.offer(obj);
+        } else {
+            throw new AsyncException("cannot offer to not yet started");
+        }
+    }
+
     public synchronized void reStart() {
         stop();
         init();
@@ -143,7 +159,7 @@ public class AsyncExeBean implements InitializingBean, DisposableBean {
                     }
                     runningCnt.incrementAndGet();
                     try {
-                        callback.process(list);
+                        callback.accept(list);
                     } finally {
                         runningCnt.decrementAndGet();
                     }
@@ -157,7 +173,7 @@ public class AsyncExeBean implements InitializingBean, DisposableBean {
         while (queue.size() > 0) {
             List list = Lists.newArrayList();
             queue.drainTo(list, asyncConfiguration.getBatchSize());
-            callback.process(list);
+            callback.accept(list);
         }
         while (!done()) {
             sleep(100);
@@ -189,11 +205,10 @@ public class AsyncExeBean implements InitializingBean, DisposableBean {
                 int runCnt = runningCnt.get();
                 if (queueSize > 0 || runCnt > 0 || cnt >= asyncConfiguration.getMonitorMaxNopTimes()) {
                     log.info("{} state: running={}, queueSize={}, runningCnt={}",
-                            asyncConfiguration.getIdentify(), running,
-                            queueSize, runCnt);
+                            asyncConfiguration.getIdentify(), running, queueSize, runCnt);
                     cnt = 0;
                     if (monitorCallback != null) {
-                        monitorCallback.wakeUp();
+                        monitorCallback.run();
                     }
                 }
                 sleep(asyncConfiguration.getMonitorNopSleepMillis());

@@ -12,7 +12,7 @@ import com.alibaba.dubbo.rpc.Invoker;
 import com.alibaba.dubbo.rpc.Result;
 import com.alibaba.dubbo.rpc.RpcException;
 import com.alpha.coding.bo.constant.Keys;
-import com.alpha.coding.bo.trace.TimestampUUIDTraceIdGenerator;
+import com.alpha.coding.bo.trace.TimestampBase62UUIDTraceIdGenerator;
 import com.alpha.coding.bo.trace.TraceIdGenerator;
 import com.alpha.coding.bo.trace.UUIDTraceIdGenerator;
 
@@ -31,7 +31,7 @@ public class MDCTraceProviderFilter implements Filter {
 
     private static final String metaTraceId = "_trId_";
     @Setter
-    private TraceIdGenerator traceIdGenerator = TimestampUUIDTraceIdGenerator.getInstance();
+    private TraceIdGenerator traceIdGenerator = TimestampBase62UUIDTraceIdGenerator.getInstance();
     @Setter
     private TraceIdGenerator tailTraceIdGenerator = UUIDTraceIdGenerator.getInstance();
 

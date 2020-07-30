@@ -48,7 +48,7 @@
         <coding4j.commons-dbcp.version>1.4</coding4j.commons-dbcp.version>
         <coding4j.commons-collections.version>3.2.2</coding4j.commons-collections.version>
         <coding4j.commons-text.version>1.6</coding4j.commons-text.version>
-        <coding4j.commons-beanutils.version>1.9.3</coding4j.commons-beanutils.version>
+        <coding4j.commons-beanutils.version>1.9.4</coding4j.commons-beanutils.version>
         <coding4j.commons-codec.version>1.11</coding4j.commons-codec.version>
         <coding4j.commons-validator.version>1.6</coding4j.commons-validator.version>
         <coding4j.common-email.version>1.5</coding4j.common-email.version>

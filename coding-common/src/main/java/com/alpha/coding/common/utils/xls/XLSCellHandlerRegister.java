@@ -24,9 +24,14 @@ public class XLSCellHandlerRegister implements ApplicationContextAware, Initiali
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        Map<String, CellHandler> beans = applicationContext.getBeansOfType(CellHandler.class);
-        for (CellHandler cellHandler : beans.values()) {
-            XLSWriter.registerCellHandler(cellHandler);
+        try {
+            if (Class.forName("org.apache.poi.ss.usermodel.Cell") != null) {
+                Map<String, CellHandler> beans = applicationContext.getBeansOfType(CellHandler.class);
+                for (CellHandler cellHandler : beans.values()) {
+                    XLSWriter.registerCellHandler(cellHandler);
+                }
+            }
+        } catch (ClassNotFoundException e) {
         }
     }
 }

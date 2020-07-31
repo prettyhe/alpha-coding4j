@@ -5,7 +5,7 @@ import java.util.List;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import redis.clients.jedis.Jedis;
-import redis.clients.jedis.JedisPool;
+import redis.clients.jedis.JedisPoolAbstract;
 import redis.clients.jedis.Pipeline;
 
 /**
@@ -18,7 +18,7 @@ import redis.clients.jedis.Pipeline;
 public class RedisBean {
 
     @Setter
-    private JedisPool pool;
+    private JedisPoolAbstract pool;
 
     @Setter
     private int db;
@@ -49,7 +49,6 @@ public class RedisBean {
      * 使用回调接口执行redis操作，封装回收资源逻辑
      *
      * @param callback redis操作回调
-     *
      * @return 返回操作结果
      */
     public <T> T doInRedis(JedisCallback<T> callback) {
@@ -93,7 +92,6 @@ public class RedisBean {
      * 使用回调接口执行redis管道操作，返回结果，封装回收资源逻辑
      *
      * @param callback redis操作回调
-     *
      * @return 返回管道操作结果
      */
     public List<Object> pipelineWithReturn(JedisPipelineCallback callback) {

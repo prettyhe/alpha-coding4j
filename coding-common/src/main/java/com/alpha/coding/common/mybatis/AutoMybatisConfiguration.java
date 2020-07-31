@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class AutoMybatisConfiguration {
 
-    @Bean("defaultConfiguration")
+    @Bean("defaultIbatisConfiguration")
     public org.apache.ibatis.session.Configuration configuration() {
         final org.apache.ibatis.session.Configuration configuration = new org.apache.ibatis.session.Configuration();
         configuration.setMapUnderscoreToCamelCase(true);

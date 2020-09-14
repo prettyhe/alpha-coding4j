@@ -82,7 +82,7 @@
         <coding4j.ehcache.version>2.10.6</coding4j.ehcache.version>
         <coding4j.snakeyaml.version>1.25</coding4j.snakeyaml.version>
         <coding4j.asm.version>3.1</coding4j.asm.version>
-        <coding4j.ant.version>1.9.4</coding4j.ant.version>
+        <coding4j.ant.version>1.9.15</coding4j.ant.version>
         <coding4j.findbugs.version>3.0.2</coding4j.findbugs.version>
     </properties>
 

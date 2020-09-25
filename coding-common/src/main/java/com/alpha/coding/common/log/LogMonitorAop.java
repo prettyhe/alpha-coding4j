@@ -38,9 +38,9 @@ public class LogMonitorAop {
 
     private LogType logType;
 
-    private Boolean isRequestLog;
+    private Boolean logRequest;
 
-    private Boolean isResponseLog;
+    private Boolean logResponse;
 
     private Logor logor;
 
@@ -56,8 +56,8 @@ public class LogMonitorAop {
     private ExtraMsgSupplier extraMsgSupplier;
 
     public LogMonitorAop() {
-        this.isRequestLog = false;
-        this.isResponseLog = false;
+        this.logRequest = false;
+        this.logResponse = false;
         this.logType = LogType.SERV_OUT;
     }
 
@@ -184,8 +184,8 @@ public class LogMonitorAop {
         }
         LogCondition logCondition = new LogCondition();
         logCondition.setLogType(this.logType);
-        logCondition.setRequestLog(this.isRequestLog != null && this.isRequestLog.booleanValue());
-        logCondition.setResponseLog(this.isResponseLog != null && this.isResponseLog.booleanValue());
+        logCondition.setLogRequest(this.logRequest != null && this.logRequest);
+        logCondition.setLogResponse(this.logResponse != null && this.logResponse);
         logCondition.setCustomLogType(this.customLogType);
         logCondition.setUseItsLog(this.useItsLog);
         if (StringUtils.isNotBlank(this.excludeInfoKeys)) {

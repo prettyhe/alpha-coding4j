@@ -9,9 +9,13 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
+import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.core.annotation.AnnotationAttributes;
 import org.springframework.util.ClassUtils;
 
+import com.alpha.coding.common.bean.register.BeanDefinitionRegistryUtils;
+import com.alpha.coding.common.bean.register.EnvironmentChangeEvent;
+import com.alpha.coding.common.bean.register.EnvironmentChangeListener;
 import com.alpha.coding.common.bean.spi.ConfigurationRegisterHandler;
 import com.alpha.coding.common.bean.spi.RegisterBeanDefinitionContext;
 import com.alpha.coding.common.datasource.CreateDataSourceEnv;
@@ -29,7 +33,7 @@ import lombok.extern.slf4j.Slf4j;
  * Date: 2020-03-21
  */
 @Slf4j
-public class EnableMybatisAutoConfigHandler implements ConfigurationRegisterHandler {
+public class EnableMybatisAutoConfigHandler implements ConfigurationRegisterHandler, EnvironmentChangeListener {
 
     @Override
     public void registerBeanDefinitions(RegisterBeanDefinitionContext context) {
@@ -43,6 +47,7 @@ public class EnableMybatisAutoConfigHandler implements ConfigurationRegisterHand
         if (CollectionUtils.isEmpty(annotationAttributes)) {
             return;
         }
+        final BeanDefinitionRegistry registry = context.getRegistry();
         if (ClassUtils.isPresent("com.github.miemiedev.mybatis.paginator.OffsetLimitInterceptor", classLoader)) {
             // 注册 pageHandlerInterceptor
             BeanDefinitionBuilder pageDefinitionBuilder = BeanDefinitionBuilder
@@ -50,7 +55,8 @@ public class EnableMybatisAutoConfigHandler implements ConfigurationRegisterHand
             Properties properties = new Properties();
             properties.put("dialectClass", "com.github.miemiedev.mybatis.paginator.dialect.MySQLDialect");
             pageDefinitionBuilder.addPropertyValue("properties", properties);
-            context.getRegistry().registerBeanDefinition("auto_PageHandlerInterceptor",
+            BeanDefinitionRegistryUtils.overideBeanDefinition(registry,
+                    "auto_PageHandlerInterceptor",
                     pageDefinitionBuilder.getBeanDefinition());
         }
         // 注册 showSqlInterceptor
@@ -59,7 +65,8 @@ public class EnableMybatisAutoConfigHandler implements ConfigurationRegisterHand
         final Properties showSQLProperties = new Properties();
         showSQLProperties.put("sqlIdAbbreviated", true);
         showSQLDefinitionBuilder.addPropertyValue("properties", showSQLProperties);
-        context.getRegistry().registerBeanDefinition("auto_ShowSqlInterceptor",
+        BeanDefinitionRegistryUtils.overideBeanDefinition(registry,
+                "auto_ShowSqlInterceptor",
                 showSQLDefinitionBuilder.getBeanDefinition());
         // 注册mybatis相关配置
         for (AnnotationAttributes attributes : annotationAttributes) {
@@ -75,7 +82,8 @@ public class EnableMybatisAutoConfigHandler implements ConfigurationRegisterHand
                     prefix + "ReadDataSource");
             dataSourceBeanDefinitionBuilder.addPropertyReference("writeDataSource",
                     prefix + "WriteDataSource");
-            context.getRegistry().registerBeanDefinition(prefix + "DataSource",
+            BeanDefinitionRegistryUtils.overideBeanDefinition(registry,
+                    prefix + "DataSource",
                     dataSourceBeanDefinitionBuilder.getBeanDefinition());
             log.info("register DynamicDataSource: {}", prefix + "DataSource");
             // 注册 SqlSessionFactoryBean
@@ -87,7 +95,8 @@ public class EnableMybatisAutoConfigHandler implements ConfigurationRegisterHand
                 BeanDefinitionBuilder configurationBeanDefinitionBuilder = BeanDefinitionBuilder
                         .genericBeanDefinition("org.apache.ibatis.session.Configuration");
                 configurationBeanDefinitionBuilder.addPropertyValue("mapUnderscoreToCamelCase", true);
-                context.getRegistry().registerBeanDefinition(prefix + "_ibatisSessionConfiguration",
+                BeanDefinitionRegistryUtils.overideBeanDefinition(registry,
+                        prefix + "_ibatisSessionConfiguration",
                         configurationBeanDefinitionBuilder.getBeanDefinition());
                 sqlSessionFactoryBeanBuilder.addPropertyReference("configuration",
                         prefix + "_ibatisSessionConfiguration");
@@ -108,7 +117,8 @@ public class EnableMybatisAutoConfigHandler implements ConfigurationRegisterHand
                 dynamicPluginProperties.put("forceUseWriteDataSourceSql", forceUseWriteDataSourceSqls);
                 dynamicPluginDefinitionBuilder.addPropertyValue("properties", dynamicPluginProperties);
             }
-            context.getRegistry().registerBeanDefinition(prefix + "DynamicPlugin",
+            BeanDefinitionRegistryUtils.overideBeanDefinition(registry,
+                    prefix + "DynamicPlugin",
                     dynamicPluginDefinitionBuilder.getBeanDefinition());
             plugins.add(prefix + "DynamicPlugin");
             if (attributes.getBoolean("enablePageHandlerInterceptor")) {
@@ -121,7 +131,8 @@ public class EnableMybatisAutoConfigHandler implements ConfigurationRegisterHand
             sqlSessionFactoryBeanBuilder.addPropertyValue("plugins", ListUtils.toArray(plugins.stream()
                     .map(x -> context.getBeanFactory().getBean(x))
                     .collect(Collectors.toList()), loadClass("org.apache.ibatis.plugin.Interceptor")));
-            context.getRegistry().registerBeanDefinition(prefix + "SqlSessionFactory",
+            BeanDefinitionRegistryUtils.overideBeanDefinition(registry,
+                    prefix + "SqlSessionFactory",
                     sqlSessionFactoryBeanBuilder.getBeanDefinition());
             log.info("register SqlSessionFactory: {}", prefix + "SqlSessionFactory");
             // 注册 MapperScannerConfigurer
@@ -131,7 +142,8 @@ public class EnableMybatisAutoConfigHandler implements ConfigurationRegisterHand
                     prefix + "SqlSessionFactory");
             mapperScannerConfigurerBuilder.addPropertyValue("basePackage",
                     attributes.getString("mapperBasePackage"));
-            context.getRegistry().registerBeanDefinition(prefix + "MapperScannerConfigurer",
+            BeanDefinitionRegistryUtils.overideBeanDefinition(registry,
+                    prefix + "MapperScannerConfigurer",
                     mapperScannerConfigurerBuilder.getBeanDefinition());
         }
     }
@@ -148,5 +160,11 @@ public class EnableMybatisAutoConfigHandler implements ConfigurationRegisterHand
             log.warn("{} not found", name);
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public void onChange(EnvironmentChangeEvent event) {
+        final RegisterBeanDefinitionContext context = (RegisterBeanDefinitionContext) event.getSource();
+        registerBeanDefinitions(context);
     }
 }

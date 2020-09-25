@@ -48,10 +48,10 @@ public class EnableLogMonitorHandler implements ConfigurationRegisterHandler {
             beanDefinitionBuilder.addPropertyValue("logType", logConfig.getEnum("logType"));
             beanDefinitionBuilder.addPropertyValue("customLogType",
                     logConfig.getString("customLogType"));
-            beanDefinitionBuilder.addPropertyValue("isRequestLog",
-                    logConfig.getBoolean("isRequestLog"));
-            beanDefinitionBuilder.addPropertyValue("isResponseLog",
-                    logConfig.getBoolean("isResponseLog"));
+            beanDefinitionBuilder.addPropertyValue("logRequest",
+                    logConfig.getBoolean("logRequest"));
+            beanDefinitionBuilder.addPropertyValue("logResponse",
+                    logConfig.getBoolean("logResponse"));
             beanDefinitionBuilder.addPropertyValue("useItsLog",
                     logConfig.getBoolean("useItsLog"));
             beanDefinitionBuilder.addPropertyValue("excludeInfoKeys",

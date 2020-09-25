@@ -24,9 +24,9 @@ public class LogCondition {
 
     private String customLogType;
 
-    private boolean isRequestLog = false;
+    private boolean logRequest = false;
 
-    private boolean isResponseLog = false;
+    private boolean logResponse = false;
 
     private boolean useItsLog = false;
 
@@ -39,8 +39,8 @@ public class LogCondition {
 
     public LogCondition(LogMonitor logMonitor) {
         this.logType = logMonitor.logType();
-        this.isRequestLog = logMonitor.isRequestLog();
-        this.isResponseLog = logMonitor.isResponseLog();
+        this.logRequest = logMonitor.logRequest();
+        this.logResponse = logMonitor.logResponse();
         this.customLogType = logMonitor.customLogType();
         this.useItsLog = logMonitor.useItsLog();
         if (logMonitor.excludeInfoKeys().length > 0) {

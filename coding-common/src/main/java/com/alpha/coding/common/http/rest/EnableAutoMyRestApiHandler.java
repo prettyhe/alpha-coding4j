@@ -30,6 +30,9 @@ import org.springframework.util.ClassUtils;
 
 import com.alpha.coding.common.bean.comm.CustomFactoryBean;
 import com.alpha.coding.common.bean.register.BeanDefineUtils;
+import com.alpha.coding.common.bean.register.BeanDefinitionRegistryUtils;
+import com.alpha.coding.common.bean.register.EnvironmentChangeEvent;
+import com.alpha.coding.common.bean.register.EnvironmentChangeListener;
 import com.alpha.coding.common.bean.spi.ConfigurationRegisterHandler;
 import com.alpha.coding.common.bean.spi.RegisterBeanDefinitionContext;
 import com.alpha.coding.common.http.CachedHttpComponentsClientHttpRequestFactory;
@@ -50,7 +53,7 @@ import lombok.extern.slf4j.Slf4j;
  * Date: 2020/6/12
  */
 @Slf4j
-public class EnableAutoMyRestApiHandler implements ConfigurationRegisterHandler {
+public class EnableAutoMyRestApiHandler implements ConfigurationRegisterHandler, EnvironmentChangeListener {
 
     private ResourcePatternResolver resourcePatternResolver = new PathMatchingResourcePatternResolver();
     private MetadataReaderFactory metadataReaderFactory = new CachingMetadataReaderFactory((ResourceLoader) null);
@@ -80,7 +83,8 @@ public class EnableAutoMyRestApiHandler implements ConfigurationRegisterHandler 
                                 "http.pool.conn.maxPerRoute"), Integer.class, 100));
                 managerDefinitionBuilder.addPropertyValue("type", PoolingHttpClientConnectionManager.class);
                 managerDefinitionBuilder.addPropertyValue("target", poolingConnectionManager);
-                registry.registerBeanDefinition(prefix + "PoolingHttpClientConnectionManager",
+                BeanDefinitionRegistryUtils.overideBeanDefinition(registry,
+                        prefix + "PoolingHttpClientConnectionManager",
                         managerDefinitionBuilder.getBeanDefinition());
                 log.info("registerBeanDefinition {} for prefix {}",
                         prefix + "PoolingHttpClientConnectionManager", prefix);
@@ -103,7 +107,8 @@ public class EnableAutoMyRestApiHandler implements ConfigurationRegisterHandler 
                         BeanDefinitionBuilder.genericBeanDefinition(CustomFactoryBean.class);
                 clientHttpRequestFactoryDefinitionBuilder.addPropertyValue("type", ClientHttpRequestFactory.class);
                 clientHttpRequestFactoryDefinitionBuilder.addPropertyValue("target", clientHttpRequestFactory);
-                registry.registerBeanDefinition(prefix + "ClientHttpRequestFactory",
+                BeanDefinitionRegistryUtils.overideBeanDefinition(registry,
+                        prefix + "ClientHttpRequestFactory",
                         clientHttpRequestFactoryDefinitionBuilder.getBeanDefinition());
                 log.info("registerBeanDefinition {} for prefix {}",
                         prefix + "ClientHttpRequestFactory", prefix);
@@ -121,7 +126,8 @@ public class EnableAutoMyRestApiHandler implements ConfigurationRegisterHandler 
                         BeanDefinitionBuilder.genericBeanDefinition(CustomFactoryBean.class);
                 myRestTemplateDefinitionBuilder.addPropertyValue("type", MyRestTemplate.class);
                 myRestTemplateDefinitionBuilder.addPropertyValue("target", restTemplate);
-                registry.registerBeanDefinition(prefix + "MyRestTemplate",
+                BeanDefinitionRegistryUtils.overideBeanDefinition(registry,
+                        prefix + "MyRestTemplate",
                         myRestTemplateDefinitionBuilder.getBeanDefinition());
                 log.info("registerBeanDefinition {} for prefix {}",
                         prefix + "MyRestTemplate", prefix);
@@ -182,7 +188,8 @@ public class EnableAutoMyRestApiHandler implements ConfigurationRegisterHandler 
             httpAPIFactoryDefinitionBuilder.addPropertyValue("restTemplate",
                     context.getBeanFactory().getBean(
                             StringUtils.isBlank(restTemplateRef) ? prefix + "MyRestTemplate" : restTemplateRef));
-            registry.registerBeanDefinition(httpAPIFactoryBeanName,
+            BeanDefinitionRegistryUtils.overideBeanDefinition(registry,
+                    httpAPIFactoryBeanName,
                     httpAPIFactoryDefinitionBuilder.getBeanDefinition());
             log.info("registerBeanDefinition {} for prefix {}", httpAPIFactoryBeanName, prefix);
         }
@@ -191,5 +198,11 @@ public class EnableAutoMyRestApiHandler implements ConfigurationRegisterHandler 
     @Override
     public int getOrder() {
         return 0;
+    }
+
+    @Override
+    public void onChange(EnvironmentChangeEvent event) {
+        final RegisterBeanDefinitionContext context = (RegisterBeanDefinitionContext) event.getSource();
+        registerBeanDefinitions(context);
     }
 }

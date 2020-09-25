@@ -44,13 +44,14 @@ public class MetaMonitor implements InitializingBean, DisposableBean, Applicatio
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        Optional.ofNullable(metaChangeListener).ifPresent(p -> this.eventBus.register(p));
+        Optional.ofNullable(metaChangeListener).ifPresent(this.eventBus::register);
         executorService.submit(() -> {
             while (true) {
                 try {
                     final Object event = queue.take();
                     eventBus.post(event);
                 } catch (Exception e) {
+                    log.error("post event fail, msg:{}", e.getMessage());
                 }
             }
         });
@@ -58,7 +59,7 @@ public class MetaMonitor implements InitializingBean, DisposableBean, Applicatio
 
     @Override
     public void destroy() throws Exception {
-        Optional.ofNullable(metaChangeListener).ifPresent(p -> this.eventBus.unregister(p));
+        Optional.ofNullable(metaChangeListener).ifPresent(this.eventBus::unregister);
     }
 
     public static void post(Object event) {

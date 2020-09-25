@@ -12,16 +12,15 @@ import org.springframework.context.annotation.Import;
 @Configuration
 @Import(LogMonitorConfiguration.class)
 @EnableLogMonitor(logorBean = "annotationLogor", order = 2,
-        logConfig = @LogMonitor(logType = LogType.OTHER, isRequestLog = true, isResponseLog = true),
+        logConfig = @LogMonitor(logType = LogType.OTHER, logRequest = true, logResponse = true),
         pointcut = {"@within(com.alpha.coding.common.log.LogMonitor)",
                 "|| @annotation(com.alpha.coding.common.log.LogMonitor)"})
 @EnableLogMonitor(logorBean = "defaultLogor", order = 3,
-        logConfig = @LogMonitor(logType = LogType.SERV_OUT, isRequestLog = true, isResponseLog = true),
+        logConfig = @LogMonitor(logType = LogType.SERV_OUT, logRequest = true, logResponse = true),
         pointcut = {"@within(org.springframework.stereotype.Controller)",
                 "|| @annotation(org.springframework.stereotype.Controller)",
                 "|| @within(org.springframework.web.bind.annotation.RestController)",
                 "|| @annotation(org.springframework.web.bind.annotation.RestController)"})
-
 public class CommonLogMonitorConfiguration {
 
 }

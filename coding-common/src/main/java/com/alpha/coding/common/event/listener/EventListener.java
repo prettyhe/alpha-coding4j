@@ -11,11 +11,10 @@ import com.alpha.coding.common.event.EventIdentifier;
  * EventListener 事件监听器
  *
  * @param <E> 事件类别
- *
  * @version 1.0
  * Date: 2020-02-21
  */
-public interface EventListener<E extends EnumWithCodeSupplier> extends EventIdentifier {
+public interface EventListener<E extends EnumWithCodeSupplier> extends EventIdentifier, java.util.EventListener {
 
     /**
      * 监听事件

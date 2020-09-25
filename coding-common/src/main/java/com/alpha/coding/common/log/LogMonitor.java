@@ -35,12 +35,12 @@ public @interface LogMonitor {
     /**
      * 方法的请求参数是否需要打印到log中，默认不打印
      */
-    boolean isRequestLog() default false;
+    boolean logRequest() default false;
 
     /**
      * 方法执行的结果是否需要打印，默认为false不打印
      */
-    boolean isResponseLog() default false;
+    boolean logResponse() default false;
 
     /**
      * 使用自身的log实例

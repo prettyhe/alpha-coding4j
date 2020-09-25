@@ -691,4 +691,14 @@ public class DateUtils {
         return format(date, CRON_FORMAT, targetTimezone);
     }
 
+    /**
+     * 是否闰年
+     *
+     * @param year 年
+     * @return 是否闰年
+     */
+    public static boolean isLeapYear(int year) {
+        return new GregorianCalendar().isLeapYear(year);
+    }
+
 }

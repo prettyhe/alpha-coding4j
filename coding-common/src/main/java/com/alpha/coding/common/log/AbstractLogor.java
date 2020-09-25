@@ -115,11 +115,11 @@ public abstract class AbstractLogor implements Logor {
             }
             Class responseClazz = context.getReturnType().getClass();
             Map<String, String> extraData = Maps.newLinkedHashMap();
-            if (context.getCondition().isRequestLog()) {
+            if (context.getCondition().isLogRequest()) {
                 extraData.put(REQUEST_KEY, getFormatStr(context.getParamNames(), context.getParams(),
                         context.getParameterAnnotations()));
             }
-            if (context.getCondition().isResponseLog()) {
+            if (context.getCondition().isLogResponse()) {
                 String resultStr = getFormatStr(new String[] {"return"}, new Object[] {context.getResponse()}, null);
                 extraData.put(RESPONSE_KEY, resultStr);
             }

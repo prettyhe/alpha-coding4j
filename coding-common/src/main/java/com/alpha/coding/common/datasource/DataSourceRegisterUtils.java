@@ -11,6 +11,7 @@ import org.springframework.core.env.Environment;
 
 import com.alibaba.druid.pool.DruidDataSource;
 import com.alpha.coding.common.bean.register.BeanDefineUtils;
+import com.alpha.coding.common.bean.register.BeanDefinitionRegistryUtils;
 import com.alpha.coding.common.bean.spi.RegisterBeanDefinitionContext;
 
 import lombok.extern.slf4j.Slf4j;
@@ -34,7 +35,8 @@ public class DataSourceRegisterUtils {
         readDefinitionBuilder.addPropertyValue("url", env.getProperty(prefix + "." + "read.jdbc.url"));
         readDefinitionBuilder.addPropertyValue("username", env.getProperty(prefix + "." + "read.jdbc.username"));
         readDefinitionBuilder.addPropertyValue("password", env.getProperty(prefix + "." + "read.jdbc.password"));
-        context.getRegistry().registerBeanDefinition(prefix + "ReadDataSource",
+        BeanDefinitionRegistryUtils.overideBeanDefinition(context.getRegistry(),
+                prefix + "ReadDataSource",
                 readDefinitionBuilder.getBeanDefinition());
         log.info("register DruidDataSource: {}", prefix + "ReadDataSource");
         // 注册 写 DruidDataSource，beanName="#prefix + 'WriteDataSource'"
@@ -44,7 +46,8 @@ public class DataSourceRegisterUtils {
         writeDefinitionBuilder.addPropertyValue("url", env.getProperty(prefix + "." + "write.jdbc.url"));
         writeDefinitionBuilder.addPropertyValue("username", env.getProperty(prefix + "." + "write.jdbc.username"));
         writeDefinitionBuilder.addPropertyValue("password", env.getProperty(prefix + "." + "write.jdbc.password"));
-        context.getRegistry().registerBeanDefinition(prefix + "WriteDataSource",
+        BeanDefinitionRegistryUtils.overideBeanDefinition(context.getRegistry(),
+                prefix + "WriteDataSource",
                 writeDefinitionBuilder.getBeanDefinition());
         log.info("register DruidDataSource: {}", prefix + "WriteDataSource");
     }
@@ -77,11 +80,11 @@ public class DataSourceRegisterUtils {
                 keysFunction.apply("jdbc.timeBetweenEvictionRunsMillis"), Long.class, 60000L, propertyMap);
         BeanDefineUtils.setIfAbsent(builder, environment, "minEvictableIdleTimeMillis",
                 keysFunction.apply("jdbc.minEvictableIdleTimeMillis"), Long.class, 300000L, propertyMap);
-        // db2的配置特殊处理
-        if (!"db2".equals(createDataSourceEnv.getType())) {
-            BeanDefineUtils.setIfAbsent(builder, environment, "validationQuery",
-                    keysFunction.apply("jdbc.validationQuery"), null, "SELECT 'x' from dual", propertyMap);
-        }
+        // 检查连接的SQL，默认=>SELECT 'x' from dual, DB2默认=>SELECT 1 FROM SYSIBM.DUAL，可自定义覆盖
+        BeanDefineUtils.setIfAbsent(builder, environment, "validationQuery",
+                keysFunction.apply("jdbc.validationQuery"), null,
+                !"db2".equals(createDataSourceEnv.getType()) ? "SELECT 'x' from dual" : "SELECT 1 FROM SYSIBM.DUAL",
+                propertyMap);
         BeanDefineUtils.setIfAbsent(builder, environment, "testWhileIdle",
                 keysFunction.apply("jdbc.testWhileIdle"), Boolean.class, true, propertyMap);
         BeanDefineUtils.setIfAbsent(builder, environment, "testOnBorrow",

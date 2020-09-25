@@ -6,6 +6,8 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.core.annotation.AnnotationAttributes;
 import org.springframework.util.ClassUtils;
 
+import com.alpha.coding.common.bean.register.EnvironmentChangeEvent;
+import com.alpha.coding.common.bean.register.EnvironmentChangeListener;
 import com.alpha.coding.common.bean.spi.ConfigurationRegisterHandler;
 import com.alpha.coding.common.bean.spi.RegisterBeanDefinitionContext;
 import com.alpha.coding.common.utils.SpringAnnotationConfigUtils;
@@ -19,7 +21,7 @@ import lombok.extern.slf4j.Slf4j;
  * Date: 2020-03-20
  */
 @Slf4j
-public class EnableAutoDataSourceHandler implements ConfigurationRegisterHandler {
+public class EnableAutoDataSourceHandler implements ConfigurationRegisterHandler, EnvironmentChangeListener {
 
     @Override
     public void registerBeanDefinitions(RegisterBeanDefinitionContext context) {
@@ -43,6 +45,12 @@ public class EnableAutoDataSourceHandler implements ConfigurationRegisterHandler
     @Override
     public int getOrder() {
         return 0;
+    }
+
+    @Override
+    public void onChange(EnvironmentChangeEvent event) {
+        final RegisterBeanDefinitionContext context = (RegisterBeanDefinitionContext) event.getSource();
+        registerBeanDefinitions(context);
     }
 
 }

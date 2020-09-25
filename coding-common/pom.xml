@@ -9,21 +9,19 @@
     <parent>
         <groupId>com.alpha.coding4j</groupId>
         <artifactId>coding4j</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>${revision}</version>
     </parent>
 
-    <groupId>com.alpha.coding4j</groupId>
     <artifactId>coding-common</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
 
     <name>coding-common</name>
     <packaging>jar</packaging>
 
     <dependencies>
         <dependency>
-            <groupId>com.alpha.coding4j</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>coding-bo</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>

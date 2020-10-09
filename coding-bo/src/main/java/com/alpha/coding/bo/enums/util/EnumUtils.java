@@ -78,6 +78,15 @@ public class EnumUtils {
         }
     }
 
+    public static <T extends Enum<T>> T safeParseByName(Class<T> enumClass, String name) {
+        for (T t : enumClass.getEnumConstants()) {
+            if (t.name().equals(name)) {
+                return t;
+            }
+        }
+        return null;
+    }
+
     public static <T> T safeParseEnumByName(Class<T> enumClass, String name) {
         if (!enumClass.isEnum()) {
             return null;

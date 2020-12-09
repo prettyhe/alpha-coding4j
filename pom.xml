@@ -80,7 +80,7 @@
         <coding4j.persistence-api.version>1.0.2</coding4j.persistence-api.version>
         <coding4j.poi-ooxml.version>3.15</coding4j.poi-ooxml.version>
         <coding4j.hibernate.validator.version>5.4.3.Final</coding4j.hibernate.validator.version>
-        <coding4j.groovy.version>3.0.4</coding4j.groovy.version>
+        <coding4j.groovy.version>3.0.7</coding4j.groovy.version>
         <coding4j.ehcache.version>2.10.6</coding4j.ehcache.version>
         <coding4j.snakeyaml.version>1.25</coding4j.snakeyaml.version>
         <coding4j.asm.version>3.1</coding4j.asm.version>

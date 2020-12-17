@@ -138,3 +138,4 @@ target
 /logs
 */.factorypath
 .vscode
+.flattened-pom.xml

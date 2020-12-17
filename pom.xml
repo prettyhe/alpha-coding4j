@@ -38,7 +38,7 @@
         <coding4j.jedis.version>3.1.0</coding4j.jedis.version>
         <coding4j.guava.version>28.2-jre</coding4j.guava.version>
         <coding4j.lombok.version>1.18.10</coding4j.lombok.version>
-        <coding4j.fastjson.version>1.2.62</coding4j.fastjson.version>
+        <coding4j.fastjson.version>1.2.75</coding4j.fastjson.version>
         <coding4j.jackson.version>2.10.0</coding4j.jackson.version>
         <coding4j.slf4j.version>1.7.26</coding4j.slf4j.version>
         <coding4j.log4j.version>2.13.3</coding4j.log4j.version>

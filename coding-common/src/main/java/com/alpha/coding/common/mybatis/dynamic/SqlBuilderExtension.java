@@ -6,6 +6,7 @@ import java.util.function.Function;
 import org.mybatis.dynamic.sql.BindableColumn;
 import org.mybatis.dynamic.sql.SqlCriterion;
 import org.mybatis.dynamic.sql.VisitableCondition;
+import org.mybatis.dynamic.sql.where.WhereApplier;
 
 /**
  * SqlBuilderExtension
@@ -40,6 +41,10 @@ public interface SqlBuilderExtension {
 
     static <T> SqlCriterion.Builder<T> sqlCriterionBuilder(String connector, BindableColumn<T> column) {
         return new SqlCriterion.Builder<T>().withColumn(column).withConnector(connector);
+    }
+
+    static WhereApplier compose(WhereApplier w1, WhereApplier w2) {
+        return dsl -> dsl.applyWhere(w1).applyWhere(w2);
     }
 
 }

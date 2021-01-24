@@ -34,6 +34,39 @@ public class LogCondition {
 
     private ExtraMsgSupplier extraMsgSupplier;
 
+    /**
+     * 请求参数中忽略打印的字段的JsonPath，
+     * 以参数下标(从0开始，*表示所有参数)开始，如0.$['name']，即从第一个点号之后的为该参数的真实JsonPath
+     *
+     * @see com.jayway.jsonpath.JsonPath
+     * @see <a href="https://github.com/json-path/JsonPath">https://github.com/json-path/JsonPath</a>
+     */
+    private String[] reqIgnoreFieldPath;
+
+    /**
+     * 响应参数中忽略打印的字段的JsonPath
+     *
+     * @see com.jayway.jsonpath.JsonPath
+     * @see <a href="https://github.com/json-path/JsonPath">https://github.com/json-path/JsonPath</a>
+     */
+    private String[] resIgnoreFieldPath;
+    /**
+     * 请求参数中保留打印的字段的JsonPath，
+     * 以参数下标(从0开始，*表示所有参数)开始，如0.$['name']，即从第一个点号之后的为该参数的真实JsonPath
+     *
+     * @see com.jayway.jsonpath.JsonPath
+     * @see <a href="https://github.com/json-path/JsonPath">https://github.com/json-path/JsonPath</a>
+     */
+    private String[] reqRetainFieldPath;
+
+    /**
+     * 响应参数中保留打印的字段的JsonPath
+     *
+     * @see com.jayway.jsonpath.JsonPath
+     * @see <a href="https://github.com/json-path/JsonPath">https://github.com/json-path/JsonPath</a>
+     */
+    private String[] resRetainFieldPath;
+
     public LogCondition() {
     }
 
@@ -52,5 +85,10 @@ public class LogCondition {
             }
         }
         this.extraMsgSupplier = ExtraMsgSupplierCache.getDefault(logMonitor.extraMsgSupplier());
+        final LogDataPath logDataPath = logMonitor.logDataPath();
+        this.reqIgnoreFieldPath = logDataPath.reqIgnoreFieldPath();
+        this.resIgnoreFieldPath = logDataPath.resIgnoreFieldPath();
+        this.reqRetainFieldPath = logDataPath.reqRetainFieldPath();
+        this.resRetainFieldPath = logDataPath.resRetainFieldPath();
     }
 }

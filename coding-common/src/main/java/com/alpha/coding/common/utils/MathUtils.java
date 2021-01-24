@@ -2,6 +2,9 @@ package com.alpha.coding.common.utils;
 
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * MathUtils
@@ -45,6 +48,14 @@ public class MathUtils {
                 : (number instanceof BigDecimal ? (BigDecimal) number : new BigDecimal(String.valueOf(number)));
     }
 
+    /**
+     * 两数(相同类型)相加
+     *
+     * @param a 数值a
+     * @param b 数值b
+     * @return 和
+     * @throws UnsupportedOperationException 不支持的数值类型
+     */
     public static <T extends Number> T add(T a, T b) {
         if (a == null) {
             return b;
@@ -66,72 +77,100 @@ public class MathUtils {
             return (T) new Byte((byte) (a.byteValue() + b.byteValue()));
         } else if (a instanceof BigDecimal) {
             return (T) ((BigDecimal) a).add((BigDecimal) b);
+        } else if (a instanceof BigInteger) {
+            return (T) ((BigInteger) a).add((BigInteger) convert(b, BigInteger.class));
+        } else if (a instanceof AtomicInteger) {
+            return (T) new AtomicInteger(a.intValue() + b.intValue());
+        } else if (a instanceof AtomicLong) {
+            return (T) new AtomicLong(a.longValue() + b.longValue());
         } else {
-            throw new UnsupportedOperationException("not support for " + a.getClass());
+            throw new UnsupportedOperationException("not support for " + a.getClass().getName());
         }
     }
 
+    /**
+     * 两数相加，并转为目标数值类型
+     *
+     * @param <T> 目标数值类型
+     * @param <A> 数值A类型
+     * @param <B> 数值B类型
+     * @param a   数值a
+     * @param b   数值b
+     * @param clz 目标数值类型
+     * @return 目标数值
+     * @throws UnsupportedOperationException 不支持的类型
+     */
     public static <T extends Number, A extends Number, B extends Number> T add(A a, B b, Class<T> clz) {
         if (a == null) {
-            return convert(b, clz);
+            return (T) convert(b, clz);
         }
         if (b == null) {
-            return convert(a, clz);
+            return (T) convert(a, clz);
         }
-        return convert(new BigDecimal(String.valueOf(a)).add(new BigDecimal(String.valueOf(b))), clz);
+        return (T) convert(new BigDecimal(String.valueOf(a)).add(new BigDecimal(String.valueOf(b))), clz);
     }
 
-    public static <P extends Number, Q extends Number> P convert(Q q, Class<P> clz) {
-        if (q == null) {
+    /**
+     * 数值转换
+     *
+     * @param <T>    数值类型
+     * @param number 数值
+     * @param type   新数值类型
+     * @return 新数值类型的数值
+     * @throws UnsupportedOperationException 不支持的类型
+     */
+    public static <T extends Number> Number convert(T number, Type type) {
+        if (number == null) {
             return null;
         }
-        BigDecimal bigDecimal = q instanceof BigDecimal ? (BigDecimal) q : new BigDecimal(String.valueOf(q));
-        if (Integer.class.equals(clz)) {
-            return (P) new Integer(bigDecimal.intValue());
-        } else if (Long.class.equals(clz)) {
-            return (P) new Long(bigDecimal.longValue());
-        } else if (Short.class.equals(clz)) {
-            return (P) new Short(bigDecimal.shortValue());
-        } else if (Float.class.equals(clz)) {
-            return (P) new Float(bigDecimal.floatValue());
-        } else if (Double.class.equals(clz)) {
-            return (P) new Double(bigDecimal.doubleValue());
-        } else if (Byte.class.equals(clz)) {
-            return (P) new Byte(bigDecimal.byteValue());
-        } else if (BigDecimal.class.equals(clz)) {
-            return (P) bigDecimal;
+        if (type == byte.class || type == Byte.class) {
+            return number.byteValue();
+        } else if (type == short.class || type == Short.class) {
+            return number.shortValue();
+        } else if (type == int.class || type == Integer.class) {
+            return number.intValue();
+        } else if (type == long.class || type == Long.class) {
+            return number.longValue();
+        } else if (type == float.class || type == Float.class) {
+            return number.floatValue();
+        } else if (type == double.class || type == Double.class) {
+            return number.doubleValue();
+        } else if (type == BigInteger.class) {
+            return new BigInteger(String.valueOf(number));
+        } else if (type == BigDecimal.class) {
+            return number instanceof BigDecimal ? (BigDecimal) number : new BigDecimal(String.valueOf(number));
+        } else if (type == AtomicInteger.class) {
+            return new AtomicInteger(number.intValue());
+        } else if (type == AtomicLong.class) {
+            return new AtomicLong(number.longValue());
         } else {
-            throw new UnsupportedOperationException("not support for " + clz);
+            try {
+                if (!Number.class.isAssignableFrom(Class.forName(type.getTypeName()))) {
+                    throw new UnsupportedOperationException("not support for " + type.getTypeName());
+                }
+            } catch (ClassNotFoundException e) {
+                throw new UnsupportedOperationException("not support for " + type.getTypeName());
+            }
+            return number;
         }
     }
 
     /**
      * 转换为数值
      *
-     * @param val 数值或数值字符串
+     * @param val  数值或数值字符串
+     * @param type 类型
+     * @return 目标类型的数值
+     * @throws UnsupportedOperationException 不支持的类型
      */
     public static Number convertToNumber(Object val, Type type) {
         if (val == null) {
             return null;
         }
-        BigDecimal bigDecimal = val instanceof BigDecimal ? (BigDecimal) val : new BigDecimal(String.valueOf(val));
-        if (int.class.equals(type) || Integer.class.equals(type)) {
-            return new Integer(bigDecimal.intValue());
-        } else if (long.class.equals(type) || Long.class.equals(type)) {
-            return new Long(bigDecimal.longValue());
-        } else if (short.class.equals(type) || Short.class.equals(type)) {
-            return new Short(bigDecimal.shortValue());
-        } else if (float.class.equals(type) || Float.class.equals(type)) {
-            return new Float(bigDecimal.floatValue());
-        } else if (double.class.equals(type) || Double.class.equals(type)) {
-            return new Double(bigDecimal.doubleValue());
-        } else if (byte.class.equals(type) || Byte.class.equals(type)) {
-            return new Byte(bigDecimal.byteValue());
-        } else if (BigDecimal.class.equals(type)) {
-            return bigDecimal;
-        } else {
-            throw new UnsupportedOperationException("not support for " + type);
+        if (val instanceof Number) {
+            return convert((Number) val, type);
         }
+        return convert(new BigDecimal(String.valueOf(val)), type);
     }
 
     /**

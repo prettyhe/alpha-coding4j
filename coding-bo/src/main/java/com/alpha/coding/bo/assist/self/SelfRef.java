@@ -12,7 +12,7 @@ import com.alpha.coding.bo.assist.ref.anno.InjectRef;
  * Date: 2020/4/14
  */
 @InjectRef
-public interface SelfRef<SELF extends SelfRef<SELF>> extends InjectRef {
+public interface SelfRef<SELF extends SelfRef<SELF>> extends com.alpha.coding.bo.assist.ref.InjectRef {
 
     default List<SELF> SELF_LIST() {
         return (List<SELF>) InjectRefType.GLOBAL.getContextVisitor().visit().lookup(this.getClass());

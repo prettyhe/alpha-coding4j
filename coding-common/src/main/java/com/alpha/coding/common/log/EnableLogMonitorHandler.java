@@ -59,6 +59,15 @@ public class EnableLogMonitorHandler implements ConfigurationRegisterHandler {
                             .reduce((x, y) -> x + "," + y).get());
             beanDefinitionBuilder.addPropertyValue("extraMsgSupplier",
                     ExtraMsgSupplierCache.getDefault(logConfig.getClass("extraMsgSupplier")));
+            final AnnotationAttributes logDataPath = logConfig.getAnnotation("logDataPath");
+            beanDefinitionBuilder.addPropertyValue("reqIgnoreFieldPath",
+                    logDataPath.getStringArray("reqIgnoreFieldPath"));
+            beanDefinitionBuilder.addPropertyValue("resIgnoreFieldPath",
+                    logDataPath.getStringArray("resIgnoreFieldPath"));
+            beanDefinitionBuilder.addPropertyValue("reqRetainFieldPath",
+                    logDataPath.getStringArray("reqRetainFieldPath"));
+            beanDefinitionBuilder.addPropertyValue("resRetainFieldPath",
+                    logDataPath.getStringArray("resRetainFieldPath"));
             context.getRegistry().registerBeanDefinition(beanName, beanDefinitionBuilder.getRawBeanDefinition());
             // 注册AOP
             final AspectJParams params = new AspectJParams()

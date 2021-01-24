@@ -56,4 +56,9 @@ public @interface LogMonitor {
      * 附加消息提供者的类型
      */
     Class<? extends ExtraMsgSupplier> extraMsgSupplier() default ThreadLocalExtraMsgSupplier.class;
+
+    /**
+     * 日志数据路径配置
+     */
+    LogDataPath logDataPath() default @LogDataPath;
 }

@@ -520,6 +520,12 @@
                 <artifactId>spring-jms</artifactId>
                 <version>${coding4j.springframework.version}</version>
             </dependency>
+            <!-- json-path -->
+            <dependency>
+                <groupId>com.jayway.jsonpath</groupId>
+                <artifactId>json-path</artifactId>
+                <version>2.5.0</version>
+            </dependency>
             <!-- dependency for test -->
             <dependency>
                 <groupId>org.springframework</groupId>

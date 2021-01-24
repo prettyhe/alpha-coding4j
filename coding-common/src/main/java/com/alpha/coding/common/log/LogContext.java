@@ -1,6 +1,7 @@
 package com.alpha.coding.common.log;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
 
 import org.slf4j.Logger;
 
@@ -23,6 +24,8 @@ public class LogContext {
     private Object[] params;
     private String[] paramNames;
     private Object response;
+    private Class<?> targetClass;
+    private Method targetMethod;
     private Class<?> returnType;
     private String interfaceName;
     private String methodName;

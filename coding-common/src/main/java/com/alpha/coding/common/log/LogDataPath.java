@@ -1,6 +1,3 @@
-/**
- * Copyright (C) 2017 www.xysl.com. All Rights Reserved.
- */
 package com.alpha.coding.common.log;
 
 import java.lang.annotation.Documented;

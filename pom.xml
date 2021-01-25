@@ -67,7 +67,7 @@
         <coding4j.zkclient.version>0.3</coding4j.zkclient.version>
         <coding4j.zookeeper.version>3.4.14</coding4j.zookeeper.version>
         <coding4j.netty.version>4.1.36.Final</coding4j.netty.version>
-        <coding4j.junit.version>4.12</coding4j.junit.version>
+        <coding4j.junit.version>4.13.1</coding4j.junit.version>
         <coding4j.druid.version>1.1.20</coding4j.druid.version>
         <coding4j.hystrix.version>1.5.12</coding4j.hystrix.version>
         <coding4j.jsoup.version>1.11.2</coding4j.jsoup.version>

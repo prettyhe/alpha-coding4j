@@ -36,7 +36,7 @@
         <coding4j.springframework.version>4.3.26.RELEASE</coding4j.springframework.version>
         <coding4j.springframework.data.version>2.2.3.RELEASE</coding4j.springframework.data.version>
         <coding4j.jedis.version>3.1.0</coding4j.jedis.version>
-        <coding4j.guava.version>28.2-jre</coding4j.guava.version>
+        <coding4j.guava.version>29.0-jre</coding4j.guava.version>
         <coding4j.lombok.version>1.18.10</coding4j.lombok.version>
         <coding4j.fastjson.version>1.2.75</coding4j.fastjson.version>
         <coding4j.jackson.version>2.10.0</coding4j.jackson.version>

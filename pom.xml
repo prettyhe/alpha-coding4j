@@ -59,7 +59,7 @@
         <coding4j.commons-lang3.version>3.9</coding4j.commons-lang3.version>
         <coding4j.javax.servlet-api.version>3.1.0</coding4j.javax.servlet-api.version>
         <coding4j.httpclient.version>4.5.4</coding4j.httpclient.version>
-        <coding4j.mybatis.version>3.5.1</coding4j.mybatis.version>
+        <coding4j.mybatis.version>3.5.6</coding4j.mybatis.version>
         <coding4j.mybatis.spring.version>2.0.3</coding4j.mybatis.spring.version>
         <coding4j.mybatis-paginator.version>1.2.17</coding4j.mybatis-paginator.version>
         <coding4j.dubbo.version>2.5.3</coding4j.dubbo.version>

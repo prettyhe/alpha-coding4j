@@ -46,7 +46,7 @@
         <coding4j.commons-configuration.version>1.10</coding4j.commons-configuration.version>
         <coding4j.commons-net.version>3.6</coding4j.commons-net.version>
         <coding4j.commons-lang.version>2.6</coding4j.commons-lang.version>
-        <coding4j.commons-io.version>2.6</coding4j.commons-io.version>
+        <coding4j.commons-io.version>2.7</coding4j.commons-io.version>
         <coding4j.commons-dbcp.version>1.4</coding4j.commons-dbcp.version>
         <coding4j.commons-collections.version>3.2.2</coding4j.commons-collections.version>
         <coding4j.commons-text.version>1.6</coding4j.commons-text.version>

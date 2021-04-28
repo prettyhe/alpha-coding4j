@@ -42,13 +42,24 @@ import lombok.extern.slf4j.Slf4j;
 public class ShowSqlInterceptor implements Interceptor {
 
     private static final String PLACEHOLDER = "%s";
-    private static final String PLACEHOLDER_FOR_SIGN = "";
+    // private static final String PLACEHOLDER_FOR_SIGN = "";
     private static final String CONF_SQL_ID_ABBR = "sqlIdAbbreviated";
     private static final String SEP_DOT = "\\.";
     private static final String DOT = ".";
 
     private Properties properties;
 
+    @Override
+    public Object plugin(Object target) {
+        return Plugin.wrap(target, this);
+    }
+
+    @Override
+    public void setProperties(Properties properties) {
+        this.properties = properties;
+    }
+
+    @Override
     public Object intercept(Invocation invocation) throws Throwable {
         MappedStatement mappedStatement = (MappedStatement) invocation.getArgs()[0];
         Object parameter = null;
@@ -111,10 +122,7 @@ public class ShowSqlInterceptor implements Interceptor {
             if (obj != null) {
                 value = obj.toString();
             } else {
-                /**
-                 * 注意，null转化成mysql的NULL
-                 */
-                value = "NULL";
+                value = "NULL"; // 注意，null转化成NULL
             }
         }
         return value;
@@ -141,7 +149,9 @@ public class ShowSqlInterceptor implements Interceptor {
                             continue;
                         }
                     } catch (Exception e) {
-                        log.debug("getParameterValue for {}", propertyName, e);
+                        if (log.isDebugEnabled()) {
+                            log.debug("getParameterValue for {}", propertyName, e);
+                        }
                     }
                     if (boundSql.hasAdditionalParameter(propertyName)) {
                         Object obj = boundSql.getAdditionalParameter(propertyName);
@@ -150,15 +160,15 @@ public class ShowSqlInterceptor implements Interceptor {
                 }
                 // assemble final sql
                 if (sql.contains("%")) {
-                    String[] strs = sql.split("%", -1);
+                    String[] tokens = sql.split("%", -1);
                     int j = 0;
-                    for (int k = 0; k < strs.length; k++) {
-                        while (strs[k].contains("?")) {
-                            strs[k] = strs[k].replaceFirst("\\?", PLACEHOLDER);
-                            strs[k] = String.format(strs[k], objects[j++]);
+                    for (int k = 0; k < tokens.length; k++) {
+                        while (tokens[k].contains("?")) {
+                            tokens[k] = tokens[k].replaceFirst("\\?", PLACEHOLDER);
+                            tokens[k] = String.format(tokens[k], objects[j++]);
                         }
                     }
-                    sql = StringUtils.join(strs, "%");
+                    sql = StringUtils.join(tokens, "%");
                 } else {
                     sql = sql.replaceAll("\\?", PLACEHOLDER);
                     sql = String.format(sql, objects);
@@ -168,46 +178,9 @@ public class ShowSqlInterceptor implements Interceptor {
         return sql;
     }
 
-    /**
-     * 此种实现略有问题，如果先遇到的字符串中有?则会替换掉
-     */
-    @Deprecated
-    public String showSqlV1(Configuration configuration, BoundSql boundSql) {
-        Object parameterObject = boundSql.getParameterObject();
-        List<ParameterMapping> parameterMappings = boundSql.getParameterMappings();
-        String sql = boundSql.getSql().replaceAll("[\\s]+", " ");
-        if (parameterMappings.size() > 0 && parameterObject != null) {
-            TypeHandlerRegistry typeHandlerRegistry = configuration.getTypeHandlerRegistry();
-            if (typeHandlerRegistry.hasTypeHandler(parameterObject.getClass())) {
-                sql = sql.replaceFirst("\\?", getParameterValue(parameterObject));
-            } else {
-                MetaObject metaObject = configuration.newMetaObject(parameterObject);
-                for (ParameterMapping parameterMapping : parameterMappings) {
-                    String propertyName = parameterMapping.getProperty();
-                    if (metaObject.hasGetter(propertyName)) {
-                        Object obj = metaObject.getValue(propertyName);
-                        sql = sql.replaceFirst("\\?", getParameterValue(obj));
-                    } else if (boundSql.hasAdditionalParameter(propertyName)) {
-                        Object obj = boundSql.getAdditionalParameter(propertyName);
-                        sql = sql.replaceFirst("\\?", getParameterValue(obj));
-                    }
-                }
-            }
-        }
-        return sql;
-    }
-
-    public Object plugin(Object target) {
-        return Plugin.wrap(target, this);
-    }
-
-    public void setProperties(Properties properties0) {
-        this.properties = properties0;
-    }
-
     private String abbreviateSqlId(String sqlId) {
         if (sqlId == null) {
-            return sqlId;
+            return null;
         }
         try {
             final String[] arr = sqlId.split(SEP_DOT);
@@ -216,12 +189,14 @@ public class ShowSqlInterceptor implements Interceptor {
             }
             StringBuilder sb = new StringBuilder();
             for (int i = 0; i < arr.length - 2; i++) {
-                sb.append(arr[i].substring(0, 1)).append(DOT);
+                sb.append(arr[i], 0, 1).append(DOT);
             }
             sb.append(arr[arr.length - 2]).append(DOT).append(arr[arr.length - 1]);
             return sb.toString();
         } catch (Exception e) {
-            log.debug("abbreviate sqlId fail, {}", e.getMessage());
+            if (log.isDebugEnabled()) {
+                log.debug("abbreviate sqlId fail, {}", e.getMessage());
+            }
             return sqlId;
         }
     }

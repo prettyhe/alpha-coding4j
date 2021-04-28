@@ -11,7 +11,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.MDC;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.DisposableBean;
@@ -76,7 +75,7 @@ public class EventBusTemplate implements InitializingBean, DisposableBean, BeanF
                     Thread.currentThread().getContextClassLoader());
         }
         Collection<EventListener> eventListeners = eventListenerFactory.getEventListeners(getIdentity());
-        if (CollectionUtils.isNotEmpty(eventListeners)) {
+        if (eventListeners != null && !eventListeners.isEmpty()) {
             for (EventListener eventListener : eventListeners) {
                 eventBusInstance.register(eventListener);
                 if (log.isDebugEnabled()) {
@@ -99,7 +98,7 @@ public class EventBusTemplate implements InitializingBean, DisposableBean, BeanF
             sleep(200);
         }
         Collection<EventListener> eventListeners = eventListenerFactory.getEventListeners(getIdentity());
-        if (CollectionUtils.isNotEmpty(eventListeners)) {
+        if (eventListeners != null && !eventListeners.isEmpty()) {
             for (EventListener eventListener : eventListeners) {
                 eventBusInstance.unregister(eventListener);
             }
@@ -146,7 +145,7 @@ public class EventBusTemplate implements InitializingBean, DisposableBean, BeanF
             while (true) {
                 List<Object> events = Lists.newArrayList();
                 queue.drainTo(events, BATCH_SIZE);
-                if (CollectionUtils.isEmpty(events)) {
+                if (events == null || events.isEmpty()) {
                     sleep(100);
                     continue;
                 }

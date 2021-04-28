@@ -71,7 +71,7 @@ public class DataSourceRegisterUtils {
         BeanDefineUtils.setIfAbsent(builder, environment, "initialSize",
                 keysFunction.apply("jdbc.initialSize"), Integer.class, 0, propertyMap);
         BeanDefineUtils.setIfAbsent(builder, environment, "minIdle",
-                keysFunction.apply("jdbc.maxIdle"), Integer.class, 1, propertyMap);
+                keysFunction.apply("jdbc.minIdle"), Integer.class, 1, propertyMap);
         BeanDefineUtils.setIfAbsent(builder, environment, "maxActive",
                 keysFunction.apply("jdbc.maxActive"), Integer.class, 1, propertyMap);
         BeanDefineUtils.setIfAbsent(builder, environment, "maxWait",

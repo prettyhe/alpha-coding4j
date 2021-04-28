@@ -7,7 +7,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.MDC;
 
 import com.alibaba.fastjson.JSON;
@@ -73,13 +72,13 @@ public class AbstractEvent<K, E extends EnumWithCodeSupplier> {
         }
     }
 
-    private final String genEventID() {
+    private String genEventID() {
         StringBuilder sb = new StringBuilder();
         sb.append(type.getClass().getSimpleName())
                 .append(MIDDLE_LINE)
                 .append(type)
                 .append(UNDER_LINE);
-        if (CollectionUtils.isNotEmpty(keys)) {
+        if (keys != null && !keys.isEmpty()) {
             sb.append(Objects.hashCode(JSON.toJSONString(keys)));
         } else {
             sb.append("0");

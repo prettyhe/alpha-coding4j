@@ -23,7 +23,6 @@ public class ComputeEngine {
      * @param expression    表达式
      * @param keyFunction   集合元素取key的函数
      * @param valueFunction 表达式中参数取值的函数
-     *
      * @return java.util.List<T>
      */
     public static <T> List<T> computeList(String expression, Function<T, Object> keyFunction,
@@ -45,7 +44,6 @@ public class ComputeEngine {
      *
      * @param triples     表达式元组
      * @param keyFunction 取key函数
-     *
      * @return java.util.List<T>
      */
     public static <T> List<T> processByPostfixExp(List<Triple<String, Boolean, List<T>>> triples,

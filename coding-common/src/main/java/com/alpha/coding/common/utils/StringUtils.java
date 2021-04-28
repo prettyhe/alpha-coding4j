@@ -22,7 +22,7 @@ public class StringUtils {
             return true;
         }
         for (int i = 0; i < strLen; i++) {
-            if ((Character.isWhitespace(str.charAt(i)) == false)) {
+            if ((!Character.isWhitespace(str.charAt(i)))) {
                 return false;
             }
         }
@@ -31,6 +31,21 @@ public class StringUtils {
 
     public static boolean isNotBlank(String str) {
         return !isBlank(str);
+    }
+
+    public static boolean isNumeric(String str) {
+        if (str == null) {
+            return false;
+        } else {
+            int sz = str.length();
+
+            for (int i = 0; i < sz; ++i) {
+                if (!Character.isDigit(str.charAt(i))) {
+                    return false;
+                }
+            }
+            return true;
+        }
     }
 
 }

@@ -6,8 +6,6 @@ package com.alpha.coding.common.utils;
 import java.util.Collection;
 import java.util.List;
 
-import org.apache.commons.collections.CollectionUtils;
-
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 
@@ -50,7 +48,7 @@ public class BatchUtils {
      * @param callback  批回调
      */
     public static <T, V> T batchProcess(Collection<V> coll, int batchSize, BatchProcessCallback<V, T> callback) {
-        if (CollectionUtils.isEmpty(coll)) {
+        if (coll == null || coll.isEmpty()) {
             return null;
         }
         Preconditions.checkArgument(batchSize > 0, "batchSize must greater than 0");
@@ -77,7 +75,7 @@ public class BatchUtils {
      * @param callback  批回调
      */
     public static <V> void batchProcess(Collection<V> coll, int batchSize, BatchCallback<V> callback) {
-        if (CollectionUtils.isEmpty(coll)) {
+        if (coll == null || coll.isEmpty()) {
             return;
         }
         Preconditions.checkArgument(batchSize > 0, "batchSize must greater than 0");

@@ -100,6 +100,7 @@ public class EnableAutoMyRestApiHandler implements ConfigurationRegisterHandler,
                                 .fetchProperty(environment, Arrays.asList(prefix + ".http.socket.timeout",
                                         "http.socket.timeout"), Integer.class, 3000))
                         .build();
+                log.info("{}RequestConfig: {}", prefix, config.toString());
                 ClientHttpRequestFactory clientHttpRequestFactory = new CachedHttpComponentsClientHttpRequestFactory()
                         .setHttpClientConnectionManager(poolingConnectionManager)
                         .setRequestConfig(config);
@@ -114,7 +115,8 @@ public class EnableAutoMyRestApiHandler implements ConfigurationRegisterHandler,
                         prefix + "ClientHttpRequestFactory", prefix);
                 // 注册 MyRestTemplate
                 MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter();
-                converter.setSupportedMediaTypes(Lists.newArrayList(MediaType.APPLICATION_JSON));
+                converter.setSupportedMediaTypes(Lists.newArrayList(MediaType.APPLICATION_JSON,
+                        MediaType.TEXT_PLAIN, MediaType.TEXT_HTML));
                 ObjectMapper objectMapper = new ObjectMapper();
                 objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
                 objectMapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
@@ -180,17 +182,17 @@ public class EnableAutoMyRestApiHandler implements ConfigurationRegisterHandler,
                 throw new BeanDefinitionStoreException("I/O failure during classpath scanning", e);
             }
             // 先注册API，避免引用错误
+            final String restTemplateBeanName = StringUtils.isBlank(restTemplateRef) ? prefix
+                    + "MyRestTemplate" : restTemplateRef;
             HttpAPIFactoryUtils.registerApi(registry, context.getBeanFactory(),
-                    (MyRestTemplate) context.getBeanFactory().getBean(prefix + "MyRestTemplate"), apis, null);
+                    (MyRestTemplate) context.getBeanFactory().getBean(restTemplateBeanName), apis, null);
             BeanDefinitionBuilder httpAPIFactoryDefinitionBuilder =
                     BeanDefinitionBuilder.genericBeanDefinition(HttpAPIFactory.class);
             httpAPIFactoryDefinitionBuilder.addPropertyValue("apis", apis);
             httpAPIFactoryDefinitionBuilder.addPropertyValue("restTemplate",
-                    context.getBeanFactory().getBean(
-                            StringUtils.isBlank(restTemplateRef) ? prefix + "MyRestTemplate" : restTemplateRef));
+                    context.getBeanFactory().getBean(restTemplateBeanName));
             BeanDefinitionRegistryUtils.overideBeanDefinition(registry,
-                    httpAPIFactoryBeanName,
-                    httpAPIFactoryDefinitionBuilder.getBeanDefinition());
+                    httpAPIFactoryBeanName, httpAPIFactoryDefinitionBuilder.getBeanDefinition());
             log.info("registerBeanDefinition {} for prefix {}", httpAPIFactoryBeanName, prefix);
         }
     }

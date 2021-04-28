@@ -4,8 +4,6 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 
-import org.apache.commons.collections.CollectionUtils;
-
 /**
  * SqlUtils
  *
@@ -30,7 +28,6 @@ public class SqlUtils {
      * change ' to \'
      *
      * @param s 输入
-     *
      * @return result
      */
     public static String escapeSql(String s) {
@@ -46,7 +43,6 @@ public class SqlUtils {
      * change % to \% change ' to \'
      *
      * @param s 输入
-     *
      * @return result
      */
     public static String escapeSqlLike(String s) {
@@ -70,7 +66,6 @@ public class SqlUtils {
      * 条件拼成sql
      *
      * @param condition 条件
-     *
      * @return result
      */
     public static String toConditionSql(List<String> condition) {
@@ -86,7 +81,7 @@ public class SqlUtils {
     }
 
     public static String toMd5List(Collection<String> urls) {
-        if (CollectionUtils.isEmpty(urls)) {
+        if (urls == null || urls.isEmpty()) {
             return "";
         }
         StringBuilder sb = new StringBuilder();

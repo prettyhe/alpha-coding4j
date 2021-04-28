@@ -10,7 +10,6 @@ import java.util.List;
 
 import org.apache.commons.beanutils.ConvertUtils;
 import org.apache.commons.beanutils.Converter;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellValue;
@@ -90,7 +89,6 @@ public class XLSReader {
      * @param sheet     excel sheet
      * @param clazz     object类型
      * @param rowOffset 行偏移量，即去掉头部几行
-     *
      * @return 解析结果
      */
     public static <T> List<T> parse(Sheet sheet, Class<T> clazz, int rowOffset) {
@@ -144,7 +142,7 @@ public class XLSReader {
     }
 
     private static <T> List<T> makeInstances(List<List<Tuple<String, Object>>> lines, Class<T> clazz) {
-        if (CollectionUtils.isEmpty(lines)) {
+        if (lines == null || lines.isEmpty()) {
             return null;
         }
         List<T> ret = Lists.newArrayList();

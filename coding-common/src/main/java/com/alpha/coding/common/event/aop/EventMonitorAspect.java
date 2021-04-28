@@ -12,7 +12,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiFunction;
 
-import org.apache.commons.collections.CollectionUtils;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -156,7 +155,7 @@ public class EventMonitorAspect {
             }
             EventConfiguration configuration =
                     eventConfigurationFactory.getEventConfiguration(eventType.eventClass(), eventTypeObject);
-            if (!configuration.isEnablePublishEmptyEvent() && CollectionUtils.isEmpty(keys)) {
+            if (!configuration.isEnablePublishEmptyEvent() && (keys == null || keys.isEmpty())) {
                 return;
             }
             if (configuration.getAllowedPublishEventSet() != null

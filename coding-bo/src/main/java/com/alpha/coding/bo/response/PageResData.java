@@ -22,6 +22,7 @@ public class PageResData<T> implements Serializable {
     private PageRet pageRet;
     private List<T> list;
     private Object extra;
+    private T summary;
 
     public PageResData() {
     }

@@ -1,6 +1,8 @@
 package com.alpha.coding.common.redis;
 
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.Optional;
 
 import org.springframework.context.EnvironmentAware;
 import org.springframework.context.annotation.Bean;
@@ -17,6 +19,7 @@ import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 
+import com.alpha.coding.common.bean.register.BeanDefineUtils;
 import com.alpha.coding.common.utils.StringUtils;
 
 import lombok.Setter;
@@ -41,11 +44,21 @@ public class RedisIntegrationConfiguration implements EnvironmentAware {
     @Bean("defaultJedisPoolConfig")
     public JedisPoolConfig jedisPoolConfig() {
         final JedisPoolConfig config = new JedisPoolConfig();
-        config.setMaxTotal(environment.getProperty("redis.pool.max_active", Integer.class));
-        config.setMaxIdle(environment.getProperty("redis.pool.max_idle", Integer.class));
-        config.setMaxWaitMillis(environment.getProperty("redis.pool.max_wait", Integer.class));
-        config.setTestOnBorrow(environment.getProperty("redis.pool.test_on_borrow", Boolean.class));
-        config.setTestOnReturn(environment.getProperty("redis.pool.test_on_return", Boolean.class));
+        Optional.ofNullable((Integer) BeanDefineUtils.fetchProperty(environment,
+                Arrays.asList("redis.pool.max_active", "redis.pool.maxActive"), StringUtils::isNotBlank,
+                Integer.class, null)).ifPresent(config::setMaxTotal);
+        Optional.ofNullable((Integer) BeanDefineUtils.fetchProperty(environment,
+                Arrays.asList("redis.pool.max_idle", "redis.pool.maxIdle"), StringUtils::isNotBlank,
+                Integer.class, null)).ifPresent(config::setMaxIdle);
+        Optional.ofNullable((Long) BeanDefineUtils.fetchProperty(environment,
+                Arrays.asList("redis.pool.max_wait", "redis.pool.maxWait"), StringUtils::isNotBlank,
+                Long.class, null)).ifPresent(config::setMaxWaitMillis);
+        Optional.ofNullable((Boolean) BeanDefineUtils.fetchProperty(environment,
+                Arrays.asList("redis.pool.test_on_borrow", "redis.pool.testOnBorrow"), StringUtils::isNotBlank,
+                Boolean.class, null)).ifPresent(config::setTestOnBorrow);
+        Optional.ofNullable((Boolean) BeanDefineUtils.fetchProperty(environment,
+                Arrays.asList("redis.pool.test_on_return", "redis.pool.testOnReturn"), StringUtils::isNotBlank,
+                Boolean.class, null)).ifPresent(config::setTestOnReturn);
         return config;
     }
 
@@ -60,7 +73,7 @@ public class RedisIntegrationConfiguration implements EnvironmentAware {
                             .commaDelimitedListToSet(environment.getProperty("redis.sentinel.nodes")));
             if (environment.containsProperty("redis.sentinel.password")) {
                 redisSentinelConfiguration
-                        .setSentinelPassword(environment.getProperty("spring.redis.sentinel.password"));
+                        .setSentinelPassword(environment.getProperty("redis.sentinel.password"));
             }
             if (environment.containsProperty("redis.db")) {
                 redisSentinelConfiguration.setDatabase(environment.getProperty("redis.db", Integer.class));
@@ -72,10 +85,10 @@ public class RedisIntegrationConfiguration implements EnvironmentAware {
             RedisClusterConfiguration redisClusterConfiguration =
                     new RedisClusterConfiguration(org.springframework.util.StringUtils
                             .commaDelimitedListToSet(environment.getProperty("redis.cluster.nodes")));
-            if (environment.containsProperty("redis.cluster.max-redirects")) {
-                redisClusterConfiguration
-                        .setMaxRedirects(environment.getProperty("redis.cluster.max-redirects", Integer.class));
-            }
+            Optional.ofNullable((Integer) BeanDefineUtils.fetchProperty(environment,
+                    Arrays.asList("redis.cluster.max-redirects", "redis.cluster.maxRedirects",
+                            "redis.cluster.max_redirects"), StringUtils::isNotBlank, Integer.class, null))
+                    .ifPresent(redisClusterConfiguration::setMaxRedirects);
             return redisClusterConfiguration;
         }
         // RedisStandalone

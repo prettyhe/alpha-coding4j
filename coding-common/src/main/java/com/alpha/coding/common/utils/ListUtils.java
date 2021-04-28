@@ -4,17 +4,17 @@
 package com.alpha.coding.common.utils;
 
 import java.lang.reflect.Array;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.beanutils.BeanUtilsBean;
+import org.apache.commons.beanutils.Converter;
 
-import com.alpha.coding.bo.function.Converter;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 /**
  * ListUtils
@@ -24,10 +24,6 @@ import com.alpha.coding.bo.function.Converter;
  */
 public class ListUtils {
 
-    public static boolean isEmpty(Collection coll) {
-        return (coll == null || coll.isEmpty());
-    }
-
     public static <T> List<T> toList(Collection<T> c) {
         if (c == null) {
             return null;
@@ -35,15 +31,19 @@ public class ListUtils {
         if (c instanceof List) {
             return (List<T>) c;
         }
-        return new ArrayList<>(c);
+        return Lists.newArrayList(c);
     }
 
-    public static <T, K> List<T> convert(Collection<K> list, Class<T> clazz, Converter<T> converter) {
-        List<T> ret = new ArrayList<>();
-        if (isEmpty(list)) {
+    public static <T, K> List<T> convert(Collection<K> list, Class<T> clazz) {
+        List<T> ret = Lists.newArrayList();
+        if (list == null || list.isEmpty()) {
             return ret;
         }
 
+        org.apache.commons.beanutils.Converter converter = BeanUtilsBean.getInstance().getConvertUtils().lookup(clazz);
+        if (converter == null) {
+            return null;
+        }
         for (K k : list) {
             T t = (T) converter.convert(clazz, k);
             ret.add(t);
@@ -56,13 +56,17 @@ public class ListUtils {
         return list.subList(index, end);
     }
 
-    public static <T> List<T> split(String str, char separatorChar, Class<T> clazz, Converter<T> converter) {
-        List<T> ret = new ArrayList<>();
-        if (StringUtils.isEmpty(str)) {
+    public static <T> List<T> split(String str, char separatorChar, Class<T> clazz) {
+        List<T> ret = Lists.newArrayList();
+        if (org.apache.commons.lang.StringUtils.isEmpty(str)) {
             return ret;
         }
 
-        String[] ts = StringUtils.split(str, separatorChar);
+        Converter converter = BeanUtilsBean.getInstance().getConvertUtils().lookup(clazz);
+        if (converter == null) {
+            return null;
+        }
+        String[] ts = org.apache.commons.lang.StringUtils.split(str, separatorChar);
         for (String token : ts) {
             T t = (T) converter.convert(clazz, token);
             ret.add(t);
@@ -82,9 +86,9 @@ public class ListUtils {
      * @param size    分解后的短list的长度
      */
     public static <T> List<List<T>> resolve(List<T> oriList, final int size) {
+        List<List<T>> result = Lists.newArrayList();
         int totalSize = oriList.size();
         int n = (totalSize % size == 0) ? (totalSize / size) : (totalSize / size + 1);
-        List<List<T>> result = new ArrayList<>(n);
         List<T> subList;
         for (int i = 1; i <= n; i++) {
             if (size * i <= totalSize) {
@@ -108,7 +112,9 @@ public class ListUtils {
         if (list == null) {
             return null;
         }
-        return new HashSet<>(list);
+        Set<T> set = Sets.newHashSet();
+        set.addAll(list);
+        return set;
     }
 
     /**
@@ -188,7 +194,7 @@ public class ListUtils {
      * 集合la与lb的并集
      */
     public static <T> List<T> add(List<T> la, List<T> lb) {
-        List<T> ret = new ArrayList<>();
+        List<T> ret = Lists.newArrayList();
         if (la != null) {
             ret.addAll(la);
         }
@@ -203,14 +209,14 @@ public class ListUtils {
      * 集合la与lb的差集
      */
     public static <T> List<T> minus(List<T> la, List<T> lb, Function<T, Object> keyFunction) {
-        if (isEmpty(la) || isEmpty(lb)) {
+        if (la == null || la.isEmpty() || lb == null || lb.isEmpty()) {
             return la;
         }
-        Set<Object> setOfB = new HashSet<>(lb.size());
+        Set<Object> setOfB = Sets.newHashSet();
         for (T t : lb) {
             setOfB.add(keyFunction.apply(t));
         }
-        List<T> ret = new ArrayList<>(la.size());
+        List<T> ret = Lists.newArrayList();
         for (T t : la) {
             if (!setOfB.contains(keyFunction.apply(t))) {
                 ret.add(t);
@@ -224,14 +230,14 @@ public class ListUtils {
      * 集合la中也同时存在于集合lb中的
      */
     public static <T> List<T> aOfB(List<T> la, List<T> lb, Function<T, Object> keyFunction) {
-        if (isEmpty(la) || isEmpty(lb)) {
+        if (la == null || la.isEmpty() || lb == null || lb.isEmpty()) {
             return Collections.emptyList();
         }
-        Set<Object> setOfB = new HashSet<>();
+        Set<Object> setOfB = Sets.newHashSet();
         for (T t : lb) {
             setOfB.add(keyFunction.apply(t));
         }
-        List<T> ret = new ArrayList<>(la.size());
+        List<T> ret = Lists.newArrayList();
         for (T t : la) {
             if (setOfB.contains(keyFunction.apply(t))) {
                 ret.add(t);

@@ -6,7 +6,6 @@ package com.alpha.coding.common.event.handler;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.InitializingBean;
 
 import com.alpha.coding.bo.enums.util.EnumWithCodeSupplier;
@@ -20,7 +19,6 @@ import lombok.extern.slf4j.Slf4j;
  * @param <K> key类型
  * @param <E> 事件类别
  * @param <R> 处理结果类别
- *
  * @version 1.0
  * Date: 2020-02-21
  */
@@ -49,7 +47,7 @@ public abstract class EventHandlerTemplate<K, E extends EnumWithCodeSupplier, R 
         }
         try {
             List<? extends AbstractEventHandleResult<K, R>> handleResults = handleWithStrategy(keys);
-            if (CollectionUtils.isEmpty(handleResults)) {
+            if (handleResults == null || handleResults.isEmpty()) {
                 return;
             }
             for (AbstractEventHandleResult<K, R> ret : handleResults) {

@@ -9,7 +9,7 @@ import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ApplicationListener;
-import org.springframework.context.event.ContextClosedEvent;
+import org.springframework.context.event.ContextRefreshedEvent;
 
 import com.alpha.coding.common.aop.assist.AopHelper;
 
@@ -23,7 +23,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class AutowireBeanProcessor implements ApplicationContextAware, BeanPostProcessor,
-        ApplicationListener<ContextClosedEvent> {
+        ApplicationListener<ContextRefreshedEvent> {
 
     private List<String> beanNames;
     private final List<String> failWhenBeforeInitializationBeanNames = new ArrayList<>();
@@ -61,7 +61,7 @@ public class AutowireBeanProcessor implements ApplicationContextAware, BeanPostP
     }
 
     @Override
-    public void onApplicationEvent(ContextClosedEvent contextClosedEvent) {
+    public void onApplicationEvent(ContextRefreshedEvent contextClosedEvent) {
         final AutowireCapableBeanFactory beanFactory = applicationContext.getAutowireCapableBeanFactory();
         for (String beanName : failWhenBeforeInitializationBeanNames) {
             try {

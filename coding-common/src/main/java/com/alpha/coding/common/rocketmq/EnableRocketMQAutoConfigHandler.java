@@ -6,13 +6,13 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.rocketmq.client.consumer.DefaultMQPushConsumer;
 import org.apache.rocketmq.client.producer.DefaultMQProducer;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.core.annotation.AnnotationAttributes;
 import org.springframework.core.env.Environment;
 
+import com.alpha.coding.common.bean.register.ApplicationPostListener;
 import com.alpha.coding.common.bean.register.BeanDefineUtils;
 import com.alpha.coding.common.bean.register.BeanDefinitionRegistryUtils;
 import com.alpha.coding.common.bean.register.EnvironmentChangeEvent;
@@ -65,9 +65,15 @@ public class EnableRocketMQAutoConfigHandler implements ConfigurationRegisterHan
             final String producerBeanName = attributes.getString("producerBeanName");
             BeanDefinitionBuilder beanDefinitionBuilder = BeanDefinitionBuilder
                     .genericBeanDefinition(DefaultMQProducer.class);
+            String namesrvAddr = Arrays.stream(attributes.getStringArray("namesrvAddr"))
+                    .map(x -> BeanDefineUtils.resolveValue(context, x, String.class))
+                    .filter(StringUtils::isNotBlank).findFirst().orElse(null);
+            if (namesrvAddr == null) {
+                namesrvAddr = env.getProperty("rocketmq.nameserver");
+            }
             final String group = BeanDefineUtils.resolveValue(context, attributes.getString("group"), String.class);
             beanDefinitionBuilder.addPropertyValue("producerGroup", group);
-            beanDefinitionBuilder.addPropertyValue("namesrvAddr", env.getProperty("rocketmq.nameserver"));
+            beanDefinitionBuilder.addPropertyValue("namesrvAddr", namesrvAddr);
             beanDefinitionBuilder.addPropertyValue("instanceName", UUID.randomUUID().toString().replaceAll("-", ""));
             if (env.containsProperty("rocketmq.producer.retryTimesWhenSendFailed")) {
                 beanDefinitionBuilder.addPropertyValue("retryTimesWhenSendFailed",
@@ -75,16 +81,12 @@ public class EnableRocketMQAutoConfigHandler implements ConfigurationRegisterHan
             }
             beanDefinitionBuilder.setInitMethodName("start");
             beanDefinitionBuilder.setDestroyMethodName("shutdown");
-            try {
-                if (registry.containsBeanDefinition(producerBeanName)) {
-                    final Object bean = context.getBeanFactory().getBean(producerBeanName);
-                    DefaultMQProducer.class.getDeclaredMethod("shutdown").invoke(bean);
-                }
-            } catch (Throwable e) {
-                log.warn("close already exists producer {} fail, {}", producerBeanName, e.getMessage());
-            }
             BeanDefinitionRegistryUtils.overideBeanDefinition(registry,
                     producerBeanName, beanDefinitionBuilder.getBeanDefinition());
+            if (registry.containsBeanDefinition("InternalApplicationPostListener")) {
+                context.getBeanFactory().getBean("InternalApplicationPostListener", ApplicationPostListener.class)
+                        .registerPostCallback(() -> context.getBeanFactory().getBean(producerBeanName));
+            }
         }
     }
 
@@ -103,14 +105,20 @@ public class EnableRocketMQAutoConfigHandler implements ConfigurationRegisterHan
             final String group = BeanDefineUtils.resolveValue(context, attributes.getString("group"), String.class);
             final String topic = BeanDefineUtils.resolveValue(context, attributes.getString("topic"), String.class);
             final String tag = BeanDefineUtils.resolveValue(context, attributes.getString("tag"), String.class);
+            String namesrvAddr = Arrays.stream(attributes.getStringArray("namesrvAddr"))
+                    .map(x -> BeanDefineUtils.resolveValue(context, x, String.class))
+                    .filter(StringUtils::isNotBlank).findFirst().orElse(null);
+            if (namesrvAddr == null) {
+                namesrvAddr = (String) BeanDefineUtils.fetchProperty(env,
+                        Arrays.asList("rocketmq.nameserver." + topic, "rocketmq.nameserver"), StringUtils::isNotBlank,
+                        String.class, null);
+            }
             BeanDefinitionBuilder beanDefinitionBuilder = BeanDefinitionBuilder
                     .genericBeanDefinition(GenericRocketMQConsumer.class);
             beanDefinitionBuilder.addPropertyValue("consumerGroup", group);
             beanDefinitionBuilder.addPropertyValue("topic", topic);
             beanDefinitionBuilder.addPropertyValue("tag", tag);
-            beanDefinitionBuilder.addPropertyValue("namesrvAddr", BeanDefineUtils.fetchProperty(env,
-                    Arrays.asList("rocketmq.nameserver." + topic, "rocketmq.nameserver"), StringUtils::isNotBlank,
-                    String.class, null));
+            beanDefinitionBuilder.addPropertyValue("namesrvAddr", namesrvAddr);
             beanDefinitionBuilder.addPropertyReference("messageListener",
                     attributes.getString("messageListenerBeanName"));
             Optional.ofNullable(BeanDefineUtils.fetchProperty(env,
@@ -138,21 +146,15 @@ public class EnableRocketMQAutoConfigHandler implements ConfigurationRegisterHan
                             "rocketmq.consumer.consumeThreadMax"), StringUtils::isNumeric,
                     Integer.class, null))
                     .ifPresent(x -> beanDefinitionBuilder.addPropertyValue("consumeThreadMax", x));
-            beanDefinitionBuilder.setDestroyMethodName("shutdown");
-            String consumerBeanName = attributes.getString("consumerBeanName");
-            if (StringUtils.isBlank(consumerBeanName)) {
-                consumerBeanName = group + "#" + topic + "#" + tag + "#" + "rocketMQConsumer";
-            }
-            try {
-                if (registry.containsBeanDefinition(consumerBeanName)) {
-                    final Object bean = context.getBeanFactory().getBean(consumerBeanName);
-                    DefaultMQPushConsumer.class.getDeclaredMethod("shutdown").invoke(bean);
-                }
-            } catch (Throwable e) {
-                log.warn("close already exists consumer {} fail, {}", consumerBeanName, e.getMessage());
-            }
+            final String consumerBeanName = Optional.ofNullable(attributes.getString("consumerBeanName"))
+                    .filter(StringUtils::isNotBlank)
+                    .orElse(group + "#" + topic + "#" + tag + "#" + "rocketMQConsumer");
             BeanDefinitionRegistryUtils.overideBeanDefinition(registry,
                     consumerBeanName, beanDefinitionBuilder.getBeanDefinition());
+            if (registry.containsBeanDefinition("InternalApplicationPostListener")) {
+                context.getBeanFactory().getBean("InternalApplicationPostListener", ApplicationPostListener.class)
+                        .registerPostCallback(() -> context.getBeanFactory().getBean(consumerBeanName));
+            }
         }
     }
 }

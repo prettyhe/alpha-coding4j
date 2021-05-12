@@ -271,24 +271,39 @@ public abstract class AbstractLogor implements Logor {
             }
             final String parameterName = paramNames != null && paramNames.length > i ? paramNames[i] : null;
             try {
-                String json = JSON.toJSONString(param);
+                String json = null;
+                boolean ignoreThisParam = false;
                 DocumentContext context = null;
                 // 配置中的删除path
                 if (ignoreJsonPathMap != null) {
                     final List<String> list = ignoreJsonPathMap.get(i);
                     if (list != null && list.size() > 0) {
-                        for (String path : list) {
-                            try {
-                                final JsonPath jsonPath = JSON_PATH_MAP.computeIfAbsent(path, JsonPath::compile);
-                                if (context == null) {
-                                    context = JsonPath.using(JSON_CONFIGURATION).parse(json);
+                        if (list.stream().anyMatch(x -> "*".equals(x) || "$".equals(x))) {
+                            ignoreThisParam = true;
+                        } else {
+                            for (String path : list) {
+                                try {
+                                    final JsonPath jsonPath = JSON_PATH_MAP.computeIfAbsent(path, JsonPath::compile);
+                                    if (context == null) {
+                                        if (json == null) {
+                                            json = JSON.toJSONString(param);
+                                        }
+                                        context = JsonPath.using(JSON_CONFIGURATION).parse(json);
+                                    }
+                                    context.delete(jsonPath);
+                                } catch (Exception e) {
+                                    log.warn("delete {} from {} fail, {}", path, parameterName, e.getMessage());
                                 }
-                                context.delete(jsonPath);
-                            } catch (Exception e) {
-                                log.warn("delete {} from {} fail, {}", path, parameterName, e.getMessage());
                             }
                         }
                     }
+                }
+                if (ignoreThisParam) {
+                    paramStr.append(EMPTY).append("|");
+                    continue;
+                }
+                if (json == null) {
+                    json = JSON.toJSONString(param);
                 }
                 // 配置中的保留path
                 if (retainJsonPathMap != null) {

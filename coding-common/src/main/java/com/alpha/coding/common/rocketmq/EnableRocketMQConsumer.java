@@ -31,6 +31,11 @@ import com.alpha.coding.common.bean.register.EnableAutoRegistrar;
 public @interface EnableRocketMQConsumer {
 
     /**
+     * nameserver地址，支持SpEL表达式
+     */
+    String[] namesrvAddr() default {"${rocketmq.nameserver}"};
+
+    /**
      * 消费者分组，支持SpEL表达式
      */
     String group();

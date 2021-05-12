@@ -13,6 +13,7 @@ import com.alibaba.druid.pool.DruidDataSource;
 import com.alpha.coding.common.bean.register.BeanDefineUtils;
 import com.alpha.coding.common.bean.register.BeanDefinitionRegistryUtils;
 import com.alpha.coding.common.bean.spi.RegisterBeanDefinitionContext;
+import com.alpha.coding.common.utils.StringUtils;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -32,23 +33,33 @@ public class DataSourceRegisterUtils {
         BeanDefinitionBuilder readDefinitionBuilder =
                 BeanDefinitionBuilder.genericBeanDefinition(DruidDataSource.class);
         buildDruidDataSourceBeanDefinitionBuilder(readDefinitionBuilder, env, createDataSourceEnv, "read");
-        readDefinitionBuilder.addPropertyValue("url", env.getProperty(prefix + "." + "read.jdbc.url"));
-        readDefinitionBuilder.addPropertyValue("username", env.getProperty(prefix + "." + "read.jdbc.username"));
-        readDefinitionBuilder.addPropertyValue("password", env.getProperty(prefix + "." + "read.jdbc.password"));
+        readDefinitionBuilder.addPropertyValue("url", BeanDefineUtils.fetchProperty(env,
+                Arrays.asList(prefix + "." + "read.jdbc.url", "read.jdbc.url"),
+                StringUtils::isNotBlank, String.class, null));
+        readDefinitionBuilder.addPropertyValue("username", BeanDefineUtils.fetchProperty(env,
+                Arrays.asList(prefix + "." + "read.jdbc.username", "read.jdbc.username"),
+                StringUtils::isNotBlank, String.class, null));
+        readDefinitionBuilder.addPropertyValue("password", BeanDefineUtils.fetchProperty(env, Arrays.asList(
+                prefix + "." + "read.jdbc.password", "read.jdbc.password"),
+                StringUtils::isNotBlank, String.class, null));
         BeanDefinitionRegistryUtils.overideBeanDefinition(context.getRegistry(),
-                prefix + "ReadDataSource",
-                readDefinitionBuilder.getBeanDefinition());
+                prefix + "ReadDataSource", readDefinitionBuilder.getBeanDefinition());
         log.info("register DruidDataSource: {}", prefix + "ReadDataSource");
         // 注册 写 DruidDataSource，beanName="#prefix + 'WriteDataSource'"
         BeanDefinitionBuilder writeDefinitionBuilder =
                 BeanDefinitionBuilder.genericBeanDefinition(DruidDataSource.class);
         buildDruidDataSourceBeanDefinitionBuilder(writeDefinitionBuilder, env, createDataSourceEnv, "write");
-        writeDefinitionBuilder.addPropertyValue("url", env.getProperty(prefix + "." + "write.jdbc.url"));
-        writeDefinitionBuilder.addPropertyValue("username", env.getProperty(prefix + "." + "write.jdbc.username"));
-        writeDefinitionBuilder.addPropertyValue("password", env.getProperty(prefix + "." + "write.jdbc.password"));
+        writeDefinitionBuilder.addPropertyValue("url", BeanDefineUtils.fetchProperty(env,
+                Arrays.asList(prefix + "." + "write.jdbc.url", "write.jdbc.url"),
+                StringUtils::isNotBlank, String.class, null));
+        writeDefinitionBuilder.addPropertyValue("username", BeanDefineUtils.fetchProperty(env,
+                Arrays.asList(prefix + "." + "write.jdbc.username", "write.jdbc.username"),
+                StringUtils::isNotBlank, String.class, null));
+        writeDefinitionBuilder.addPropertyValue("password", BeanDefineUtils.fetchProperty(env, Arrays.asList(
+                prefix + "." + "write.jdbc.password", "write.jdbc.password"),
+                StringUtils::isNotBlank, String.class, null));
         BeanDefinitionRegistryUtils.overideBeanDefinition(context.getRegistry(),
-                prefix + "WriteDataSource",
-                writeDefinitionBuilder.getBeanDefinition());
+                prefix + "WriteDataSource", writeDefinitionBuilder.getBeanDefinition());
         log.info("register DruidDataSource: {}", prefix + "WriteDataSource");
     }
 

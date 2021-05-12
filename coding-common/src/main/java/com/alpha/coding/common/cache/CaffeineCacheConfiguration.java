@@ -25,7 +25,7 @@ import com.google.common.collect.Multimap;
 public class CaffeineCacheConfiguration {
 
     @Bean("cacheBeanDefineBeanFactory")
-    public DefineBeanFactory defineBeanFactory() {
+    public static DefineBeanFactory defineBeanFactory() {
         Multimap<Class<?>, DefineBeanConfig> defineClassMultimap = ArrayListMultimap.create();
         defineClassMultimap.put(CaffeineConfig.class, new DefineBeanConfig()
                 .setType(DefineType.YAML).setSrcLocation("caffeine.yml"));
@@ -34,7 +34,7 @@ public class CaffeineCacheConfiguration {
 
     @Bean("caffeineCacheManager")
     @DependsOn("cacheBeanDefineBeanFactory")
-    public CacheManager flexibleCaffeineCacheManager() {
+    public static CacheManager flexibleCaffeineCacheManager() {
         return new FlexibleCaffeineCacheManager();
     }
 

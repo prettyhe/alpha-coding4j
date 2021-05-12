@@ -50,6 +50,11 @@ public class ConfigurationRegistrar implements ImportBeanDefinitionRegistrar,
     @Override
     public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
         TOTAL_COUNT.incrementAndGet();
+        if (!registry.containsBeanDefinition("InternalApplicationPostListener")) {
+            registry.registerBeanDefinition("InternalApplicationPostListener",
+                    BeanDefinitionBuilder.genericBeanDefinition(DefaultApplicationPostListener.class)
+                            .getBeanDefinition());
+        }
         if (environment instanceof ConfigurableEnvironment) {
             ConfigurableEnvironment configurableEnvironment = (ConfigurableEnvironment) environment;
             final Set<String> propertySourceNames = new LinkedHashSet<>();

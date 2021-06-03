@@ -32,9 +32,19 @@ public @interface EnableMybatisAutoConfig {
     EnableAutoDataSource dataSource();
 
     /**
+     * 适用于同一个数据源多份mybatis映射配置场景，使用此字段区分
+     */
+    String tag() default "";
+
+    /**
      * beanName of org.apache.ibatis.session.Configuration
      */
     String configuration() default "";
+
+    /**
+     * configLocation
+     */
+    String configLocation() default "";
 
     /**
      * xml文件路径
@@ -44,7 +54,7 @@ public @interface EnableMybatisAutoConfig {
     /**
      * model包路径
      */
-    String typeAliasesPackage();
+    String typeAliasesPackage() default "";
 
     /**
      * mapper
@@ -57,7 +67,7 @@ public @interface EnableMybatisAutoConfig {
     boolean enablePageHandlerInterceptor() default false;
 
     /**
-     * 启用：com.alpha.coding.common.mybatis.ShowSqlInterceptor
+     * 启用：com.rzj.common.mybatis.ShowSqlInterceptor
      */
     boolean enableShowSqlInterceptor() default true;
 

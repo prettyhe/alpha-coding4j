@@ -13,6 +13,7 @@ import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.core.annotation.AnnotationAttributes;
 import org.springframework.util.ClassUtils;
 
+import com.alpha.coding.common.bean.register.BeanDefineUtils;
 import com.alpha.coding.common.bean.register.BeanDefinitionRegistryUtils;
 import com.alpha.coding.common.bean.register.EnvironmentChangeEvent;
 import com.alpha.coding.common.bean.register.EnvironmentChangeListener;
@@ -74,7 +75,7 @@ public class EnableMybatisAutoConfigHandler implements ConfigurationRegisterHand
             final String prefix = dataSource.getString("prefix");
             // 注册 读 & 写 DataSource
             DataSourceRegisterUtils.register(context, new CreateDataSourceEnv().setPrefix(prefix)
-                    .setType(dataSource.getString("type")));
+                    .setType(BeanDefineUtils.resolveValue(context, dataSource.getString("type"), String.class)));
             // 注册 DynamicDataSource
             BeanDefinitionBuilder dataSourceBeanDefinitionBuilder =
                     BeanDefinitionBuilder.genericBeanDefinition(DynamicDataSource.class);
@@ -86,27 +87,36 @@ public class EnableMybatisAutoConfigHandler implements ConfigurationRegisterHand
                     prefix + "DataSource",
                     dataSourceBeanDefinitionBuilder.getBeanDefinition());
             log.info("register DynamicDataSource: {}", prefix + "DataSource");
+            // 此配置标签
+            final String tag = attributes.getString("tag");
             // 注册 SqlSessionFactoryBean
             BeanDefinitionBuilder sqlSessionFactoryBeanBuilder = BeanDefinitionBuilder
                     .genericBeanDefinition("org.mybatis.spring.SqlSessionFactoryBean");
             sqlSessionFactoryBeanBuilder.addPropertyReference("dataSource", prefix + "DataSource");
             final String configuration = attributes.getString("configuration");
             if (StringUtils.isBlank(configuration)) {
-                BeanDefinitionBuilder configurationBeanDefinitionBuilder = BeanDefinitionBuilder
-                        .genericBeanDefinition("org.apache.ibatis.session.Configuration");
-                configurationBeanDefinitionBuilder.addPropertyValue("mapUnderscoreToCamelCase", true);
-                BeanDefinitionRegistryUtils.overideBeanDefinition(registry,
-                        prefix + "_ibatisSessionConfiguration",
-                        configurationBeanDefinitionBuilder.getBeanDefinition());
-                sqlSessionFactoryBeanBuilder.addPropertyReference("configuration",
-                        prefix + "_ibatisSessionConfiguration");
+                if (StringUtils.isNotBlank(attributes.getString("configLocation"))) {
+                    sqlSessionFactoryBeanBuilder.addPropertyValue("configLocation",
+                            attributes.getString("configLocation"));
+                } else {
+                    BeanDefinitionBuilder configurationBeanDefinitionBuilder = BeanDefinitionBuilder
+                            .genericBeanDefinition("org.apache.ibatis.session.Configuration");
+                    configurationBeanDefinitionBuilder.addPropertyValue("mapUnderscoreToCamelCase", true);
+                    BeanDefinitionRegistryUtils.overideBeanDefinition(registry,
+                            prefix + "_ibatisSessionConfiguration" + tag,
+                            configurationBeanDefinitionBuilder.getBeanDefinition());
+                    sqlSessionFactoryBeanBuilder.addPropertyReference("configuration",
+                            prefix + "_ibatisSessionConfiguration" + tag);
+                }
             } else {
                 sqlSessionFactoryBeanBuilder.addPropertyReference("configuration", configuration);
             }
             sqlSessionFactoryBeanBuilder.addPropertyValue("mapperLocations",
                     attributes.getStringArray("mapperLocations"));
-            sqlSessionFactoryBeanBuilder.addPropertyValue("typeAliasesPackage",
-                    attributes.getString("typeAliasesPackage"));
+            if (StringUtils.isNotBlank(attributes.getString("typeAliasesPackage"))) {
+                sqlSessionFactoryBeanBuilder.addPropertyValue("typeAliasesPackage",
+                        attributes.getString("typeAliasesPackage"));
+            }
             final List<String> plugins = new ArrayList<>();
             // 注册 dynamicPlugin
             BeanDefinitionBuilder dynamicPluginDefinitionBuilder =
@@ -118,32 +128,32 @@ public class EnableMybatisAutoConfigHandler implements ConfigurationRegisterHand
                 dynamicPluginDefinitionBuilder.addPropertyValue("properties", dynamicPluginProperties);
             }
             BeanDefinitionRegistryUtils.overideBeanDefinition(registry,
-                    prefix + "DynamicPlugin",
+                    prefix + "DynamicPlugin" + tag,
                     dynamicPluginDefinitionBuilder.getBeanDefinition());
-            plugins.add(prefix + "DynamicPlugin");
+            plugins.add(prefix + "DynamicPlugin" + tag);
             if (attributes.getBoolean("enablePageHandlerInterceptor")) {
                 plugins.add("auto_PageHandlerInterceptor");
             }
             if (attributes.getBoolean("enableShowSqlInterceptor")) {
                 plugins.add("auto_ShowSqlInterceptor");
             }
-            Arrays.stream(attributes.getStringArray("extPlugins")).forEach(x -> plugins.add(x));
+            plugins.addAll(Arrays.asList(attributes.getStringArray("extPlugins")));
             sqlSessionFactoryBeanBuilder.addPropertyValue("plugins", ListUtils.toArray(plugins.stream()
                     .map(x -> context.getBeanFactory().getBean(x))
                     .collect(Collectors.toList()), loadClass("org.apache.ibatis.plugin.Interceptor")));
             BeanDefinitionRegistryUtils.overideBeanDefinition(registry,
-                    prefix + "SqlSessionFactory",
+                    prefix + "SqlSessionFactory" + tag,
                     sqlSessionFactoryBeanBuilder.getBeanDefinition());
-            log.info("register SqlSessionFactory: {}", prefix + "SqlSessionFactory");
+            log.info("register SqlSessionFactory: {}", prefix + "SqlSessionFactory" + tag);
             // 注册 MapperScannerConfigurer
             BeanDefinitionBuilder mapperScannerConfigurerBuilder = BeanDefinitionBuilder
                     .genericBeanDefinition("org.mybatis.spring.mapper.MapperScannerConfigurer");
             mapperScannerConfigurerBuilder.addPropertyValue("sqlSessionFactoryBeanName",
-                    prefix + "SqlSessionFactory");
+                    prefix + "SqlSessionFactory" + tag);
             mapperScannerConfigurerBuilder.addPropertyValue("basePackage",
                     attributes.getString("mapperBasePackage"));
             BeanDefinitionRegistryUtils.overideBeanDefinition(registry,
-                    prefix + "MapperScannerConfigurer",
+                    prefix + "MapperScannerConfigurer" + tag,
                     mapperScannerConfigurerBuilder.getBeanDefinition());
         }
     }
@@ -167,4 +177,5 @@ public class EnableMybatisAutoConfigHandler implements ConfigurationRegisterHand
         final RegisterBeanDefinitionContext context = (RegisterBeanDefinitionContext) event.getSource();
         registerBeanDefinitions(context);
     }
+
 }

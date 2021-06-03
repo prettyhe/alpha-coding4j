@@ -3,10 +3,10 @@ package com.alpha.coding.common.bean.spi;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.security.AccessControlContext;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.Iterator;
@@ -51,7 +51,7 @@ public class ServiceBootstrap {
         }
         List<S> candidates = Lists.newArrayList(iterator);
         // the smaller order has higher priority
-        Collections.sort(candidates, Comparator.comparingInt(x -> x.getOrder()));
+        candidates.sort(Comparator.comparingInt(Ordered::getOrder));
 
         return candidates;
     }
@@ -86,7 +86,8 @@ public class ServiceBootstrap {
             while (urls.hasMoreElements()) {
                 URL url = urls.nextElement();
                 try {
-                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream(), "utf-8"))) {
+                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream(),
+                            StandardCharsets.UTF_8))) {
                         String line = null;
                         while ((line = reader.readLine()) != null) {
                             final int ci = line.indexOf('#');
@@ -111,7 +112,7 @@ public class ServiceBootstrap {
                                     final S s = load(line, type, classLoader);
                                     multimap.put(name, s);
                                 } catch (Throwable t) {
-                                    IllegalStateException e = new IllegalStateException(
+                                    throw new IllegalStateException(
                                             "Failed to load class(interface: " + type + ", class line: "
                                                     + line + ") in " + url + ", cause: " + t.getMessage(), t);
                                 }
@@ -136,7 +137,7 @@ public class ServiceBootstrap {
      */
     public static <S extends Ordered> Multimap<String, S> loadAllOrdered(String dir, Class<S> type) {
         final Multimap<String, S> multimap = loadAll(dir, type);
-        multimap.keySet().forEach(k -> multimap.get(k).stream().sorted(Comparator.comparingInt(x -> x.getOrder())));
+        multimap.keySet().forEach(k -> multimap.get(k).stream().sorted(Comparator.comparingInt(Ordered::getOrder)));
         return multimap;
     }
 
@@ -165,7 +166,7 @@ public class ServiceBootstrap {
         if (acc == null) {
             return supplier.get();
         } else {
-            PrivilegedAction<S> action = () -> supplier.get();
+            PrivilegedAction<S> action = supplier::get;
             return AccessController.doPrivileged(action, acc);
         }
     }

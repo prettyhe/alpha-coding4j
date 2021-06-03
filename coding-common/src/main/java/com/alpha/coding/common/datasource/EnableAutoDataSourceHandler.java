@@ -6,6 +6,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.core.annotation.AnnotationAttributes;
 import org.springframework.util.ClassUtils;
 
+import com.alpha.coding.common.bean.register.BeanDefineUtils;
 import com.alpha.coding.common.bean.register.EnvironmentChangeEvent;
 import com.alpha.coding.common.bean.register.EnvironmentChangeListener;
 import com.alpha.coding.common.bean.spi.ConfigurationRegisterHandler;
@@ -38,7 +39,7 @@ public class EnableAutoDataSourceHandler implements ConfigurationRegisterHandler
         for (AnnotationAttributes attributes : annotationAttributes) {
             DataSourceRegisterUtils.register(context, new CreateDataSourceEnv()
                     .setPrefix(attributes.getString("prefix"))
-                    .setType(attributes.getString("type")));
+                    .setType(BeanDefineUtils.resolveValue(context, attributes.getString("type"), String.class)));
         }
     }
 

@@ -34,13 +34,13 @@ public class DataSourceRegisterUtils {
                 BeanDefinitionBuilder.genericBeanDefinition(DruidDataSource.class);
         buildDruidDataSourceBeanDefinitionBuilder(readDefinitionBuilder, env, createDataSourceEnv, "read");
         readDefinitionBuilder.addPropertyValue("url", BeanDefineUtils.fetchProperty(env,
-                Arrays.asList(prefix + "." + "read.jdbc.url", "read.jdbc.url"),
+                Arrays.asList(prefix + "." + "read.jdbc.url", prefix + ".jdbc.url", "read.jdbc.url"),
                 StringUtils::isNotBlank, String.class, null));
         readDefinitionBuilder.addPropertyValue("username", BeanDefineUtils.fetchProperty(env,
-                Arrays.asList(prefix + "." + "read.jdbc.username", "read.jdbc.username"),
+                Arrays.asList(prefix + "." + "read.jdbc.username", prefix + ".jdbc.username", "read.jdbc.username"),
                 StringUtils::isNotBlank, String.class, null));
         readDefinitionBuilder.addPropertyValue("password", BeanDefineUtils.fetchProperty(env, Arrays.asList(
-                prefix + "." + "read.jdbc.password", "read.jdbc.password"),
+                prefix + "." + "read.jdbc.password", prefix + ".jdbc.password", "read.jdbc.password"),
                 StringUtils::isNotBlank, String.class, null));
         BeanDefinitionRegistryUtils.overideBeanDefinition(context.getRegistry(),
                 prefix + "ReadDataSource", readDefinitionBuilder.getBeanDefinition());
@@ -50,13 +50,13 @@ public class DataSourceRegisterUtils {
                 BeanDefinitionBuilder.genericBeanDefinition(DruidDataSource.class);
         buildDruidDataSourceBeanDefinitionBuilder(writeDefinitionBuilder, env, createDataSourceEnv, "write");
         writeDefinitionBuilder.addPropertyValue("url", BeanDefineUtils.fetchProperty(env,
-                Arrays.asList(prefix + "." + "write.jdbc.url", "write.jdbc.url"),
+                Arrays.asList(prefix + "." + "write.jdbc.url", prefix + ".jdbc.url", "write.jdbc.url"),
                 StringUtils::isNotBlank, String.class, null));
         writeDefinitionBuilder.addPropertyValue("username", BeanDefineUtils.fetchProperty(env,
-                Arrays.asList(prefix + "." + "write.jdbc.username", "write.jdbc.username"),
+                Arrays.asList(prefix + "." + "write.jdbc.username", prefix + ".jdbc.username", "write.jdbc.username"),
                 StringUtils::isNotBlank, String.class, null));
         writeDefinitionBuilder.addPropertyValue("password", BeanDefineUtils.fetchProperty(env, Arrays.asList(
-                prefix + "." + "write.jdbc.password", "write.jdbc.password"),
+                prefix + "." + "write.jdbc.password", prefix + ".jdbc.password", "write.jdbc.password"),
                 StringUtils::isNotBlank, String.class, null));
         BeanDefinitionRegistryUtils.overideBeanDefinition(context.getRegistry(),
                 prefix + "WriteDataSource", writeDefinitionBuilder.getBeanDefinition());
@@ -67,9 +67,10 @@ public class DataSourceRegisterUtils {
                                                                   Environment environment,
                                                                   CreateDataSourceEnv createDataSourceEnv,
                                                                   String readWrite) {
-        Function<String, List<String>> keysFunction = k -> Arrays.asList(
+        final Function<String, List<String>> keysFunction = k -> Arrays.asList(
                 createDataSourceEnv.getPrefix() + "." + readWrite + "." + k,
                 createDataSourceEnv.getPrefix() + "." + k,
+                readWrite + "." + k,
                 k
         );
         final Map<String, Object> propertyMap = new HashMap<>();

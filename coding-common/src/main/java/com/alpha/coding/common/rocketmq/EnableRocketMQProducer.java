@@ -27,12 +27,12 @@ import com.alpha.coding.common.bean.register.EnableAutoRegistrar;
 public @interface EnableRocketMQProducer {
 
     /**
-     * nameserver地址，支持SpEL表达式
+     * nameserver地址，支持外部化配置
      */
     String[] namesrvAddr() default {"${rocketmq.nameserver}"};
 
     /**
-     * 生产者分组，支持SpEL表达式
+     * 生产者分组，支持外部化配置，如${xxx.group:XXX_GROUP}
      */
     String group();
 

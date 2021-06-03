@@ -28,7 +28,7 @@ public @interface EnableAutoDataSource {
     String prefix();
 
     /**
-     * 类型，如mysql、db2，支持SpEL，默认mysql
+     * 类型，如mysql、db2，支持外部化配置，默认mysql
      */
     String type() default "${datasource.type:mysql}";
 }

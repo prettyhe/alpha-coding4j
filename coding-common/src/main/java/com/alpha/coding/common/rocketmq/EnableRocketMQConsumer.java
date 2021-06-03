@@ -31,22 +31,22 @@ import com.alpha.coding.common.bean.register.EnableAutoRegistrar;
 public @interface EnableRocketMQConsumer {
 
     /**
-     * nameserver地址，支持SpEL表达式
+     * nameserver地址，支持外部化配置
      */
     String[] namesrvAddr() default {"${rocketmq.nameserver}"};
 
     /**
-     * 消费者分组，支持SpEL表达式
+     * 消费者分组，支持外部化配置，如${xxx.group:XXX_GROUP}
      */
     String group();
 
     /**
-     * topic，支持SpEL表达式
+     * topic，支持外部化配置，如${xxx.topic:topic_xxx}
      */
     String topic();
 
     /**
-     * tag，支持SpEL表达式
+     * tag，支持外部化配置，如${xxx.tag:tag_xxx}
      */
     String tag() default "*";
 

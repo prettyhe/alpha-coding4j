@@ -67,7 +67,7 @@ public @interface EnableMybatisAutoConfig {
     boolean enablePageHandlerInterceptor() default false;
 
     /**
-     * 启用：com.rzj.common.mybatis.ShowSqlInterceptor
+     * 启用：com.alpha.coding.common.mybatis.ShowSqlInterceptor
      */
     boolean enableShowSqlInterceptor() default true;
 

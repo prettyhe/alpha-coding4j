@@ -17,7 +17,6 @@ import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.BeanNameGenerator;
-import org.springframework.beans.factory.support.DefaultBeanNameGenerator;
 import org.springframework.core.annotation.AnnotationAttributes;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.core.env.StandardEnvironment;
@@ -49,7 +48,6 @@ public class EnableAutoIdentityBeanHandler implements ConfigurationRegisterHandl
     private final ResourcePatternResolver resourcePatternResolver = new PathMatchingResourcePatternResolver();
     private final MetadataReaderFactory metadataReaderFactory = new CachingMetadataReaderFactory((ResourceLoader) null);
     private final List<String> registeredBeanNames = new ArrayList<>();
-    private final BeanNameGenerator beanNameGenerator = new DefaultBeanNameGenerator();
 
     @Override
     public void registerBeanDefinitions(RegisterBeanDefinitionContext context) {
@@ -73,18 +71,10 @@ public class EnableAutoIdentityBeanHandler implements ConfigurationRegisterHandl
                 registerBean(context.getRegistry(), basePackages, excludes, beanNameGenerator);
             }
         }
-        // if (!registeredBeanNames.isEmpty()) {
-        //     BeanDefinitionBuilder beanDefinitionBuilder = BeanDefinitionBuilder
-        //             .genericBeanDefinition(AutowireBeanProcessor.class);
-        //     beanDefinitionBuilder.addPropertyValue("beanNames", registeredBeanNames);
-        //     final AbstractBeanDefinition beanDefinition = beanDefinitionBuilder.getBeanDefinition();
-        //     final String beanName = beanNameGenerator.generateBeanName(beanDefinition, context.getRegistry());
-        //     context.getRegistry().registerBeanDefinition(beanName, beanDefinition);
-        // }
     }
 
-    private void registerBean(BeanDefinitionRegistry registry, String[] basePackages, Class<?>[] excludes,
-                              BeanNameGenerator beanNameGenerator) {
+    private synchronized void registerBean(BeanDefinitionRegistry registry, String[] basePackages, Class<?>[] excludes,
+                                           BeanNameGenerator beanNameGenerator) {
         try {
             for (String basePackage : basePackages) {
                 String packageSearchPath = ResourcePatternResolver.CLASSPATH_ALL_URL_PREFIX
@@ -111,16 +101,18 @@ public class EnableAutoIdentityBeanHandler implements ConfigurationRegisterHandl
                                     com.alpha.coding.common.bean.identity.annotation.IdentityBean.class) == null) {
                                 continue;
                             }
-                            if (excludes != null && Arrays.stream(excludes).anyMatch(x -> x.equals(beanClazz))) {
+                            if (excludes != null && Arrays.asList(excludes).contains(beanClazz)) {
                                 continue;
                             }
                             final BeanDefinitionBuilder beanDefinitionBuilder =
                                     BeanDefinitionBuilder.genericBeanDefinition(beanClazz);
                             final AbstractBeanDefinition beanDefinition = beanDefinitionBuilder.getBeanDefinition();
                             final String beanName = beanNameGenerator.generateBeanName(beanDefinition, registry);
-                            registry.registerBeanDefinition(beanName, beanDefinition);
-                            log.info("registerBeanDefinition: beanName={},type={}", beanName, beanClazz.getName());
-                            registeredBeanNames.add(beanName);
+                            if (!registeredBeanNames.contains(beanName)) {
+                                registry.registerBeanDefinition(beanName, beanDefinition);
+                                log.info("registerBeanDefinition: beanName={},type={}", beanName, beanClazz.getName());
+                                registeredBeanNames.add(beanName);
+                            }
                         } catch (Throwable ex) {
                             throw new FatalBeanException("Failed to load BeanDefine class: " + resource, ex);
                         }

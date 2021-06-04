@@ -44,7 +44,7 @@ public class SyncInvokeAspect implements ApplicationContextAware {
     private final Object NO_RESULT = new Object();
     private final Map<AnnotatedElementKey, JoinOperationMetadata> metadataCache = new ConcurrentHashMap<>(1024);
     private final Map<ExpressionKey, Expression> expressionCache = new ConcurrentHashMap<>(64);
-    private final Map<String, String> methodSignatureCache = new ConcurrentHashMap(64);
+    private final Map<String, String> methodSignatureCache = new ConcurrentHashMap<>(64);
     private final Map<String, InvokeUtils.InvokeLock> invokeLockCache = new ConcurrentHashMap<>(256);
 
     /**
@@ -68,7 +68,7 @@ public class SyncInvokeAspect implements ApplicationContextAware {
                 joinPoint.getArgs(), joinPoint.getTarget());
         final String invokeKey = buildInvokeKey(operationContext, syncInvoke.key());
         final RedisSync redisSync = syncInvoke.redisSync();
-        if (redisSync != null && redisSync.enable()) {
+        if (redisSync.enable()) {
             RedisTemplate redisTemplate = (RedisTemplate) applicationContext.getBean(redisSync.redisTemplateBean());
             Throwable[] throwables = new Throwable[1];
             Tuple<Boolean, Object> tuple = redisSync.failFast() ? RedisTemplateUtils
@@ -98,7 +98,7 @@ public class SyncInvokeAspect implements ApplicationContextAware {
         }
         return InvokeUtils.syncInvoke(invokeLockCache, invokeKey,
                 syncInvoke.maxAwait() == -1 ? null : syncInvoke.maxAwait(),
-                () -> joinPoint.proceed(), null).getData();
+                joinPoint::proceed, null).getData();
     }
 
     private String buildInvokeKey(JoinOperationContext context, String keyExpression) {

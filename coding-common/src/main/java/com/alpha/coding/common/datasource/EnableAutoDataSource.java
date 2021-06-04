@@ -10,7 +10,7 @@ import java.lang.annotation.Target;
 import com.alpha.coding.common.bean.register.EnableAutoRegistrar;
 
 /**
- * EnableAutoDataSource
+ * EnableAutoDataSource 自动配置DataSource，使用Druid
  *
  * @version 1.0
  * Date: 2020-03-20

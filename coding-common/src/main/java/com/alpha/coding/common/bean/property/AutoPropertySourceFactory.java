@@ -24,7 +24,7 @@ public class AutoPropertySourceFactory extends DefaultPropertySourceFactory {
     public PropertySource<?> createPropertySource(String name, EncodedResource resource) throws IOException {
         String sourceName = (name == null) ? resource.getResource().getFilename() : name;
         if (sourceName == null) {
-            super.createPropertySource(null, resource);
+            return super.createPropertySource(null, resource);
         }
         if (sourceName.endsWith(".yml") || sourceName.endsWith(".yaml")) {
             try {

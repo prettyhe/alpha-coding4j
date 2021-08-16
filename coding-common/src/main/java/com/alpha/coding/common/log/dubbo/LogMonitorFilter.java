@@ -54,8 +54,8 @@ public class LogMonitorFilter implements Filter {
     }
 
     private void doLog(LogItem item, Invoker<?> invoker, Invocation invocation, Result result) {
-        if (invoker.getInterface().getClass().getName().equals("com.alibaba.dubbo.monitor.MonitorService")
-                || invoker.getInterface().getClass().getName().equals("org.apache.dubbo.monitor.MonitorService")) {
+        if (invoker.getInterface().getName().equals("com.alibaba.dubbo.monitor.MonitorService")
+                || invoker.getInterface().getName().equals("org.apache.dubbo.monitor.MonitorService")) {
             return;
         }
         if (log.isTraceEnabled()) {
@@ -83,6 +83,7 @@ public class LogMonitorFilter implements Filter {
                 final Class<?> returnType = method.getReturnType();
                 item.setValue(buildString(result == null ? null : result.getValue(), returnType));
             } catch (NoSuchMethodException e) {
+                // nothing
             }
             StringBuilder sb = new StringBuilder();
             sb.append("side").append(EQUALS_SIGN).append(item.getSide()).append(BLANK_STR);
@@ -144,7 +145,7 @@ public class LogMonitorFilter implements Filter {
                 if (argument == null) {
                     sb.append("null").append("|");
                 } else if (argument.getClass().isPrimitive()) {
-                    sb.append(arguments.toString()).append("|");
+                    sb.append(argument.toString()).append("|");
                 } else {
                     sb.append(JSON.toJSONString(argument)).append("|");
                 }

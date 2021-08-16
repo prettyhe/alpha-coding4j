@@ -26,7 +26,6 @@ public class TraceIdHalfInheritor implements Consumer<Map<String, String>> {
         final int half = traceId.length() / 2;
         final String newTrace = traceId.substring(0, half) + "_" + genString(traceId.length() - 1 - half);
         map.put(Keys.TRACE_ID, newTrace);
-        return;
     }
 
     private String genString(int length) {

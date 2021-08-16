@@ -8,8 +8,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -21,6 +21,7 @@ import org.springframework.util.concurrent.ListenableFuture;
 
 import com.alpha.coding.bo.base.MapThreadLocalAdaptor;
 import com.alpha.coding.bo.executor.NamedThreadFactory;
+import com.alpha.coding.bo.function.SelfChainConsumer;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -34,7 +35,8 @@ import lombok.Setter;
  * @version 1.0
  * Date: 2020-02-21
  */
-public class MDCThreadPoolTaskExecutor extends ThreadPoolTaskExecutor implements ExecutorService {
+public class MDCThreadPoolTaskExecutor extends ThreadPoolTaskExecutor
+        implements ExecutorService, SelfChainConsumer<MDCThreadPoolTaskExecutor> {
 
     private final AtomicBoolean initializeFlag = new AtomicBoolean(false);
 
@@ -96,8 +98,9 @@ public class MDCThreadPoolTaskExecutor extends ThreadPoolTaskExecutor implements
             return this;
         }
 
-        public MDCThreadPoolTaskExecutorBuilder abortPolicy(ThreadPoolExecutor.AbortPolicy abortPolicy) {
-            this.executor.setRejectedExecutionHandler(abortPolicy);
+        public MDCThreadPoolTaskExecutorBuilder rejectedExecutionHandler(
+                RejectedExecutionHandler rejectedExecutionHandler) {
+            this.executor.setRejectedExecutionHandler(rejectedExecutionHandler);
             return this;
         }
 

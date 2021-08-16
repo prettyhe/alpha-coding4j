@@ -63,4 +63,11 @@ public class RunnableWrapper implements Runnable {
             }
         }
     }
+
+    /**
+     * 原生执行
+     */
+    public void rawRun() {
+        this.command.run();
+    }
 }

@@ -1,10 +1,10 @@
 package com.alpha.coding.common.log;
 
 import java.lang.management.ManagementFactory;
-import java.net.InetAddress;
-import java.net.NetworkInterface;
-import java.util.Enumeration;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -18,8 +18,11 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.util.ClassUtils;
 
 import com.alibaba.dubbo.config.ProtocolConfig;
+import com.alpha.coding.common.bean.comm.ApplicationContextHolder;
+import com.alpha.coding.common.utils.NetUtils;
 
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -43,50 +46,14 @@ public class ApplicationEnv implements InitializingBean, ApplicationListener<Con
     private String module;
     private String pid;
     private Map<String, String> extraMap;
-    private Supplier<String> portSupplier = new HttpPortSupplier();
+    private ApplicationContext applicationContext;
+    private Supplier<String> portSupplier = new SmartPortSupplier(Arrays.asList(this::getApplicationContext,
+            ApplicationContextHolder::getCurrentApplicationContext));
 
     public ApplicationEnv() {
-        this.host = getLocalHostName();
+        this.host = NetUtils.getLocalHost();
         this.pid = getCurrentPid();
         this.port = portSupplier.get();
-    }
-
-    private String getLocalHostName() {
-        final InetAddress address = getLocalHostLANAddress();
-        return address == null ? null : address.getHostName();
-    }
-
-    private InetAddress getLocalHostLANAddress() {
-        try {
-            InetAddress candidateAddress = null;
-            Enumeration networkInterfaces = NetworkInterface.getNetworkInterfaces();
-            // 遍历所有的网络接口
-            while (networkInterfaces.hasMoreElements()) {
-                NetworkInterface iface = (NetworkInterface) networkInterfaces.nextElement();
-                // 在所有的接口下再遍历IP
-                for (Enumeration inetAddrs = iface.getInetAddresses(); inetAddrs.hasMoreElements(); ) {
-                    InetAddress inetAddr = (InetAddress) inetAddrs.nextElement();
-                    if (!inetAddr.isLoopbackAddress()) { // 排除loopback类型地址
-                        if (inetAddr.isSiteLocalAddress()) {
-                            // 如果是site-local地址，就是它了
-                            return inetAddr;
-                        } else if (candidateAddress == null) {
-                            // site-local类型的地址未被发现，先记录候选地址
-                            candidateAddress = inetAddr;
-                        }
-                    }
-                }
-            }
-            if (candidateAddress != null) {
-                return candidateAddress;
-            }
-            // 如果没有发现 non-loopback地址.只能用最次选的方案
-            InetAddress jdkSuppliedAddress = InetAddress.getLocalHost();
-            return jdkSuppliedAddress;
-        } catch (Exception e) {
-            log.error("getLocalHostLANAddress fail", e);
-        }
-        return null;
     }
 
     private String getCurrentPid() {
@@ -109,14 +76,14 @@ public class ApplicationEnv implements InitializingBean, ApplicationListener<Con
             }
             return objectNames.iterator().next().getKeyProperty("port");
         } catch (Exception e) {
-            log.error("getLocalPort fail", e);
+            log.warn("find Local HTTP Port fail", e);
         }
         return null;
     }
 
     private static String getLocalDubboPort(ApplicationContext applicationContext) {
         try {
-            if (Class.forName("com.alibaba.dubbo.config.ProtocolConfig") != null) {
+            if (ClassUtils.isPresent("com.alibaba.dubbo.config.ProtocolConfig", null)) {
                 final Map<String, ProtocolConfig> beans = applicationContext.getBeansOfType(ProtocolConfig.class);
                 Integer port = null;
                 if (beans != null && !beans.isEmpty()) {
@@ -131,8 +98,28 @@ public class ApplicationEnv implements InitializingBean, ApplicationListener<Con
                     return String.valueOf(port);
                 }
             }
-        } catch (Exception ex) {
-            log.error("getDubboPort fail, {}", ex.getMessage());
+        } catch (Throwable ex) {
+            log.warn("find Alibaba Dubbo Port fail, {}", ex.getMessage());
+        }
+        try {
+            if (ClassUtils.isPresent("org.apache.dubbo.config.ProtocolConfig", null)) {
+                final Map<String, org.apache.dubbo.config.ProtocolConfig> beans =
+                        applicationContext.getBeansOfType(org.apache.dubbo.config.ProtocolConfig.class);
+                Integer port = null;
+                if (beans != null && !beans.isEmpty()) {
+                    for (Map.Entry<String, org.apache.dubbo.config.ProtocolConfig> entry : beans.entrySet()) {
+                        if (entry.getValue().getPort() != null) {
+                            port = entry.getValue().getPort();
+                            break;
+                        }
+                    }
+                }
+                if (port != null) {
+                    return String.valueOf(port);
+                }
+            }
+        } catch (Throwable ex) {
+            log.warn("find Apache Dubbo Port fail, {}", ex.getMessage());
         }
         return null;
     }
@@ -166,8 +153,11 @@ public class ApplicationEnv implements InitializingBean, ApplicationListener<Con
 
     @Override
     public void onApplicationEvent(ContextRefreshedEvent contextRefreshedEvent) {
-        this.port = portSupplier.get();
-        putIfAbsentToSystemProperty("port", this.port);
+        this.applicationContext = contextRefreshedEvent.getApplicationContext();
+        this.port = this.portSupplier.get();
+        if (this.port != null && !Objects.equals(this.port, System.getProperty("port"))) {
+            System.setProperty("port", this.port);
+        }
     }
 
     /**
@@ -196,6 +186,35 @@ public class ApplicationEnv implements InitializingBean, ApplicationListener<Con
         @Override
         public String get() {
             return getLocalDubboPort(this.applicationContext);
+        }
+    }
+
+    /**
+     * 智能端口获取，优先检测当前环境的dubbo端口，再检测http端口
+     */
+    public static class SmartPortSupplier implements Supplier<String> {
+
+        private final List<Supplier<ApplicationContext>> supplierList;
+
+        public SmartPortSupplier(List<Supplier<ApplicationContext>> supplierList) {
+            this.supplierList = supplierList;
+        }
+
+        @Override
+        public String get() {
+            String dubboPort = null;
+            if (supplierList != null) {
+                for (Supplier<ApplicationContext> supplier : supplierList) {
+                    final ApplicationContext applicationContext = supplier.get();
+                    if (applicationContext != null) {
+                        dubboPort = getLocalDubboPort(applicationContext);
+                        if (dubboPort != null) {
+                            return dubboPort;
+                        }
+                    }
+                }
+            }
+            return getLocalHttpPort();
         }
     }
 

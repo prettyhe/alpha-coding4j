@@ -3,6 +3,8 @@ package com.alpha.coding.bo.function.common;
 import java.math.BigDecimal;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.Set;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
@@ -27,7 +29,7 @@ public interface Predicates {
      * 判断一个字符串是否是预期的整数字符串
      */
     BiPredicate<String, Integer> testIntStr = (t, u) ->
-            (t == null && u == null) || (t != null && u != null && Integer.parseInt(t.trim()) == u.intValue());
+            (t == null && u == null) || (t != null && u != null && Integer.parseInt(t.trim()) == u);
 
     /**
      * 判断一个object的整数部分是否等于预期整数值
@@ -36,15 +38,15 @@ public interface Predicates {
         if (t == null && u == null) {
             return true;
         }
-        if ((t == null && u != null) || (t != null && u == null)) {
+        if (t == null || u == null) {
             return false;
         }
         if (t instanceof Number) {
-            return ((Number) t).intValue() == u.intValue();
+            return ((Number) t).intValue() == u;
         }
         try {
             final BigDecimal bigDecimal = new BigDecimal(String.valueOf(t).trim());
-            return bigDecimal.intValue() == u.intValue();
+            return bigDecimal.intValue() == u;
         } catch (Exception e) {
             return false;
         }
@@ -53,7 +55,7 @@ public interface Predicates {
     /**
      * 判断集合中是否存在元素
      */
-    BiPredicate<Number, Set<Integer>> testContainsInt = (Number t, Set<Integer> u) ->
+    BiPredicate<Number, Set<Integer>> testContainsInt = (t, u) ->
             (t == null && u == null) || (t != null && u != null && u.contains(t.intValue()));
 
     /**
@@ -75,7 +77,7 @@ public interface Predicates {
      */
     Predicate<String> urlPredicate = t -> {
         try {
-            URL url = new URL(t);
+            new URL(t);
             return true;
         } catch (MalformedURLException e) {
             return false;
@@ -85,8 +87,44 @@ public interface Predicates {
     /**
      * 判断包含
      */
-    TiPredicate<Object, Set<Object>, Function<Object, Object>> testContains =
-            (Object t, Set<Object> u, Function<Object, Object> v) ->
-                    (t == null && u == null) || (t != null && u != null && u.contains(v.apply(t)));
+    TiPredicate<Object, Set<Object>, Function<Object, Object>> testContains = (t, u, v) ->
+            (t == null && u == null) || (t != null && u != null && u.contains(v.apply(t)));
+
+    /**
+     * 判断两时间是否为同一天
+     */
+    BiPredicate<Date, Date> testSameDay = (d1, d2) -> {
+        Calendar c1 = Calendar.getInstance();
+        c1.setTime(d1);
+        Calendar c2 = Calendar.getInstance();
+        c2.setTime(d2);
+        return c1.get(Calendar.DAY_OF_MONTH) == c2.get(Calendar.DAY_OF_MONTH)
+                && c1.get(Calendar.MONTH) == c2.get(Calendar.MONTH)
+                && c1.get(Calendar.YEAR) == c2.get(Calendar.YEAR);
+    };
+
+    /**
+     * 判断两时间是否为同一月
+     */
+    BiPredicate<Date, Date> testSameMonth = (d1, d2) -> {
+        Calendar c1 = Calendar.getInstance();
+        c1.setTime(d1);
+        Calendar c2 = Calendar.getInstance();
+        c2.setTime(d2);
+        return c1.get(Calendar.MONTH) == c2.get(Calendar.MONTH)
+                && c1.get(Calendar.YEAR) == c2.get(Calendar.YEAR);
+    };
+
+    /**
+     * 判断两个数字整数部分是否相等
+     */
+    BiPredicate<Number, Number> testIntEqual = (n1, n2) ->
+            (n1 == null && n2 == null) || (n1 != null && n2 != null && n1.intValue() == n2.intValue());
+
+    /**
+     * 判断两个数字整数部分是否相等
+     */
+    BiPredicate<Number, Number> testLongEqual = (n1, n2) ->
+            (n1 == null && n2 == null) || (n1 != null && n2 != null && n1.longValue() == n2.longValue());
 
 }

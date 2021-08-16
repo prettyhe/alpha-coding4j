@@ -13,6 +13,12 @@ import org.slf4j.MDC;
  */
 public class MDCClearConsumer implements Consumer<Map<String, String>> {
 
+    private static final MDCClearConsumer INSTANCE = new MDCClearConsumer();
+
+    public static MDCClearConsumer getInstance() {
+        return INSTANCE;
+    }
+
     @Override
     public void accept(Map<String, String> map) {
         if (map == null || map.isEmpty() || MDC.getMDCAdapter() == null) {

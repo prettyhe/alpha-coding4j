@@ -60,6 +60,10 @@ public class SupplierHolder<T> implements Supplier<T> {
         return this.supplier.get();
     }
 
+    public T getCurrent() {
+        return this.target;
+    }
+
     public T replace(Supplier<T> supplier) {
         try {
             this.target = supplier.get();
@@ -74,4 +78,5 @@ public class SupplierHolder<T> implements Supplier<T> {
     public T refresh() {
         return replace(this.supplier);
     }
+
 }

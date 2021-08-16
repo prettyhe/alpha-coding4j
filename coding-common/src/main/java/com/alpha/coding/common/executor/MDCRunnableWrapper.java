@@ -32,13 +32,13 @@ public class MDCRunnableWrapper extends RunnableWrapper implements Runnable {
         this.superMDCContext = superMDCContext;
         this.superMapThreadLocalAdaptorContext = superMapThreadLocalAdaptorContext;
         this.setBefore(() -> {
-            new MDCCopyConsumer().accept(MDCRunnableWrapper.this.superMDCContext);
-            new MapThreadLocalAdaptorCopyConsumer()
+            MDCCopyConsumer.getInstance().accept(MDCRunnableWrapper.this.superMDCContext);
+            MapThreadLocalAdaptorCopyConsumer.getInstance()
                     .accept(MDCRunnableWrapper.this.superMapThreadLocalAdaptorContext);
         });
         this.setAfter(() -> {
-            new MDCClearConsumer().accept(MDCRunnableWrapper.this.superMDCContext);
-            new MapThreadLocalAdaptorClearConsumer()
+            MDCClearConsumer.getInstance().accept(MDCRunnableWrapper.this.superMDCContext);
+            MapThreadLocalAdaptorClearConsumer.getInstance()
                     .accept(MDCRunnableWrapper.this.superMapThreadLocalAdaptorContext);
         });
     }

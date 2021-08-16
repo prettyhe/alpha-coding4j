@@ -14,8 +14,14 @@ import com.alpha.coding.bo.base.MapThreadLocalAdaptor;
  */
 public class MapThreadLocalAdaptorCopyConsumer implements Consumer<Map<String, Object>> {
 
+    private static final MapThreadLocalAdaptorCopyConsumer INSTANCE = new MapThreadLocalAdaptorCopyConsumer();
+
+    public static MapThreadLocalAdaptorCopyConsumer getInstance() {
+        return INSTANCE;
+    }
+
     @Override
     public void accept(Map<String, Object> map) {
-        Optional.ofNullable(map).ifPresent(p -> p.forEach((k, v) -> MapThreadLocalAdaptor.put(k, v)));
+        Optional.ofNullable(map).ifPresent(p -> p.forEach(MapThreadLocalAdaptor::put));
     }
 }

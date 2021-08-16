@@ -13,6 +13,12 @@ import org.slf4j.MDC;
  */
 public class MDCCopyConsumer implements Consumer<Map<String, String>> {
 
+    private static final MDCCopyConsumer INSTANCE = new MDCCopyConsumer();
+
+    public static MDCCopyConsumer getInstance() {
+        return INSTANCE;
+    }
+
     @Override
     public void accept(Map<String, String> map) {
         if (map == null || map.isEmpty() || MDC.getMDCAdapter() == null) {

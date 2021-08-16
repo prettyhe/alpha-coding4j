@@ -7,7 +7,6 @@ import java.util.function.Supplier;
 import org.slf4j.MDC;
 
 import com.alpha.coding.bo.constant.Keys;
-import com.alpha.coding.bo.function.NullSupplier;
 import com.alpha.coding.bo.trace.TraceIdGenerator;
 import com.google.common.base.Stopwatch;
 
@@ -64,7 +63,7 @@ public class FunctionDelegator {
     }
 
     public static void timeRun(Runnable runnable, Consumer<Stopwatch> timeConsume) {
-        Stopwatch stopwatch = Stopwatch.createStarted();
+        final Stopwatch stopwatch = Stopwatch.createStarted();
         try {
             runnable.run();
         } finally {
@@ -112,11 +111,16 @@ public class FunctionDelegator {
         if (MDC.getMDCAdapter() == null || generator == null) {
             return supplier.get();
         } else {
+            final String oldTrace = MDC.get(Keys.TRACE_ID);
             try {
                 MDC.put(Keys.TRACE_ID, generator.traceId());
                 return supplier.get();
             } finally {
-                MDC.remove(Keys.TRACE_ID);
+                if (oldTrace != null) {
+                    MDC.put(Keys.TRACE_ID, oldTrace);
+                } else {
+                    MDC.remove(Keys.TRACE_ID);
+                }
             }
         }
     }
@@ -138,25 +142,31 @@ public class FunctionDelegator {
     }
 
     public static void traceRun(final Runnable runnable, TraceIdGenerator generator) {
-        traceAgent(new Supplier<Object>() {
-            @Override
-            public Object get() {
-                runnable.run();
-                return null;
-            }
+        traceAgent(() -> {
+            runnable.run();
+            return null;
         }, generator);
     }
 
     public static void traceRunIfAbsent(final Runnable runnable, TraceIdGenerator generator) {
-        traceAgentIfAbsent(new NullSupplier<>(runnable), generator);
+        traceAgentIfAbsent(() -> {
+            runnable.run();
+            return null;
+        }, generator);
     }
 
     public static void traceAccept(final Consumer consumer, final Object object, TraceIdGenerator generator) {
-        traceAgent(new NullSupplier<>(() -> consumer.accept(object)), generator);
+        traceAgent(() -> {
+            consumer.accept(object);
+            return null;
+        }, generator);
     }
 
     public static void traceAcceptIfAbsent(final Consumer consumer, final Object object, TraceIdGenerator generator) {
-        traceAgentIfAbsent(new NullSupplier<>(() -> consumer.accept(object)), generator);
+        traceAgentIfAbsent(() -> {
+            consumer.accept(object);
+            return null;
+        }, generator);
     }
 
     public static <T, R> R traceApply(final Function<T, R> function, final T t, TraceIdGenerator generator) {

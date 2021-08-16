@@ -36,8 +36,8 @@ public class TimestampBase62UUIDTraceIdGenerator implements TraceIdGenerator {
         final int start = ThreadLocalRandom.current().nextInt(0, uuid.length() - (LENGTH - timestamp.length()));
         final String uuidStr = uuid.substring(start, start + (LENGTH - timestamp.length()));
         final int prefixLength = (LENGTH + 1) / 2 - timestamp.length();
-        return uuidStr.substring(0, prefixLength < 0 ? 0 : prefixLength)
-                + timestamp + uuidStr.substring(prefixLength < 0 ? 0 : prefixLength);
+        return uuidStr.substring(0, Math.max(prefixLength, 0))
+                + timestamp + uuidStr.substring(Math.max(prefixLength, 0));
     }
 
     /**
@@ -46,7 +46,7 @@ public class TimestampBase62UUIDTraceIdGenerator implements TraceIdGenerator {
     public long parseTimestamp(String traceId) {
         String timestamp = base62Encode(System.currentTimeMillis());
         final int prefixLength = (LENGTH + 1) / 2 - timestamp.length();
-        return base62Decode(traceId.substring(prefixLength < 0 ? 0 : prefixLength).substring(0, timestamp.length()));
+        return base62Decode(traceId.substring(Math.max(prefixLength, 0)).substring(0, timestamp.length()));
     }
 
     /**
@@ -62,8 +62,7 @@ public class TimestampBase62UUIDTraceIdGenerator implements TraceIdGenerator {
             num = num / scale;
         }
         sb.append(DIGITS[(int) num]);
-        String value = sb.reverse().toString();
-        return value;
+        return sb.reverse().toString();
     }
 
     /**

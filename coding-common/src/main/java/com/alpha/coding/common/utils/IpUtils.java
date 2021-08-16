@@ -70,7 +70,6 @@ public class IpUtils {
      * 检查IP是否合法
      *
      * @param ip ip
-     *
      * @return true|false
      */
     public static boolean ipValid(String ip) {
@@ -93,11 +92,11 @@ public class IpUtils {
     public static String getLocalIP() {
         String localIP = "127.0.0.1";
         try {
-            Enumeration netInterfaces = NetworkInterface.getNetworkInterfaces();
+            Enumeration<NetworkInterface> netInterfaces = NetworkInterface.getNetworkInterfaces();
             while (netInterfaces.hasMoreElements()) {
-                NetworkInterface ni = (NetworkInterface) netInterfaces.nextElement();
+                NetworkInterface ni = netInterfaces.nextElement();
                 InetAddress ip = ni.getInetAddresses().nextElement();
-                if (!ip.isLoopbackAddress() && ip.getHostAddress().indexOf(":") == -1) {
+                if (!ip.isLoopbackAddress() && !ip.getHostAddress().contains(":")) {
                     localIP = ip.getHostAddress();
                     break;
                 }
@@ -115,35 +114,30 @@ public class IpUtils {
     /**
      * 获取客户机的ip地址
      *
-     * @param request
-     *
+     * @param request 请求
      * @return ip
      */
     public static String getClientIp(HttpServletRequest request) {
-        String ip = request.getHeader("X-FORWARDED-FOR");
-        final String localIP = "127.0.0.1";
-        if (ip == null || ip.length() == 0 || (ip.equalsIgnoreCase(localIP)) || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("X-Real-IP");
-        }
-        if (ip == null || ip.length() == 0 || (ip.equalsIgnoreCase(localIP)) || "unknown".equalsIgnoreCase(ip)) {
+        String ip = request.getHeader("x-forwarded-for");
+        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
             ip = request.getHeader("Proxy-Client-IP");
         }
-        if (ip == null || ip.length() == 0 || (ip.equalsIgnoreCase(localIP)) || "unknown".equalsIgnoreCase(ip)) {
+        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
             ip = request.getHeader("WL-Proxy-Client-IP");
         }
-        if (ip == null || ip.length() == 0 || (ip.equalsIgnoreCase(localIP)) || "unknown".equalsIgnoreCase(ip)) {
+        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
             ip = request.getRemoteAddr();
         }
         if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("HTTP_CLIENT_IP");
+            ip = request.getHeader("http_client_ip");
         }
         if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
             ip = request.getHeader("HTTP_X_FORWARDED_FOR");
         }
         // 如果是多级代理，那么取第一个ip为客户ip
-        if (ip != null && ip.indexOf(",") != -1) {
-            String[] items = ip.split(",");
-            for (String str : items) {
+        if (ip != null && ip.contains(",")) {
+            String[] strs = ip.split(",");
+            for (String str : strs) {
                 if ("unknown".equalsIgnoreCase(str)) {
                     continue;
                 }

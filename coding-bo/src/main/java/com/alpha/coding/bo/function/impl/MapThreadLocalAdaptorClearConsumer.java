@@ -14,8 +14,14 @@ import com.alpha.coding.bo.base.MapThreadLocalAdaptor;
  */
 public class MapThreadLocalAdaptorClearConsumer implements Consumer<Map<String, Object>> {
 
+    private static final MapThreadLocalAdaptorClearConsumer INSTANCE = new MapThreadLocalAdaptorClearConsumer();
+
+    public static MapThreadLocalAdaptorClearConsumer getInstance() {
+        return INSTANCE;
+    }
+
     @Override
     public void accept(Map<String, Object> map) {
-        Optional.ofNullable(map).ifPresent(p -> p.keySet().forEach(k -> MapThreadLocalAdaptor.remove(k)));
+        Optional.ofNullable(map).ifPresent(p -> p.keySet().forEach(MapThreadLocalAdaptor::remove));
     }
 }

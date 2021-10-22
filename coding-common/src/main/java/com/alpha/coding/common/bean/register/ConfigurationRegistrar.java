@@ -38,7 +38,8 @@ public class ConfigurationRegistrar implements ImportBeanDefinitionRegistrar,
     private static final DefaultBeanNameGenerator BEAN_NAME_GENERATOR = new DefaultBeanNameGenerator();
     private static final AtomicInteger TOTAL_COUNT = new AtomicInteger(0);
 
-    private ConfigurationRegisterHandler handler = ServiceBootstrap.loadPrimary(ConfigurationRegisterHandler.class);
+    private final ConfigurationRegisterHandler handler =
+            ServiceBootstrap.loadPrimary(ConfigurationRegisterHandler.class);
 
     @Setter
     private ResourceLoader resourceLoader;
@@ -50,8 +51,8 @@ public class ConfigurationRegistrar implements ImportBeanDefinitionRegistrar,
     @Override
     public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
         TOTAL_COUNT.incrementAndGet();
-        if (!registry.containsBeanDefinition("InternalApplicationPostListener")) {
-            registry.registerBeanDefinition("InternalApplicationPostListener",
+        if (!registry.containsBeanDefinition(DefaultApplicationPostListener.BEAN_NAME)) {
+            registry.registerBeanDefinition(DefaultApplicationPostListener.BEAN_NAME,
                     BeanDefinitionBuilder.genericBeanDefinition(DefaultApplicationPostListener.class)
                             .getBeanDefinition());
         }
@@ -88,4 +89,5 @@ public class ConfigurationRegistrar implements ImportBeanDefinitionRegistrar,
                 .setBeanFactory(beanFactory)
                 .setEnvironment(environment));
     }
+
 }

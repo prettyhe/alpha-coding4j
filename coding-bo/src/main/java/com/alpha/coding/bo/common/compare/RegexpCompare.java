@@ -1,5 +1,7 @@
 package com.alpha.coding.bo.common.compare;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -12,9 +14,11 @@ import java.util.regex.Pattern;
  */
 public class RegexpCompare implements ConditionCompare {
 
+    private static final Map<String, Pattern> PATTERN_MAP = new ConcurrentHashMap<>();
+
     @Override
     public int type() {
-        return ConditionType.EXCLUDE.getType();
+        return ConditionType.REGEXP.getType();
     }
 
     @Override
@@ -25,9 +29,9 @@ public class RegexpCompare implements ConditionCompare {
         if (input == null) {
             return CompareResult.UNKNOWN;
         }
-        Pattern pattern = Pattern.compile(String.valueOf(benchmark));
+        Pattern pattern = PATTERN_MAP.computeIfAbsent(String.valueOf(benchmark), Pattern::compile);
         Matcher matcher = pattern.matcher(String.valueOf(function == null ? input : function.apply(input)));
-        return matcher.find() ? CompareResult.PASS : CompareResult.FAIL;
+        return matcher.matches() ? CompareResult.PASS : CompareResult.FAIL;
     }
 
 }

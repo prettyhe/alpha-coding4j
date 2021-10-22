@@ -3,8 +3,10 @@ package com.alpha.coding.bo.function.common;
 import java.math.BigDecimal;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
@@ -116,6 +118,12 @@ public interface Predicates {
     };
 
     /**
+     * 判断两个数值是否相等
+     */
+    TiPredicate<Number, Number, Function<Number, Object>> testNumberEqual = (n1, n2, func) ->
+            (n1 == null && n2 == null) || (n1 != null && n2 != null && Objects.equals(func.apply(n1), func.apply(n2)));
+
+    /**
      * 判断两个数字整数部分是否相等
      */
     BiPredicate<Number, Number> testIntEqual = (n1, n2) ->
@@ -126,5 +134,21 @@ public interface Predicates {
      */
     BiPredicate<Number, Number> testLongEqual = (n1, n2) ->
             (n1 == null && n2 == null) || (n1 != null && n2 != null && n1.longValue() == n2.longValue());
+
+    /**
+     * 判断数值是否被包含
+     */
+    TiPredicate<Number, Number[], Function<Number, Object>> testNumberInclude =
+            (n, a, func) -> Arrays.stream(a).anyMatch(p -> testNumberEqual.test(n, p, func));
+
+    /**
+     * 判断整数部分是否被包含
+     */
+    BiPredicate<Number, Number[]> testIntInclude = (n, a) -> Arrays.stream(a).anyMatch(p -> testIntEqual.test(n, p));
+
+    /**
+     * 判断整数部分是否被包含
+     */
+    BiPredicate<Number, Number[]> testLongInclude = (n, a) -> Arrays.stream(a).anyMatch(p -> testLongEqual.test(n, p));
 
 }

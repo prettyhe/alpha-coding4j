@@ -60,4 +60,9 @@ public @interface EnableRocketMQConsumer {
      */
     String consumerBeanName() default "";
 
+    /**
+     * 描述
+     */
+    String description() default "";
+
 }

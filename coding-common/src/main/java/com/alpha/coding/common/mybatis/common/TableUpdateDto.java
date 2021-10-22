@@ -1,6 +1,7 @@
 package com.alpha.coding.common.mybatis.common;
 
 import java.io.Serializable;
+import java.util.Set;
 
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -19,5 +20,9 @@ public class TableUpdateDto implements Serializable {
     private int type; // 0-insert, 1-update
     private Long id;
     private String sqlId;
+    private Set<Long> ids;
+    private Long timestamp;
+    private Object before;
+    private Object after;
 
 }

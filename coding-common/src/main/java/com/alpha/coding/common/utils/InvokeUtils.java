@@ -62,7 +62,6 @@ public class InvokeUtils {
      * @param awaitMillis   最大等待时长
      * @param valueSupplier 加载器：获取值
      * @param valueConsumer 放置器：值写入缓存
-     *
      * @return InvokeResult
      */
     public static InvokeResult syncInvoke(Map<String, InvokeLock> lockCache, String key, Long awaitMillis,
@@ -132,7 +131,6 @@ public class InvokeUtils {
      * @param awaitMillis   最大等待时长
      * @param valueSupplier 加载器：获取值
      * @param valueConsumer 放置器：值写入缓存
-     *
      * @return InvokeResult
      */
     public static InvokeResult syncInvoke(String key, Long awaitMillis,

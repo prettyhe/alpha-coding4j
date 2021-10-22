@@ -17,7 +17,7 @@ public class EnumUtils {
     /**
      * 比较器，相等返回0，不等返回-1
      */
-    public static Comparator IGNORE_TYPE_COMPARATOR = (o1, o2) -> {
+    public static final Comparator IGNORE_TYPE_COMPARATOR = (o1, o2) -> {
         if (o1 == null && o2 == null) {
             return 0;
         }
@@ -97,6 +97,10 @@ public class EnumUtils {
             }
         }
         return null;
+    }
+
+    public static <T extends Enum<T> & EnumWithCodeSupplier> T safeParseDefault(Class<T> enumClass, Object code) {
+        return safeParse(enumClass, code, IGNORE_TYPE_COMPARATOR);
     }
 
 }

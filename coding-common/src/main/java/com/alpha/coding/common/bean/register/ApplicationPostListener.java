@@ -9,7 +9,7 @@ package com.alpha.coding.common.bean.register;
 public interface ApplicationPostListener {
 
     /**
-     * 注册回调
+     * 注册回调函数
      */
     void registerPostCallback(Runnable runnable);
 

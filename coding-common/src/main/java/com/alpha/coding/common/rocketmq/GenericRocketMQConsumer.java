@@ -24,6 +24,8 @@ public class GenericRocketMQConsumer extends DefaultMQPushConsumer implements In
     private String topic;
     @Setter
     private String tag = "*";
+    @Setter
+    private String description;
 
     private volatile boolean started = false;
 
@@ -34,8 +36,8 @@ public class GenericRocketMQConsumer extends DefaultMQPushConsumer implements In
             if (Objects.equals(System.getProperty("rocketmq.client.name", "DEFAULT"), this.getInstanceName())) {
                 this.setInstanceName(UUID.randomUUID().toString().replaceAll("-", ""));
             }
-            log.info("RocketMQ 创建实例成功，主题={}，消费组={}，实例名为={}", this.topic, this.getConsumerGroup(),
-                    this.getInstanceName());
+            log.info("[{}]创建RocketMQ实例,主题={},消费组={},实例名={}", this.description, this.topic,
+                    this.getConsumerGroup(), this.getInstanceName());
             super.start();
             started = true;
         }

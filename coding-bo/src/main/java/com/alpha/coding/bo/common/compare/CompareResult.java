@@ -22,7 +22,7 @@ public enum CompareResult implements EnumWithCodeSupplier {
     UNKNOWN(3),
     FAIL(4);
 
-    private int code;
+    private final int code;
 
     @Override
     public Supplier codeSupply() {

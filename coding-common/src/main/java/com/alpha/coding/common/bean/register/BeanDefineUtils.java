@@ -6,10 +6,14 @@ import java.util.function.Predicate;
 
 import org.springframework.beans.TypeConverter;
 import org.springframework.beans.factory.BeanFactory;
+import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.beans.factory.config.BeanExpressionContext;
 import org.springframework.beans.factory.config.BeanExpressionResolver;
+import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.expression.StandardBeanExpressionResolver;
 import org.springframework.core.env.Environment;
 import org.springframework.util.StringValueResolver;
@@ -79,6 +83,36 @@ public class BeanDefineUtils {
                 new BeanExpressionContext(defaultListableBeanFactory, null));
         TypeConverter converter = defaultListableBeanFactory.getTypeConverter();
         return converter.convertIfNecessary(evaluate, type);
+    }
+
+    public static <T> T resolveValue(ApplicationContext context, String valueExpr, Class<T> type) {
+        if (valueExpr == null) {
+            return null;
+        }
+        final Environment environment = context.getEnvironment();
+        final StringValueResolver stringValueResolver = environment::resolvePlaceholders;
+        final String value = stringValueResolver.resolveStringValue(valueExpr);
+        if (context instanceof ConfigurableApplicationContext) {
+            final ConfigurableListableBeanFactory beanFactory =
+                    ((ConfigurableApplicationContext) context).getBeanFactory();
+            BeanExpressionResolver beanExpressionResolver = beanFactory.getBeanExpressionResolver();
+            final Object evaluate = beanExpressionResolver.evaluate(value,
+                    new BeanExpressionContext(beanFactory, null));
+            TypeConverter converter = beanFactory.getTypeConverter();
+            return converter.convertIfNecessary(evaluate, type);
+        } else {
+            final AutowireCapableBeanFactory autowireCapableBeanFactory = context.getAutowireCapableBeanFactory();
+            if (autowireCapableBeanFactory instanceof DefaultListableBeanFactory) {
+                DefaultListableBeanFactory beanFactory = (DefaultListableBeanFactory) autowireCapableBeanFactory;
+                BeanExpressionResolver beanExpressionResolver = beanFactory.getBeanExpressionResolver();
+                final Object evaluate = beanExpressionResolver.evaluate(value,
+                        new BeanExpressionContext(beanFactory, null));
+                TypeConverter converter = beanFactory.getTypeConverter();
+                return converter.convertIfNecessary(evaluate, type);
+            } else {
+                throw new IllegalArgumentException("ApplicationContext Not Supported");
+            }
+        }
     }
 
 }

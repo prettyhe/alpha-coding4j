@@ -29,9 +29,9 @@ public enum ConditionType implements EnumWithCodeSupplier {
     EXCLUDE(9, "排除", "基准类型是集合类型"),
     REGEXP(10, "正则", "基准类型是正则表达式");
 
-    private int type;
-    private String name;
-    private String desc;
+    private final int type;
+    private final String name;
+    private final String desc;
 
     @Override
     public Supplier codeSupply() {

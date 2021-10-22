@@ -112,9 +112,8 @@ public class ServiceBootstrap {
                                     final S s = load(line, type, classLoader);
                                     multimap.put(name, s);
                                 } catch (Throwable t) {
-                                    throw new IllegalStateException(
-                                            "Failed to load class(interface: " + type + ", class line: "
-                                                    + line + ") in " + url + ", cause: " + t.getMessage(), t);
+                                    log.warn("Failed to load class(interface: " + type + ", class line: "
+                                            + line + ") in " + url + ", cause: " + t.getMessage(), t);
                                 }
                             }
                         }

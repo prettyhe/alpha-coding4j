@@ -10,3 +10,4 @@ EnableActiveMQAutoConfigHandler=com.alpha.coding.common.activemq.EnableActiveMQA
 EnableAutoMyRestApiHandler=com.alpha.coding.common.http.rest.EnableAutoMyRestApiHandler
 EnableAutoIdentityBeanHandler=com.alpha.coding.common.bean.identity.EnableAutoIdentityBeanHandler
 EnableRocketMQAutoConfigHandler=com.alpha.coding.common.rocketmq.EnableRocketMQAutoConfigHandler
+EnableMessageMonitorSendHandler=com.alpha.coding.common.message.EnableMessageMonitorSendHandler

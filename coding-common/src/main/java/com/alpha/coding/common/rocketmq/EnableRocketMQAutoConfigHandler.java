@@ -15,6 +15,7 @@ import org.springframework.core.env.Environment;
 import com.alpha.coding.common.bean.register.ApplicationPostListener;
 import com.alpha.coding.common.bean.register.BeanDefineUtils;
 import com.alpha.coding.common.bean.register.BeanDefinitionRegistryUtils;
+import com.alpha.coding.common.bean.register.DefaultApplicationPostListener;
 import com.alpha.coding.common.bean.register.EnvironmentChangeEvent;
 import com.alpha.coding.common.bean.register.EnvironmentChangeListener;
 import com.alpha.coding.common.bean.spi.ConfigurationRegisterHandler;
@@ -83,8 +84,9 @@ public class EnableRocketMQAutoConfigHandler implements ConfigurationRegisterHan
             beanDefinitionBuilder.setDestroyMethodName("shutdown");
             BeanDefinitionRegistryUtils.overideBeanDefinition(registry,
                     producerBeanName, beanDefinitionBuilder.getBeanDefinition());
-            if (registry.containsBeanDefinition("InternalApplicationPostListener")) {
-                context.getBeanFactory().getBean("InternalApplicationPostListener", ApplicationPostListener.class)
+            if (registry.containsBeanDefinition(DefaultApplicationPostListener.BEAN_NAME)) {
+                context.getBeanFactory()
+                        .getBean(DefaultApplicationPostListener.BEAN_NAME, ApplicationPostListener.class)
                         .registerPostCallback(() -> context.getBeanFactory().getBean(producerBeanName));
             }
         }
@@ -121,6 +123,7 @@ public class EnableRocketMQAutoConfigHandler implements ConfigurationRegisterHan
             beanDefinitionBuilder.addPropertyValue("namesrvAddr", namesrvAddr);
             beanDefinitionBuilder.addPropertyReference("messageListener",
                     attributes.getString("messageListenerBeanName"));
+            beanDefinitionBuilder.addPropertyValue("description", attributes.getString("description"));
             Optional.ofNullable(BeanDefineUtils.fetchProperty(env,
                     Arrays.asList("rocketmq.consumer." + topic + ".pullInterval",
                             "rocketmq.consumer.pullInterval"), StringUtils::isNumeric,
@@ -151,10 +154,12 @@ public class EnableRocketMQAutoConfigHandler implements ConfigurationRegisterHan
                     .orElse(group + "#" + topic + "#" + tag + "#" + "rocketMQConsumer");
             BeanDefinitionRegistryUtils.overideBeanDefinition(registry,
                     consumerBeanName, beanDefinitionBuilder.getBeanDefinition());
-            if (registry.containsBeanDefinition("InternalApplicationPostListener")) {
-                context.getBeanFactory().getBean("InternalApplicationPostListener", ApplicationPostListener.class)
+            if (registry.containsBeanDefinition(DefaultApplicationPostListener.BEAN_NAME)) {
+                context.getBeanFactory()
+                        .getBean(DefaultApplicationPostListener.BEAN_NAME, ApplicationPostListener.class)
                         .registerPostCallback(() -> context.getBeanFactory().getBean(consumerBeanName));
             }
         }
     }
+
 }

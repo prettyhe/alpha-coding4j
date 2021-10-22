@@ -14,7 +14,7 @@
 
     <artifactId>coding-example</artifactId>
 
-    <name>coding-bo</name>
+    <name>coding-example</name>
     <packaging>jar</packaging>
 
     <dependencies>

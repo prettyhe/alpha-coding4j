@@ -20,9 +20,9 @@ import java.lang.annotation.Target;
 public @interface RedisSync {
 
     /**
-     * 是否启用
+     * 是否启用，默认启用
      */
-    boolean enable() default false;
+    boolean enable() default true;
 
     /**
      * 过期时间
@@ -38,5 +38,15 @@ public @interface RedisSync {
      * RedisTemplate的beanName
      */
     String redisTemplateBean() default "stringRedisTemplate";
+
+    /**
+     * 失败回调
+     */
+    Class<? extends FailCallback> failCallback() default FailCallback.class;
+
+    /**
+     * 失败文案，支持外部化配置，如"${invoke.sync.failText:操作太频繁}"
+     */
+    String failText() default "";
 
 }

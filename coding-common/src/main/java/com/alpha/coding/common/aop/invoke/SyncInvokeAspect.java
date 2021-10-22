@@ -22,6 +22,7 @@ import com.alpha.coding.common.aop.assist.ExpressionKey;
 import com.alpha.coding.common.aop.assist.JoinOperationContext;
 import com.alpha.coding.common.aop.assist.JoinOperationMetadata;
 import com.alpha.coding.common.aop.assist.SpelExpressionParserFactory;
+import com.alpha.coding.common.bean.register.BeanDefineUtils;
 import com.alpha.coding.common.redis.RedisTemplateUtils;
 import com.alpha.coding.common.utils.InvokeUtils;
 import com.alpha.coding.common.utils.MD5Utils;
@@ -93,6 +94,11 @@ public class SyncInvokeAspect implements ApplicationContextAware {
             if (throwables[0] != null) {
                 throw throwables[0];
             } else {
+                if (!tuple.getF() && !redisSync.failCallback().equals(FailCallback.class)) {
+                    return FailCallbackFactory.instance(redisSync.failCallback())
+                            .callback(method, joinPoint.getArgs(), BeanDefineUtils
+                                    .resolveValue(applicationContext, redisSync.failText(), String.class));
+                }
                 return tuple.getS();
             }
         }

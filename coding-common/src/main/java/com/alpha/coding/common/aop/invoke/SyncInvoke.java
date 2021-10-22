@@ -30,7 +30,8 @@ public @interface SyncInvoke {
     long maxAwait() default -1;
 
     /**
-     * Redis同步配置
+     * Redis同步配置，默认不开启
      */
-    RedisSync redisSync();
+    RedisSync redisSync() default @RedisSync(enable = false);
+
 }

@@ -21,6 +21,7 @@ public class IpUtils {
 
     public static final String _255 = "(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)";
     public static final Pattern pattern = Pattern.compile("^(?:" + _255 + "\\.){3}" + _255 + "$");
+    private static final String LOCAL_IP = "127.0.0.1";
 
     public static String longToIpV4(long longIp) {
         int octet3 = (int) ((longIp >> 24) % 256);
@@ -90,7 +91,7 @@ public class IpUtils {
      * @return ip
      */
     public static String getLocalIP() {
-        String localIP = "127.0.0.1";
+        String localIP = LOCAL_IP;
         try {
             Enumeration<NetworkInterface> netInterfaces = NetworkInterface.getNetworkInterfaces();
             while (netInterfaces.hasMoreElements()) {
@@ -118,27 +119,33 @@ public class IpUtils {
      * @return ip
      */
     public static String getClientIp(HttpServletRequest request) {
-        String ip = request.getHeader("x-forwarded-for");
-        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
+        String ip = request.getHeader("X-Original-Forwarded-For");
+        if (isInValidIp(ip)) {
+            ip = request.getHeader("X-Forwarded-For");
+        }
+        if (isInValidIp(ip)) {
+            ip = request.getHeader("X-Real-IP");
+        }
+        if (isInValidIp(ip)) {
             ip = request.getHeader("Proxy-Client-IP");
         }
-        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
+        if (isInValidIp(ip)) {
             ip = request.getHeader("WL-Proxy-Client-IP");
         }
-        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
+        if (isInValidIp(ip)) {
             ip = request.getRemoteAddr();
         }
         if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("http_client_ip");
+            ip = request.getHeader("HTTP_CLIENT_IP");
         }
         if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
             ip = request.getHeader("HTTP_X_FORWARDED_FOR");
         }
         // 如果是多级代理，那么取第一个ip为客户ip
         if (ip != null && ip.contains(",")) {
-            String[] strs = ip.split(",");
-            for (String str : strs) {
-                if ("unknown".equalsIgnoreCase(str)) {
+            String[] items = ip.split(",");
+            for (String str : items) {
+                if (str.length() == 0 || "unknown".equalsIgnoreCase(str)) {
                     continue;
                 }
                 ip = str;
@@ -146,6 +153,10 @@ public class IpUtils {
             }
         }
         return ip;
+    }
+
+    private static boolean isInValidIp(String ip) {
+        return ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip) || LOCAL_IP.equalsIgnoreCase(ip);
     }
 
 }

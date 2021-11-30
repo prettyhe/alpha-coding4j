@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
  */
 public class NetUtils {
 
-    private static Logger logger = LoggerFactory.getLogger(NetUtils.class);
+    private static final Logger logger = LoggerFactory.getLogger(NetUtils.class);
     private static final String LOCALHOST_VALUE = "127.0.0.1";
     private static volatile InetAddress LOCAL_ADDRESS = null;
     private static final Pattern IP_PATTERN = Pattern.compile("\\d{1,3}(\\.\\d{1,3}){3,5}$");

@@ -1,6 +1,3 @@
-/**
- * Copyright
- */
 package com.alpha.coding.common.log;
 
 import java.util.HashSet;

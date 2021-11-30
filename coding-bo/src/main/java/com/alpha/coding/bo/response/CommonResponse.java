@@ -45,16 +45,17 @@ public class CommonResponse<T> implements CodeMsgSupplier, Predicate<Integer>, S
 
     @Override
     public Supplier<Integer> codeSupplier() {
-        return () -> CommonResponse.this.getCode();
+        return this::getCode;
     }
 
     @Override
     public Supplier<String> msgSupplier() {
-        return () -> CommonResponse.this.getMsg();
+        return this::getMsg;
     }
 
     @Override
     public boolean test(Integer code) {
-        return (code == null && this.code == null) || (code.intValue() == this.code.intValue());
+        return (code == null && this.code == null)
+                || (code != null && this.code != null && code.intValue() == this.code.intValue());
     }
 }

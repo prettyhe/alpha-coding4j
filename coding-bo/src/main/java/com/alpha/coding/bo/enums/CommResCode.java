@@ -29,23 +29,23 @@ public enum CommResCode implements EnumWithCodeSupplier, CodeMsgSupplier, Predic
     PARAM_ERR(-9, "Parameter Error", "Parameter Error"),
     CUSTOM_ERR(-99, "", "");
 
-    private int code;
-    private String msg;
-    private String msgEn;
+    private final int code;
+    private final String msg;
+    private final String msgEn;
 
     @Override
     public Supplier codeSupply() {
-        return () -> CommResCode.this.getCode();
+        return this::getCode;
     }
 
     @Override
     public Supplier<Integer> codeSupplier() {
-        return () -> CommResCode.this.getCode();
+        return this::getCode;
     }
 
     @Override
     public Supplier<String> msgSupplier() {
-        return () -> CommResCode.this.getMsg();
+        return this::getMsg;
     }
 
     @Override

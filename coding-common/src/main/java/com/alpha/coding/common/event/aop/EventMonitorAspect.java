@@ -1,6 +1,3 @@
-/**
- * Copyright
- */
 package com.alpha.coding.common.event.aop;
 
 import java.lang.annotation.Annotation;

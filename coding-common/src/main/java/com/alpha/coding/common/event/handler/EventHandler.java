@@ -1,6 +1,3 @@
-/**
- * Copyright
- */
 package com.alpha.coding.common.event.handler;
 
 import java.util.Set;

@@ -24,11 +24,11 @@ public class PasswdEncoder {
     private static final String KEY_ALGORITHMS = "PBKDF2WithHmacSHA1";
     private static final String ALGORITHMS_SHA1PRNG = "SHA1PRNG";
 
-    private static int PBE_ITERATION_COUNT = 1000;
+    private static final int PBE_ITERATION_COUNT = 1000;
 
-    private static int KEY_BIT_LENGTH = 256;
+    private static final int KEY_BIT_LENGTH = 256;
 
-    private static int SALT_BIT_LENGTH = 256;
+    private static final int SALT_BIT_LENGTH = 256;
 
     /**
      * 对明文密码编码， 结果为 hex 编码字符串

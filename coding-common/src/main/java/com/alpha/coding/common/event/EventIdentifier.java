@@ -1,6 +1,3 @@
-/**
- * Copyright
- */
 package com.alpha.coding.common.event;
 
 import com.alpha.coding.bo.enums.util.EnumWithCodeSupplier;

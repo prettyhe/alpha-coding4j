@@ -1,6 +1,3 @@
-/**
- * Copyright
- */
 package com.alpha.coding.common.http;
 
 import java.io.IOException;

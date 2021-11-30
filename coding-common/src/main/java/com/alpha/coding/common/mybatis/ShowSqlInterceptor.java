@@ -1,6 +1,3 @@
-/**
- * Copyright
- */
 package com.alpha.coding.common.mybatis;
 
 import java.util.Date;

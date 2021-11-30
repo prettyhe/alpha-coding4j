@@ -1,7 +1,7 @@
 package com.alpha.coding.common.utils;
 
 import java.io.InputStream;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 import org.apache.commons.lang.StringUtils;
 import org.springframework.core.io.Resource;
@@ -27,7 +27,7 @@ public class IdcardAddressUtil {
                     .getResources("classpath:/resource/cityMeta.json");
             if (resources != null && resources.length > 0) {
                 try (InputStream inputStream = resources[0].getInputStream()) {
-                    final String src = IOUtils.readFromInputStream(inputStream, Charset.forName("UTF-8"), false);
+                    final String src = IOUtils.readFromInputStream(inputStream, StandardCharsets.UTF_8, false);
                     cityLevelInfo = JSON.parseObject(src, CityLevelInfo.class);
                 }
             }

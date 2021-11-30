@@ -1,6 +1,3 @@
-/**
- * Copyright
- */
 package com.alpha.coding.bo.config;
 
 import java.util.Collection;

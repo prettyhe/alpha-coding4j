@@ -1,6 +1,3 @@
-/**
- * Copyright
- */
 package com.alpha.coding.common.utils;
 
 import java.io.BufferedReader;

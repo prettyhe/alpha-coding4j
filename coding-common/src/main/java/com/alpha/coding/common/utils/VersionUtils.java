@@ -41,7 +41,7 @@ public class VersionUtils {
             if (sep.length() > sepMaxWidth) {
                 sep = sep.substring(0, sepMaxWidth);
             }
-            ret += tmpStep * Long.valueOf(sep);
+            ret += tmpStep * Long.parseLong(sep);
         }
         return ret;
     }

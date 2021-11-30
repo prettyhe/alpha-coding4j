@@ -1,6 +1,3 @@
-/**
- * Copyright
- */
 package com.alpha.coding.common.bean.comm;
 
 import lombok.Setter;

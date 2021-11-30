@@ -8,7 +8,7 @@ import java.util.function.Supplier;
  * @version 1.0
  * Date: 2020-02-21
  */
-public interface EnumWithCodeSupplier {
+public interface EnumWithCodeSupplier extends DescSupplier {
 
     Supplier codeSupply();
 

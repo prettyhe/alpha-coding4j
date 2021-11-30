@@ -2,7 +2,7 @@ package com.alpha.coding.bo.common.compare;
 
 import java.util.function.Supplier;
 
-import com.alpha.coding.bo.enums.util.EnumWithCodeSupplier;
+import com.alpha.coding.bo.enums.util.CodeSupplyEnum;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -15,14 +15,15 @@ import lombok.Getter;
  */
 @Getter
 @AllArgsConstructor
-public enum CompareResult implements EnumWithCodeSupplier {
+public enum CompareResult implements CodeSupplyEnum<CompareResult> {
 
-    PASS(1),
-    NOT_FAIL(2),
-    UNKNOWN(3),
-    FAIL(4);
+    PASS(1, "通过"),
+    NOT_FAIL(2, "非失败"),
+    UNKNOWN(3, "未知"),
+    FAIL(4, "失败");
 
     private final int code;
+    private final String desc;
 
     @Override
     public Supplier codeSupply() {
@@ -137,6 +138,14 @@ public enum CompareResult implements EnumWithCodeSupplier {
             default:
                 throw new RuntimeException("unknown result");
         }
+    }
+
+    public static CompareResult valueOf(int code) {
+        return CodeSupplyEnum.valueOf(code);
+    }
+
+    public static String getDescByCode(int code) {
+        return CodeSupplyEnum.getDescByCode(code);
     }
 
 }

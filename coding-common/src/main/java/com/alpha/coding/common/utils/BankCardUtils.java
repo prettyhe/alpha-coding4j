@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -16,8 +17,8 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.alpha.coding.bo.enums.util.CodeSupplyEnum;
 import com.alpha.coding.bo.enums.util.EnumUtils;
-import com.alpha.coding.bo.enums.util.EnumWithCodeSupplier;
 import com.alpha.coding.common.http.HttpClientUtils;
 import com.google.common.collect.Maps;
 
@@ -38,31 +39,34 @@ public class BankCardUtils {
 
     private static List<BankInfoItem> bankInfoItems;
     private static long refreshTimestamp = System.currentTimeMillis();
-    private static Map<String, BankInfoItem> bankMap = Maps.newHashMap();
-    private static Map<String, String> bankCodeMap = Maps.newHashMap();
-    private static Map<String, CardCheckResult> cardBinBankMap = Maps.newHashMap();
+    private static final Map<String, BankInfoItem> bankMap = Maps.newHashMap();
+    private static final Map<String, String> bankCodeMap = Maps.newHashMap();
+    private static final Map<String, CardCheckResult> cardBinBankMap = Maps.newHashMap();
     private static final String aliValidateBankNoUrl = "https://ccdcapi.alipay.com/validateAndCacheCardInfo"
             + ".json?_input_charset=utf-8&cardNo=%s&cardBinCheck=true";
 
     @Getter
     @AllArgsConstructor
-    public static enum CardTypeEnum implements EnumWithCodeSupplier {
+    public static enum CardTypeEnum implements CodeSupplyEnum<CardTypeEnum> {
         DC("DC", "借记卡"),
         CC("CC", "贷记卡"),
         SCC("SCC", "准贷记卡"),
         PC("PC", "预付费卡");
 
-        private String code;
-        private String desc;
+        private final String code;
+        private final String desc;
 
         @Override
         public Supplier codeSupply() {
-            return new Supplier() {
-                @Override
-                public Object get() {
-                    return CardTypeEnum.this.getCode();
-                }
-            };
+            return this::getCode;
+        }
+
+        public static CardTypeEnum valueOfCode(String code) {
+            return CodeSupplyEnum.valueOf(code);
+        }
+
+        public static String getDescByCode(String code) {
+            return CodeSupplyEnum.getDescByCode(code);
         }
     }
 
@@ -111,7 +115,7 @@ public class BankCardUtils {
                 if (bankInfoItems == null || System.currentTimeMillis() - refreshTimestamp > 300000) {
                     loadBankCodeMap();
                     final String bankInfo = loadResourceAsString("classpath*:/resource/bank-info.json",
-                            Charset.forName("UTF-8"), false);
+                            StandardCharsets.UTF_8, false);
                     if (bankInfo != null) {
                         bankInfoItems = JSON.parseArray(bankInfo, BankInfoItem.class);
                         bankMap.clear();
@@ -126,8 +130,8 @@ public class BankCardUtils {
                                     try {
                                         final CardTypeEnum cardType = EnumUtils
                                                 .safeParse(CardTypeEnum.class, pattern.getCardType());
-                                        final String[] tokens = pattern.getRegexp().split("\\(|\\)");
-                                        int cardLenExcludeBin = Integer.parseInt(tokens[2].split("\\{|\\}")[1]);
+                                        final String[] tokens = pattern.getRegexp().split("[()]");
+                                        int cardLenExcludeBin = Integer.parseInt(tokens[2].split("[{}]")[1]);
                                         for (String bin : tokens[1].split("\\|")) {
                                             CardCheckResult info = new CardCheckResult()
                                                     .setBankCode(item.getBankCode())
@@ -154,7 +158,7 @@ public class BankCardUtils {
     private static void loadBankCodeMap() {
         try {
             final String text = loadResourceAsString("classpath*:/resource/bank-code.json",
-                    Charset.forName("UTF-8"), false);
+                    StandardCharsets.UTF_8, false);
             final JSONObject jsonObject = JSON.parseObject(text);
             for (String key : jsonObject.keySet()) {
                 bankCodeMap.put(key, jsonObject.getString(key));
@@ -179,11 +183,11 @@ public class BankCardUtils {
             return null;
         }
         CardCheckResult result = new CardCheckResult();
-        int checkCode = Integer.valueOf(cardNo.substring(cardNo.length() - 1));
+        int checkCode = Integer.parseInt(cardNo.substring(cardNo.length() - 1));
         String cardNoCheckCode = cardNo.substring(0, cardNo.length() - 1);
         int sum = 0;
         for (int i = 0; i < cardNoCheckCode.length(); i++) {
-            Integer temp = Integer.valueOf(
+            int temp = Integer.parseInt(
                     cardNoCheckCode.substring(cardNoCheckCode.length() - i - 1, cardNoCheckCode.length() - i));
             if (i % 2 == 0) {
                 temp *= 2;
@@ -193,11 +197,7 @@ public class BankCardUtils {
             }
         }
         int myCheckCode = sum % 10 == 0 ? 0 : 10 - (sum % 10);
-        if (checkCode == myCheckCode) {
-            result.setValidate(true);
-        } else {
-            result.setValidate(false);
-        }
+        result.setValidate(checkCode == myCheckCode);
         for (BankInfoItem item : bankInfoItems) {
             if (CollectionUtils.isEmpty(item.getPatterns())) {
                 continue;
@@ -233,7 +233,7 @@ public class BankCardUtils {
         JSONObject ret = JSON.parseObject(res);
         CardCheckResult result = new CardCheckResult();
         final Boolean validated = ret.getBoolean("validated");
-        result.setAliValidate(validated != null && validated.booleanValue());
+        result.setAliValidate(validated != null && validated);
         result.setCardType(EnumUtils.safeParse(CardTypeEnum.class, ret.getString("cardType")));
         result.setBankCode(ret.getString("bank"));
         if (bankMap.isEmpty()) {
@@ -273,14 +273,14 @@ public class BankCardUtils {
         if (cardBin == null || cardBin.length() < 2) {
             return null;
         }
-        if (cardBinBankMap == null || cardBinBankMap.isEmpty()) {
+        if (cardBinBankMap.isEmpty()) {
             try {
                 loadBankInfoItem();
             } catch (IOException e) {
                 // nothing
             }
         }
-        for (int i = 2; i < (cardBin.length() >= 10 ? 10 : cardBin.length()); i++) {
+        for (int i = 2; i < (Math.min(cardBin.length(), 10)); i++) {
             final CardCheckResult info = cardBinBankMap.get(cardBin.substring(0, i));
             if (info != null) {
                 return info;

@@ -16,7 +16,7 @@ import com.alpha.coding.example.constant.RedisTopics;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * LoanChangePublisher
+ * DataAChangePublisher
  *
  * @version 1.0
  * Date: 2020-02-19

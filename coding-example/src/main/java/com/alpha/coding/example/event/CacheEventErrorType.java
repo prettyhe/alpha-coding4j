@@ -30,11 +30,11 @@ public enum CacheEventErrorType implements EnumWithCodeSupplier {
      */
     WRITE_FAIL(1003, "写入失败");
 
-    private int type;
-    private String msg;
+    private final int type;
+    private final String msg;
 
     @Override
     public Supplier codeSupply() {
-        return () -> this.type;
+        return this::getType;
     }
 }

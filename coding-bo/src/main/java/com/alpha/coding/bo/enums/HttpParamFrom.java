@@ -11,5 +11,5 @@ public enum HttpParamFrom {
     Header,
     QueryString,
     Form,
-    Raw;
+    Raw
 }

@@ -1,6 +1,3 @@
-/**
- * Copyright
- */
 package com.alpha.coding.common.event.listener;
 
 import org.springframework.beans.BeansException;

@@ -1,6 +1,3 @@
-/**
- * Copyright
- */
 package com.alpha.coding.bo.page;
 
 import java.util.function.Supplier;
@@ -22,10 +19,10 @@ public enum Order implements EnumWithCodeSupplier {
 
     ASC("asc"), DESC("desc");
 
-    private String name;
+    private final String name;
 
     @Override
     public Supplier codeSupply() {
-        return () -> Order.this.getName();
+        return this::getName;
     }
 }

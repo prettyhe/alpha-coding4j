@@ -20,8 +20,8 @@ public enum CacheEventType implements EnumWithCodeSupplier {
     DATA_A_CHANGE(1, "数据A更新"),
     ;
 
-    private int type;
-    private String desc;
+    private final int type;
+    private final String desc;
 
     @Override
     public Supplier codeSupply() {

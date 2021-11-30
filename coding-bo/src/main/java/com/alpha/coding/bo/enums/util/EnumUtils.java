@@ -1,10 +1,10 @@
-/**
- * Copyright
- */
 package com.alpha.coding.bo.enums.util;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Optional;
+import java.util.function.Function;
 
 /**
  * EnumUtils
@@ -48,7 +48,7 @@ public class EnumUtils {
                 return t;
             }
         }
-        throw new IllegalArgumentException("Unknown code = " + code + " for enum class = " + enumClass);
+        throw new IllegalArgumentException("unknown code = " + code + " for enum class = " + enumClass);
     }
 
     public static <T extends Enum<T> & EnumWithCodeSupplier> T parse(Class<T> enumClass, Object code,
@@ -58,7 +58,7 @@ public class EnumUtils {
                 return t;
             }
         }
-        throw new IllegalArgumentException("Unknown code = " + code + " for enum class = " + enumClass);
+        throw new IllegalArgumentException("unknown code = " + code + " for enum class = " + enumClass.getName());
     }
 
     public static <T extends Enum<T> & EnumWithCodeSupplier> T safeParse(Class<T> enumClass, Object code) {
@@ -101,6 +101,37 @@ public class EnumUtils {
 
     public static <T extends Enum<T> & EnumWithCodeSupplier> T safeParseDefault(Class<T> enumClass, Object code) {
         return safeParse(enumClass, code, IGNORE_TYPE_COMPARATOR);
+    }
+
+    public static <E extends Enum<E>> E valueOf(Class<E> enumClass, Function<E, Object> codeGetter, Object code) {
+        return Arrays.stream(enumClass.getEnumConstants())
+                .filter(p -> IGNORE_TYPE_COMPARATOR.compare(codeGetter.apply(p), code) == 0).findAny().orElse(null);
+    }
+
+    public static <E extends Enum<E>> String getDescByCodeDefault(Class<E> enumClass, Function<E, Object> codeGetter,
+                                                                  Object code, Function<E, String> descGetter,
+                                                                  String descDefault) {
+        return Optional.ofNullable(valueOf(enumClass, codeGetter, code)).map(descGetter).orElse(descDefault);
+    }
+
+    public static <E extends Enum<E>> String getDescByCode(Class<E> enumClass, Function<E, Object> codeGetter,
+                                                           Object code, Function<E, String> descGetter) {
+        return getDescByCodeDefault(enumClass, codeGetter, code, descGetter, null);
+    }
+
+    public static <E extends Enum<E> & EnumWithCodeSupplier> E valueOf(Class<E> enumClass, Object code) {
+        return Arrays.stream(enumClass.getEnumConstants())
+                .filter(p -> IGNORE_TYPE_COMPARATOR.compare(p.codeSupply().get(), code) == 0).findAny().orElse(null);
+    }
+
+    public static <E extends Enum<E> & EnumWithCodeSupplier> String getDescByCodeDefault(
+            Class<E> enumClass, Object code, String defaultDesc) {
+        return Optional.ofNullable(valueOf(enumClass, code))
+                .map(p -> p.descSupply().get()).orElse(defaultDesc);
+    }
+
+    public static <E extends Enum<E> & EnumWithCodeSupplier> String getDescByCode(Class<E> enumClass, Object code) {
+        return getDescByCodeDefault(enumClass, code, null);
     }
 
 }

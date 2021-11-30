@@ -1,13 +1,10 @@
-/**
- * Copyright
- */
 package com.alpha.coding.bo.enums;
 
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import com.alpha.coding.bo.base.CodeMsgSupplier;
-import com.alpha.coding.bo.enums.util.EnumWithCodeSupplier;
+import com.alpha.coding.bo.enums.util.CodeSupplyEnum;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -20,7 +17,7 @@ import lombok.Getter;
  */
 @Getter
 @AllArgsConstructor
-public enum ResponseCode implements EnumWithCodeSupplier, CodeMsgSupplier, Predicate<Integer> {
+public enum ResponseCode implements CodeSupplyEnum<ResponseCode>, CodeMsgSupplier, Predicate<Integer> {
 
     OK(0, "OK", "OK"),
     ERROR(700, "错误", "ERROR"),
@@ -32,27 +29,35 @@ public enum ResponseCode implements EnumWithCodeSupplier, CodeMsgSupplier, Predi
     NOT_LOGIN(801, "未登录", "Not Login"),
     AUTHENTICATION_FAIL(802, "无权限", "Authentication Fail");
 
-    private int code;
-    private String msg;
-    private String msgEn;
+    private final int code;
+    private final String msg;
+    private final String msgEn;
 
     @Override
     public Supplier codeSupply() {
-        return () -> ResponseCode.this.getCode();
+        return this::getCode;
     }
 
     @Override
     public Supplier<Integer> codeSupplier() {
-        return () -> ResponseCode.this.getCode();
+        return this::getCode;
     }
 
     @Override
     public Supplier<String> msgSupplier() {
-        return () -> ResponseCode.this.getMsg();
+        return this::getMsg;
     }
 
     @Override
     public boolean test(Integer code) {
         return code != null && this.code == code;
+    }
+
+    public static ResponseCode valueOf(int code) {
+        return CodeSupplyEnum.valueOf(code);
+    }
+
+    public static String getDescByCode(int code) {
+        return CodeSupplyEnum.getDescByCode(code);
     }
 }

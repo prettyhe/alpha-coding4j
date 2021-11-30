@@ -17,8 +17,8 @@ public enum InjectRefType {
     ANNOTATION("annotation", new ContextVisitor(new AnnotatedRefContext())),
     GLOBAL("global", new ContextVisitor(new DefaultRefContext()));
 
-    private String name;
-    private ContextVisitor contextVisitor;
+    private final String name;
+    private final ContextVisitor contextVisitor;
 
     public static final class ContextVisitor {
 

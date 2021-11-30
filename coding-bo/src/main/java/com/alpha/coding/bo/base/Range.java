@@ -1,6 +1,3 @@
-/**
- * Copyright
- */
 package com.alpha.coding.bo.base;
 
 import java.io.Serializable;

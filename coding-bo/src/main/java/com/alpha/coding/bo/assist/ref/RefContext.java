@@ -76,8 +76,8 @@ public interface RefContext {
      */
     default void merge(RefContext context) {
         context.getAll().entrySet().stream()
-                .map(p -> p.getValue())
-                .forEach(p -> p.stream().forEach(x -> register(x)));
+                .map(Map.Entry::getValue)
+                .forEach(p -> p.forEach(this::register));
     }
 
 }

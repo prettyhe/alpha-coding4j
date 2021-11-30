@@ -1,6 +1,3 @@
-/**
- * Copyright
- */
 package com.alpha.coding.common.process;
 
 import java.lang.management.ManagementFactory;

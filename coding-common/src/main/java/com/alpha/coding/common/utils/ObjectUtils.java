@@ -25,8 +25,7 @@ public class ObjectUtils {
         for (Method method : clz.getDeclaredMethods()) {
             if (method.getName().equals("valueOf")) {
                 final Class<?>[] parameterTypes = method.getParameterTypes();
-                if (parameterTypes == null || parameterTypes.length != 1
-                        || !parameterTypes[0].equals(val.getClass())) {
+                if (parameterTypes.length != 1 || !parameterTypes[0].equals(val.getClass())) {
                     continue;
                 }
                 return (T) method.invoke(null, val);

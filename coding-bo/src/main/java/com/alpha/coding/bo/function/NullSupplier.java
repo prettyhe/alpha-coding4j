@@ -11,10 +11,23 @@ import java.util.function.Supplier;
  */
 public class NullSupplier<T> implements Supplier<T> {
 
-    public Runnable runnable;
+    private static NullSupplier<?> EMPTY = null;
+
+    private final Runnable runnable;
 
     public NullSupplier(Runnable runnable) {
         this.runnable = runnable;
+    }
+
+    public static <T> NullSupplier<T> empty() {
+        if (EMPTY == null) {
+            EMPTY = new NullSupplier<>(null);
+        }
+        return (NullSupplier<T>) EMPTY;
+    }
+
+    public static <T> NullSupplier<T> of(Runnable runnable) {
+        return new NullSupplier<>(runnable);
     }
 
     @Override
@@ -22,4 +35,5 @@ public class NullSupplier<T> implements Supplier<T> {
         Optional.ofNullable(runnable).ifPresent(Runnable::run);
         return (T) null;
     }
+
 }

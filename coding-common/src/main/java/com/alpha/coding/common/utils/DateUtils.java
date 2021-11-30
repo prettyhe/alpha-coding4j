@@ -1,6 +1,3 @@
-/**
- * Copyright
- */
 package com.alpha.coding.common.utils;
 
 import java.text.DateFormat;
@@ -699,6 +696,38 @@ public class DateUtils {
      */
     public static boolean isLeapYear(int year) {
         return new GregorianCalendar().isLeapYear(year);
+    }
+
+    /**
+     * 比较两个日期是否为同一天
+     *
+     * @param date1 日期1
+     * @param date2 日期2
+     * @return 是否为同一天
+     */
+    public static boolean isSameDay(final Date date1, final Date date2) {
+        if (date1 == null && date2 == null) {
+            return true;
+        }
+        if (date1 == null || date2 == null) {
+            return false;
+        }
+        Calendar cal1 = Calendar.getInstance();
+        cal1.setTime(date1);
+        Calendar cal2 = Calendar.getInstance();
+        cal2.setTime(date2);
+        return cal1.get(Calendar.DAY_OF_YEAR) == cal2.get(Calendar.DAY_OF_YEAR)
+                && cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR)
+                && cal1.get(Calendar.ERA) == cal2.get(Calendar.ERA);
+    }
+
+    /**
+     * 获取当天剩余秒数
+     */
+    public static long getDayRemainSeconds() {
+        Date currentDate = new Date();
+        Date endDate = getDayEnd(new Date());
+        return (endDate.getTime() - currentDate.getTime()) / 1000;
     }
 
 }

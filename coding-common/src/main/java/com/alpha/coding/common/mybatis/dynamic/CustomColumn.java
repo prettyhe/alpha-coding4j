@@ -12,9 +12,9 @@ import org.mybatis.dynamic.sql.render.TableAliasCalculator;
  * @version 1.0
  * Date: 2020/4/18
  */
-public class CustomColumn implements BindableColumn {
+public class CustomColumn<T> implements BindableColumn<T> {
 
-    private String name;
+    private final String name;
 
     private CustomColumn(String name) {
         this.name = name;
@@ -26,7 +26,7 @@ public class CustomColumn implements BindableColumn {
     }
 
     @Override
-    public BindableColumn as(String alias) {
+    public BindableColumn<T> as(String alias) {
         return of(alias);
     }
 
@@ -45,7 +45,7 @@ public class CustomColumn implements BindableColumn {
         return Optional.empty();
     }
 
-    public static CustomColumn of(String name) {
-        return new CustomColumn(name);
+    public static <T> CustomColumn<T> of(String name) {
+        return new CustomColumn<>(name);
     }
 }

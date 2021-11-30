@@ -1,6 +1,5 @@
 package com.alpha.coding.common.mybatis.dynamic;
 
-import java.util.Objects;
 import java.util.function.Function;
 
 import org.mybatis.dynamic.sql.AbstractNoValueCondition;
@@ -11,7 +10,7 @@ import org.mybatis.dynamic.sql.AbstractNoValueCondition;
  * @version 1.0
  * Date: 2020/4/18
  */
-public class IsIdentity extends AbstractNoValueCondition {
+public class IsIdentity<T> extends AbstractNoValueCondition<T> {
 
     private Function<String, String> function = Function.identity();
 
@@ -27,9 +26,8 @@ public class IsIdentity extends AbstractNoValueCondition {
         return function.apply(columnName);
     }
 
-    public static IsIdentity of(Function<String, String> function) {
-        Objects.requireNonNull(function);
-        return new IsIdentity(function);
+    public static <T> IsIdentity<T> of(Function<String, String> function) {
+        return new IsIdentity<>(function);
     }
 
 }

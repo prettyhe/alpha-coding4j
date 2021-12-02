@@ -3,6 +3,9 @@ package com.alpha.coding.common.aop.invoke;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
+import lombok.Getter;
+import lombok.Setter;
+
 /**
  * OnceDataHolderAspect
  *
@@ -13,11 +16,19 @@ public class OnceDataHolderAspect {
 
     private static final String ASPECT_KEY = "$_doAspectCnt";
 
+    @Getter
+    @Setter
+    private Boolean enableLog;
+
     public void doBefore() {
         final Supplier<AtomicInteger> supplier = OnceDataHolder.getSupplier(ASPECT_KEY);
         if (supplier == null) {
             OnceDataHolder.clear();
-            OnceDataHolder.getOnce(ASPECT_KEY, () -> new AtomicInteger(1));
+            if (enableLog == null) {
+                OnceDataHolder.getOnce(ASPECT_KEY, () -> new AtomicInteger(1));
+            } else {
+                OnceDataHolder.getOnce(ASPECT_KEY, () -> new AtomicInteger(1), enableLog);
+            }
         } else {
             supplier.get().incrementAndGet();
         }

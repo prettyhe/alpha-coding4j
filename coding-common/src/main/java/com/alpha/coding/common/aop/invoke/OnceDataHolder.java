@@ -1,6 +1,7 @@
 package com.alpha.coding.common.aop.invoke;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -23,7 +24,7 @@ public class OnceDataHolder {
                     if (parentValue == null) {
                         return null;
                     }
-                    return new HashMap<>(parentValue);
+                    return new LinkedHashMap<>(parentValue);
                 }
             };
 
@@ -72,7 +73,7 @@ public class OnceDataHolder {
         getMap().put(key, supplier);
     }
 
-    public static <T> T getOnce(String key, Supplier<T> supplier) {
+    public static <T> T getOnce(String key, Supplier<T> supplier, Boolean enableLog) {
         if (key == null) {
             throw new IllegalArgumentException("key cannot be null");
         }
@@ -81,8 +82,18 @@ public class OnceDataHolder {
             return supplier.get();
         }
         final OneTimeSupplierHolder<T> oneTimeSupplierHolder =
-                (OneTimeSupplierHolder<T>) getMap().computeIfAbsent(key, k -> new OneTimeSupplierHolder<>(k, supplier));
+                (OneTimeSupplierHolder<T>) getMap().computeIfAbsent(key,
+                        k -> enableLog != null ? new OneTimeSupplierHolder<>(k, supplier, enableLog)
+                                : new OneTimeSupplierHolder<>(k, supplier));
         return oneTimeSupplierHolder.get();
+    }
+
+    public static <T> T getOnce(String key, Supplier<T> supplier) {
+        return getOnce(key, supplier, null);
+    }
+
+    public static <T> T getOnceNonLog(String key, Supplier<T> supplier) {
+        return getOnce(key, supplier, false);
     }
 
     public static <T> T getUntilNotNull(String key, Supplier<T> supplier) {
@@ -94,11 +105,19 @@ public class OnceDataHolder {
             return supplier.get();
         }
         final SupplierHolder<T> supplierHolder =
-                (OneTimeSupplierHolder<T>) getMap().computeIfAbsent(key, k -> new SupplierHolder<>(k, supplier));
+                (SupplierHolder<T>) getMap().computeIfAbsent(key,
+                        k -> new SupplierHolder<>(k, supplier));
         return supplierHolder.get();
     }
 
-    public static Supplier getSupplier(String key) {
+    public static <T> Supplier<T> getSupplier(String key) {
+        if (key == null) {
+            throw new IllegalArgumentException("key cannot be null");
+        }
+        return (Supplier<T>) getMap().get(key);
+    }
+
+    public static Supplier rawSupplier(String key) {
         if (key == null) {
             throw new IllegalArgumentException("key cannot be null");
         }

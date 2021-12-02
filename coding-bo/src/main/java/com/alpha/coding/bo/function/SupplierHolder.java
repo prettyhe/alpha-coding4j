@@ -1,8 +1,11 @@
 package com.alpha.coding.bo.function;
 
 import java.util.Objects;
+import java.util.Properties;
 import java.util.function.Function;
 import java.util.function.Supplier;
+
+import com.alpha.coding.bo.util.CommonUtil;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -10,15 +13,33 @@ import lombok.extern.slf4j.Slf4j;
  * SupplierHolder
  *
  * @version 1.0
- * @date 2020年04月13日
+ * Date 2020年04月13日
  */
 @Slf4j
 public class SupplierHolder<T> implements Supplier<T> {
+
+    private static final String PROP_FILE_NAME;
+    private static final String PROPERTY_KEY;
+    private static volatile Boolean enableLogFromProperty;
+
+    static {
+        final String propFileName = "/META-INF/project-comm.properties";
+        Properties properties;
+        try {
+            properties = CommonUtil.readFromClasspathFile(propFileName);
+        } catch (Exception e) {
+            log.warn("load {} fail, {}", propFileName, e.getMessage());
+            properties = new Properties();
+        }
+        PROP_FILE_NAME = properties.getProperty("project.config.file.name", "system-common.properties");
+        PROPERTY_KEY = properties.getProperty("property.key.supplier.holder.log.enable", "supplier.holder.log.enable");
+    }
 
     private volatile T target;
     private final String tag;
     private final Supplier<T> supplier;
     private final Function<Object, String> logText;
+    private Boolean enableLog;
 
     public SupplierHolder(Supplier<T> supplier) {
         this.tag = null;
@@ -32,10 +53,53 @@ public class SupplierHolder<T> implements Supplier<T> {
         this.logText = Objects::toString;
     }
 
+    public SupplierHolder(String tag, Supplier<T> supplier, boolean enableLog) {
+        this.tag = tag;
+        this.supplier = supplier;
+        this.logText = Objects::toString;
+        this.enableLog = enableLog;
+    }
+
     public SupplierHolder(String tag, Supplier<T> supplier, Function<Object, String> logText) {
         this.tag = tag;
         this.supplier = supplier;
         this.logText = logText;
+    }
+
+    private boolean checkEnableLog() {
+        if (enableLog != null) {
+            return enableLog;
+        }
+        if (enableLogFromProperty == null) {
+            synchronized(SupplierHolder.class) {
+                if (enableLogFromProperty == null) {
+                    try {
+                        if (System.getProperties().containsKey(PROPERTY_KEY)) {
+                            enableLogFromProperty = Boolean.parseBoolean(System.getProperty(PROPERTY_KEY));
+                            log.info("load enableLog={} from system properties", System.getProperty(PROPERTY_KEY));
+                        } else {
+                            try {
+                                final Properties properties = CommonUtil.readFromClasspathFile(PROP_FILE_NAME);
+                                if (properties != null && properties.containsKey(PROPERTY_KEY)) {
+                                    enableLogFromProperty = Boolean.parseBoolean(properties.getProperty(PROPERTY_KEY));
+                                    log.info("load enableLog={} from {}",
+                                            properties.getProperty(PROPERTY_KEY), PROP_FILE_NAME);
+                                }
+                            } catch (Exception e) {
+                                // nothing
+                            }
+                        }
+                    } catch (Exception e) {
+                        // nothing
+                    }
+                    if (enableLogFromProperty == null) {
+                        enableLogFromProperty = true; // 默认开启
+                    }
+                }
+            }
+        }
+        enableLog = enableLogFromProperty;
+        return enableLog;
     }
 
     @Override
@@ -44,7 +108,7 @@ public class SupplierHolder<T> implements Supplier<T> {
             try {
                 this.target = this.supplier.get();
             } finally {
-                if (this.tag != null) {
+                if (checkEnableLog() && this.tag != null) {
                     log.info("{} => {}", this.tag, this.logText.apply(this.target));
                 }
             }
@@ -68,7 +132,7 @@ public class SupplierHolder<T> implements Supplier<T> {
         try {
             this.target = supplier.get();
         } finally {
-            if (this.tag != null) {
+            if (checkEnableLog() && this.tag != null) {
                 log.info("{} => {}", this.tag, this.logText.apply(this.target));
             }
         }

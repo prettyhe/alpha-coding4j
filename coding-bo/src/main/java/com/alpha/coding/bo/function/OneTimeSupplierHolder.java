@@ -24,6 +24,10 @@ public class OneTimeSupplierHolder<T> extends SupplierHolder<T> {
         super(tag, supplier);
     }
 
+    public OneTimeSupplierHolder(String tag, Supplier<T> supplier, boolean enableLog) {
+        super(tag, supplier, enableLog);
+    }
+
     public OneTimeSupplierHolder(String tag, Supplier<T> supplier,
                                  Function<Object, String> logText) {
         super(tag, supplier, logText);

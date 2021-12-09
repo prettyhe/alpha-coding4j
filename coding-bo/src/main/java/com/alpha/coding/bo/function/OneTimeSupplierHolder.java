@@ -16,6 +16,22 @@ public class OneTimeSupplierHolder<T> extends SupplierHolder<T> {
 
     private volatile boolean done;
 
+    public static <T> OneTimeSupplierHolder<T> of(Supplier<T> supplier) {
+        return new OneTimeSupplierHolder<>(supplier);
+    }
+
+    public static <T> OneTimeSupplierHolder<T> of(String tag, Supplier<T> supplier) {
+        return new OneTimeSupplierHolder<>(tag, supplier);
+    }
+
+    public static <T> OneTimeSupplierHolder<T> of(String tag, Supplier<T> supplier, boolean enableLog) {
+        return new OneTimeSupplierHolder<>(tag, supplier, enableLog);
+    }
+
+    public static <T> OneTimeSupplierHolder<T> of(String tag, Supplier<T> supplier, Function<Object, String> logText) {
+        return new OneTimeSupplierHolder<>(tag, supplier, logText);
+    }
+
     public OneTimeSupplierHolder(Supplier<T> supplier) {
         super(supplier);
     }

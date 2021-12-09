@@ -24,11 +24,13 @@ public class SupplierHolder<T> implements Supplier<T> {
 
     static {
         final String propFileName = "/META-INF/project-comm.properties";
-        Properties properties;
+        Properties properties = null;
         try {
             properties = CommonUtil.readFromClasspathFile(propFileName);
-        } catch (Exception e) {
+        } catch (Throwable e) {
             log.warn("load {} fail, {}", propFileName, e.getMessage());
+        }
+        if (properties == null) {
             properties = new Properties();
         }
         PROP_FILE_NAME = properties.getProperty("project.config.file.name", "system-common.properties");
@@ -40,6 +42,22 @@ public class SupplierHolder<T> implements Supplier<T> {
     private final Supplier<T> supplier;
     private final Function<Object, String> logText;
     private Boolean enableLog;
+
+    public static <T> SupplierHolder<T> of(Supplier<T> supplier) {
+        return new SupplierHolder<>(supplier);
+    }
+
+    public static <T> SupplierHolder<T> of(String tag, Supplier<T> supplier) {
+        return new SupplierHolder<>(tag, supplier);
+    }
+
+    public static <T> SupplierHolder<T> of(String tag, Supplier<T> supplier, boolean enableLog) {
+        return new SupplierHolder<>(tag, supplier, enableLog);
+    }
+
+    public static <T> SupplierHolder<T> of(String tag, Supplier<T> supplier, Function<Object, String> logText) {
+        return new SupplierHolder<>(tag, supplier, logText);
+    }
 
     public SupplierHolder(Supplier<T> supplier) {
         this.tag = null;

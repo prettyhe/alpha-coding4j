@@ -12,12 +12,24 @@ import java.util.Properties;
  */
 public class CommonUtil {
 
-    private static ClassLoader classLoader() {
-        ClassLoader loader = Thread.currentThread().getContextClassLoader();
-        if (loader == null) {
-            loader = ClassLoader.getSystemClassLoader();
+    public static ClassLoader getDefaultClassLoader() {
+        ClassLoader cl = null;
+        try {
+            cl = Thread.currentThread().getContextClassLoader();
+        } catch (Throwable ex) {
+            // Cannot access thread context ClassLoader
         }
-        return loader;
+        if (cl == null) {
+            cl = CommonUtil.class.getClassLoader();
+            if (cl == null) {
+                try {
+                    cl = ClassLoader.getSystemClassLoader();
+                } catch (Throwable ex) {
+                    // Cannot access system ClassLoader
+                }
+            }
+        }
+        return cl;
     }
 
     public static Properties readInputStream(InputStream is) throws IOException {
@@ -30,8 +42,18 @@ public class CommonUtil {
     }
 
     public static Properties readFromClasspathFile(String fileName) throws IOException {
-        try (InputStream inputStream = classLoader().getResourceAsStream(fileName)) {
-            return readInputStream(inputStream);
+        return readFromClasspathFile(getDefaultClassLoader(), fileName);
+    }
+
+    public static Properties readFromClasspathFile(ClassLoader classLoader, String fileName) throws IOException {
+        if (classLoader == null) {
+            try (InputStream inputStream = ClassLoader.getSystemResourceAsStream(fileName)) {
+                return readInputStream(inputStream);
+            }
+        } else {
+            try (InputStream inputStream = classLoader.getResourceAsStream(fileName)) {
+                return readInputStream(inputStream);
+            }
         }
     }
 

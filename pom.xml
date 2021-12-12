@@ -45,7 +45,7 @@
         <coding4j.commons-configuration.version>1.10</coding4j.commons-configuration.version>
         <coding4j.commons-net.version>3.6</coding4j.commons-net.version>
         <coding4j.commons-lang.version>2.6</coding4j.commons-lang.version>
-        <coding4j.commons-io.version>2.6</coding4j.commons-io.version>
+        <coding4j.commons-io.version>2.7</coding4j.commons-io.version>
         <coding4j.commons-dbcp.version>1.4</coding4j.commons-dbcp.version>
         <coding4j.commons-collections.version>3.2.2</coding4j.commons-collections.version>
         <coding4j.commons-text.version>1.6</coding4j.commons-text.version>
@@ -57,7 +57,7 @@
         <coding4j.commons-pool2.version>2.4.2</coding4j.commons-pool2.version>
         <coding4j.commons-lang3.version>3.9</coding4j.commons-lang3.version>
         <coding4j.javax.servlet-api.version>3.1.0</coding4j.javax.servlet-api.version>
-        <coding4j.httpclient.version>4.5.4</coding4j.httpclient.version>
+        <coding4j.httpclient.version>4.5.13</coding4j.httpclient.version>
         <coding4j.mybatis.version>3.5.6</coding4j.mybatis.version>
         <coding4j.mybatis.spring.version>2.0.3</coding4j.mybatis.spring.version>
         <coding4j.mybatis-paginator.version>1.2.17</coding4j.mybatis-paginator.version>
@@ -83,7 +83,7 @@
         <coding4j.ehcache.version>2.10.6</coding4j.ehcache.version>
         <coding4j.snakeyaml.version>1.26</coding4j.snakeyaml.version>
         <coding4j.asm.version>3.1</coding4j.asm.version>
-        <coding4j.ant.version>1.10.9</coding4j.ant.version>
+        <coding4j.ant.version>1.10.11</coding4j.ant.version>
         <coding4j.findbugs.version>3.0.2</coding4j.findbugs.version>
     </properties>
 
@@ -454,7 +454,7 @@
             <dependency>
                 <groupId>org.hibernate.validator</groupId>
                 <artifactId>hibernate-validator</artifactId>
-                <version>6.0.18.Final</version>
+                <version>6.0.20.Final</version>
             </dependency>
             <!-- springframework web -->
             <dependency>

@@ -40,7 +40,7 @@
         <coding4j.fastjson.version>1.2.75</coding4j.fastjson.version>
         <coding4j.jackson.version>2.10.0</coding4j.jackson.version>
         <coding4j.slf4j.version>1.7.26</coding4j.slf4j.version>
-        <coding4j.log4j.version>2.13.3</coding4j.log4j.version>
+        <coding4j.log4j.version>2.15.0</coding4j.log4j.version>
         <coding4j.commons-logging.version>1.2</coding4j.commons-logging.version>
         <coding4j.commons-configuration.version>1.10</coding4j.commons-configuration.version>
         <coding4j.commons-net.version>3.6</coding4j.commons-net.version>
@@ -58,10 +58,10 @@
         <coding4j.commons-lang3.version>3.9</coding4j.commons-lang3.version>
         <coding4j.javax.servlet-api.version>3.1.0</coding4j.javax.servlet-api.version>
         <coding4j.httpclient.version>4.5.4</coding4j.httpclient.version>
-        <coding4j.mybatis.version>3.5.1</coding4j.mybatis.version>
+        <coding4j.mybatis.version>3.5.6</coding4j.mybatis.version>
         <coding4j.mybatis.spring.version>2.0.3</coding4j.mybatis.spring.version>
         <coding4j.mybatis-paginator.version>1.2.17</coding4j.mybatis-paginator.version>
-        <coding4j.dubbo.version>2.5.3</coding4j.dubbo.version>
+        <coding4j.dubbo.version>2.6.3</coding4j.dubbo.version>
         <coding4j.jboss.netty.version>3.2.9.Final</coding4j.jboss.netty.version>
         <coding4j.zkclient.version>0.3</coding4j.zkclient.version>
         <coding4j.zookeeper.version>3.4.14</coding4j.zookeeper.version>
@@ -69,7 +69,7 @@
         <coding4j.junit.version>4.13.1</coding4j.junit.version>
         <coding4j.druid.version>1.1.20</coding4j.druid.version>
         <coding4j.hystrix.version>1.5.12</coding4j.hystrix.version>
-        <coding4j.jsoup.version>1.11.2</coding4j.jsoup.version>
+        <coding4j.jsoup.version>1.14.2</coding4j.jsoup.version>
         <coding4j.aspectjweaver.version>1.8.13</coding4j.aspectjweaver.version>
         <coding4j.javax.el-api.version>3.0.0</coding4j.javax.el-api.version>
         <coding4j.mysql.version>8.0.16</coding4j.mysql.version>
@@ -81,9 +81,9 @@
         <coding4j.hibernate.validator.version>5.4.3.Final</coding4j.hibernate.validator.version>
         <coding4j.groovy.version>3.0.7</coding4j.groovy.version>
         <coding4j.ehcache.version>2.10.6</coding4j.ehcache.version>
-        <coding4j.snakeyaml.version>1.25</coding4j.snakeyaml.version>
+        <coding4j.snakeyaml.version>1.26</coding4j.snakeyaml.version>
         <coding4j.asm.version>3.1</coding4j.asm.version>
-        <coding4j.ant.version>1.9.15</coding4j.ant.version>
+        <coding4j.ant.version>1.10.9</coding4j.ant.version>
         <coding4j.findbugs.version>3.0.2</coding4j.findbugs.version>
     </properties>
 
@@ -306,7 +306,7 @@
             <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-compress</artifactId>
-                <version>1.19</version>
+                <version>1.21</version>
             </dependency>
             <dependency>
                 <groupId>com.alibaba</groupId>
@@ -322,7 +322,7 @@
             <dependency>
                 <groupId>org.apache.dubbo</groupId>
                 <artifactId>dubbo</artifactId>
-                <version>2.7.3</version>
+                <version>2.7.13</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.ant</groupId>

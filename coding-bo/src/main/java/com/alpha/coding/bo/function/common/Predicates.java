@@ -11,6 +11,7 @@ import java.util.Set;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.IntStream;
 
 import com.alpha.coding.bo.function.TiPredicate;
 
@@ -150,5 +151,97 @@ public interface Predicates {
      * 判断整数部分是否被包含
      */
     BiPredicate<Number, Number[]> testLongInclude = (n, a) -> Arrays.stream(a).anyMatch(p -> testLongEqual.test(n, p));
+
+    /**
+     * 判断字符串是否为空
+     */
+    Predicate<CharSequence> isEmptyStr = cs -> cs == null || cs.length() == 0;
+
+    /**
+     * 判断字符串是否非空
+     */
+    Predicate<CharSequence> isNotEmptyStr = isEmptyStr.negate();
+
+    /**
+     * 判断字符串是否为空白
+     */
+    Predicate<CharSequence> isBlankStr = cs -> isEmptyStr.test(cs)
+            || IntStream.range(0, cs.length()).map(cs::charAt).allMatch(Character::isWhitespace);
+
+    /**
+     * 判断字符串是否为非空白
+     */
+    Predicate<CharSequence> isNotBlankStr = isBlankStr.negate();
+
+    /**
+     * 判断字符串是否为数字
+     */
+    Predicate<CharSequence> isNumericStr = cs -> isNotEmptyStr.test(cs)
+            && IntStream.range(0, cs.length()).map(cs::charAt).allMatch(Character::isDigit);
+
+    /**
+     * 判断字符串是否为整数(Integer)字符串
+     */
+    Predicate<CharSequence> isIntegerStr = cs -> {
+        if (isNotBlankStr.test(cs)) {
+            try {
+                Integer.parseInt(cs.toString());
+                return true;
+            } catch (NumberFormatException e) {
+                return false;
+            }
+        }
+        return false;
+    };
+
+    /**
+     * 判断字符串是否为整数(Long)字符串
+     */
+    Predicate<CharSequence> isLongStr = cs -> {
+        if (isNotBlankStr.test(cs)) {
+            try {
+                Long.parseLong(cs.toString());
+                return true;
+            } catch (NumberFormatException e) {
+                return false;
+            }
+        }
+        return false;
+    };
+
+    /**
+     * 判断字符串是否为数值(BigDecimal)字符串
+     */
+    Predicate<CharSequence> isBigDecimalStr = cs -> {
+        if (isNotBlankStr.test(cs)) {
+            try {
+                new BigDecimal(cs.toString());
+                return true;
+            } catch (NumberFormatException e) {
+                return false;
+            }
+        }
+        return false;
+    };
+
+    /**
+     * 时间是否在指定区间内(闭区间)
+     */
+    TiPredicate<Date, Date, Date> isBetween = (d, st, et) -> d.compareTo(st) >= 0 && d.compareTo(et) <= 0;
+
+    /**
+     * 时间是否在指定区间内(开区间)
+     */
+    TiPredicate<Date, Date, Date> isBetweenOpen = (d, st, et) -> d.compareTo(st) > 0 && d.compareTo(et) < 0;
+
+    /**
+     * 时间是否在指定区间内(前开后闭)
+     */
+    TiPredicate<Date, Date, Date> isBetweenOpenClosed = (d, st, et) -> d.compareTo(st) > 0 && d.compareTo(et) <= 0;
+
+    /**
+     * 时间是否在指定区间内(前闭后开)
+     */
+    TiPredicate<Date, Date, Date> isBetweenClosedOpen = (d, st, et) -> d.compareTo(st) >= 0 && d.compareTo(et) < 0;
 
 }

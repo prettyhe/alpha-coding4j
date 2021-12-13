@@ -9,7 +9,9 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -41,8 +43,8 @@ public interface Functions {
      * map val 智能转json
      */
     Function<Map<String, Object>, Map<String, String>> mapValSmartToJson = t ->
-            t == null ? null : t.entrySet().stream()
-                    .collect(Collectors.toMap(Map.Entry::getKey, a -> smartToJson.apply(a.getValue()), (a, b) -> b));
+            t == null ? null : t.entrySet().stream().collect(Collectors
+                    .toMap(Map.Entry::getKey, a -> smartToJson.apply(a.getValue())));
 
     /**
      * map val 智能转json
@@ -73,10 +75,78 @@ public interface Functions {
             (t, u) -> stringSplit.apply(t, u).map(p -> p.collect(Collectors.toList()));
 
     /**
+     * 切分字符串到List
+     */
+    BiFunction<String, String, List<String>> stringSplitToListDefaultEmpty =
+            (t, u) -> stringSplitToList.apply(t, u).orElse(Collections.emptyList());
+
+    /**
      * 切分字符串到Set
      */
     BiFunction<String, String, Optional<Set<String>>> stringSplitToSet =
             (t, u) -> stringSplit.apply(t, u).map(p -> p.collect(Collectors.toSet()));
+
+    /**
+     * 切分字符串到Set
+     */
+    BiFunction<String, String, Set<String>> stringSplitToSetDefaultEmpty =
+            (t, u) -> stringSplitToSet.apply(t, u).orElse(Collections.emptySet());
+
+    /**
+     * 切分字符串到整数List
+     */
+    BiFunction<String, String, Optional<List<Integer>>> strSplitToIntegerList =
+            (t, u) -> stringSplit.apply(t, u)
+                    .map(p -> p.filter(Predicates.isIntegerStr)
+                            .map(Integer::valueOf).collect(Collectors.toList()));
+
+    /**
+     * 切分字符串到整数List
+     */
+    BiFunction<String, String, List<Integer>> strSplitToIntegerListDefaultEmpty =
+            (t, u) -> strSplitToIntegerList.apply(t, u).orElse(Collections.emptyList());
+
+    /**
+     * 切分字符串到整数Set
+     */
+    BiFunction<String, String, Optional<LinkedHashSet<Integer>>> strSplitToIntegerSet =
+            (t, u) -> stringSplit.apply(t, u)
+                    .map(p -> p.filter(Predicates.isIntegerStr)
+                            .map(Integer::valueOf).collect(Collectors.toCollection(LinkedHashSet::new)));
+
+    /**
+     * 切分字符串到整数Set
+     */
+    BiFunction<String, String, LinkedHashSet<Integer>> strSplitToIntegerSetDefaultEmpty =
+            (t, u) -> strSplitToIntegerSet.apply(t, u).orElse(new LinkedHashSet<>(0));
+
+    /**
+     * 切分字符串到整数List
+     */
+    BiFunction<String, String, Optional<List<Long>>> strSplitToLongList =
+            (t, u) -> stringSplit.apply(t, u)
+                    .map(p -> p.filter(Predicates.isLongStr)
+                            .map(Long::valueOf).collect(Collectors.toList()));
+
+    /**
+     * 切分字符串到整数List
+     */
+    BiFunction<String, String, List<Long>> strSplitToLongListDefaultEmpty =
+            (t, u) -> strSplitToLongList.apply(t, u).orElse(Collections.emptyList());
+
+    /**
+     * 切分字符串到整数Set
+     */
+    BiFunction<String, String, Optional<LinkedHashSet<Long>>> strSplitToLongSet =
+            (t, u) -> stringSplit.apply(t, u)
+                    .map(p -> p.filter(Predicates.isLongStr)
+                            .map(Long::valueOf).collect(Collectors.toCollection(LinkedHashSet::new)));
+
+    /**
+     * 切分字符串到整数Set
+     */
+    BiFunction<String, String, LinkedHashSet<Long>> strSplitToLongSetDefaultEmpty =
+            (t, u) -> strSplitToLongSet.apply(t, u).orElse(new LinkedHashSet<>(0));
 
     /**
      * 时间单位
@@ -130,7 +200,7 @@ public interface Functions {
     /**
      * 格式化4位小数
      */
-    Function<Double, String> formatCompact4Digits = value -> String.format(Locale.ROOT, "%.4g", value);
+    Function<Double, String> formatCompact4Digits = val -> String.format(Locale.ROOT, "%.4g", val);
 
     /**
      * 格式化纳秒数

@@ -61,6 +61,11 @@ public interface Converter {
             number == null ? defaultVal : number.intValue();
 
     /**
+     * toString
+     */
+    Function<Object, String> TO_STRING = o -> o == null ? null : String.valueOf(o);
+
+    /**
      * 转成String，如果为null则使用默认值
      */
     BiFunction<Object, String, String> toStringWithDefault = (Object o, String defaultVal) ->

@@ -16,7 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class BufferedServletInputStream extends ServletInputStreamWrapper {
 
-    private BufferedInputStream bufferedInputStream;
+    private final BufferedInputStream bufferedInputStream;
 
     public BufferedServletInputStream(ServletInputStream servletInputStream) {
         super(servletInputStream);
@@ -29,12 +29,12 @@ public class BufferedServletInputStream extends ServletInputStreamWrapper {
     }
 
     @Override
-    public int read(byte b[]) throws IOException {
+    public int read(byte[] b) throws IOException {
         return read(b, 0, b.length);
     }
 
     @Override
-    public int read(byte b[], int off, int len) throws IOException {
+    public int read(byte[] b, int off, int len) throws IOException {
         return bufferedInputStream.read(b, off, len);
     }
 
@@ -50,6 +50,9 @@ public class BufferedServletInputStream extends ServletInputStreamWrapper {
 
     @Override
     public void close() throws IOException {
+        if (log.isDebugEnabled()) {
+            log.debug("bufferedInputStream will be close");
+        }
         bufferedInputStream.close();
     }
 

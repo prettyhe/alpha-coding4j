@@ -58,12 +58,12 @@ public interface CodeSupplyEnum<E extends Enum<E>> extends EnumWithCodeSupplier 
     }
 
     static String getDescByCodeDefault(Object code, String defaultDesc) {
-        final EnumWithCodeSupplier e = valueOf(code);
+        final EnumWithCodeSupplier e = CodeSupplyEnum.valueOf(code);
         return e == null ? defaultDesc : e.descSupply().get();
     }
 
     static String getDescByCode(Object code) {
-        return getDescByCodeDefault(code, null);
+        return CodeSupplyEnum.getDescByCodeDefault(code, null);
     }
 
 }

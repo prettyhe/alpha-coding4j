@@ -29,6 +29,7 @@ import org.springframework.util.ClassUtils;
 import com.alpha.coding.common.mybatis.callback.RecordUpdateStub;
 import com.alpha.coding.common.mybatis.callback.TableUpdateListener;
 import com.alpha.coding.common.mybatis.common.TableNameParser;
+import com.alpha.coding.common.mybatis.common.TableUpdateBeforeControl;
 import com.alpha.coding.common.mybatis.common.TableUpdateDto;
 import com.alpha.coding.common.utils.StringUtils;
 
@@ -56,7 +57,7 @@ public class RecordUpdateInterceptor extends ShowSqlInterceptor {
     private static final Pattern PATTERN_KEY_COLUMN_IN_DEFAULT =
             Pattern.compile("where\\s+id\\s+in\\s*\\(\\s*\\d+\\s*(,\\s*\\d+\\s*)*\\)");
     private static final Pattern PATTERN_KEY_VALUE = Pattern.compile("\\d+");
-    private static final Map<String, Pattern> KEY_COLUMN_PATTERN_CACHE = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final Map<String, Pattern> KEY_COLUMN_PATTERN_CACHE = new ConcurrentHashMap<>();
     private static final Map<String, Pattern> KEY_COLUMN_IN_PATTERN_CACHE = new ConcurrentHashMap<>();
     private static final String DYNAMIC_INSERT_CLASS_NAME =
             "org.mybatis.dynamic.sql.insert.render.InsertStatementProvider";
@@ -132,6 +133,8 @@ public class RecordUpdateInterceptor extends ShowSqlInterceptor {
                         .setType(0)
                         .setId(parseKeyFromParameterObject(tableName, boundSql));
                 dto.setAfter(queryByPrimaryKey(tableName, dto.getId()));
+                dto.setBizParams(TableUpdateBeforeControl.getCopyOfContextMap());
+                TableUpdateBeforeControl.clear();
                 listener.onUpdate(dto);
             } else if (SqlCommandType.UPDATE.equals(mappedStatement.getSqlCommandType())) {
                 if (recordUpdateStubMap != null && recordUpdateStubMap.containsKey(tableName)) {
@@ -139,9 +142,12 @@ public class RecordUpdateInterceptor extends ShowSqlInterceptor {
                 } else {
                     buildUpdateDtoMap(configuration, boundSql, tableName, updateDtoMap);
                 }
+                final Map<String, Object> beforeControlContext = TableUpdateBeforeControl.getCopyOfContextMap();
+                TableUpdateBeforeControl.clear();
                 updateDtoMap.forEach((k, v) -> {
                     v.setTimestamp(timestamp);
                     v.setSqlId(sqlId);
+                    v.setBizParams(beforeControlContext);
                     listener.onUpdate(v);
                 });
             }

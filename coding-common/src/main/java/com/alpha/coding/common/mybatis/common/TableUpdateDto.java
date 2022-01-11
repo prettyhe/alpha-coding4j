@@ -1,6 +1,7 @@
 package com.alpha.coding.common.mybatis.common;
 
 import java.io.Serializable;
+import java.util.Map;
 import java.util.Set;
 
 import lombok.Data;
@@ -24,5 +25,6 @@ public class TableUpdateDto implements Serializable {
     private Long timestamp;
     private Object before;
     private Object after;
+    private Map<String, Object> bizParams; // 业务参数
 
 }

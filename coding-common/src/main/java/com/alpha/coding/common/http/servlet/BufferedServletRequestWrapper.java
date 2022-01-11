@@ -14,7 +14,7 @@ import javax.servlet.http.HttpServletRequestWrapper;
  */
 public class BufferedServletRequestWrapper extends HttpServletRequestWrapper {
 
-    private BufferedServletInputStream bufferedServletInputStream;
+    private final BufferedServletInputStream bufferedServletInputStream;
 
     public BufferedServletRequestWrapper(HttpServletRequest request) throws IOException {
         super(request);

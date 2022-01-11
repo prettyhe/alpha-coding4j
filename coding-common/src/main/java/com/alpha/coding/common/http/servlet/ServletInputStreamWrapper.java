@@ -13,7 +13,7 @@ import javax.servlet.ServletInputStream;
  */
 public class ServletInputStreamWrapper extends ServletInputStream {
 
-    private ServletInputStream servletInputStream;
+    private final ServletInputStream servletInputStream;
 
     public ServletInputStreamWrapper(ServletInputStream servletInputStream) {
         this.servletInputStream = servletInputStream;
@@ -25,12 +25,12 @@ public class ServletInputStreamWrapper extends ServletInputStream {
     }
 
     @Override
-    public int read(byte b[]) throws IOException {
+    public int read(byte[] b) throws IOException {
         return read(b, 0, b.length);
     }
 
     @Override
-    public int read(byte b[], int off, int len) throws IOException {
+    public int read(byte[] b, int off, int len) throws IOException {
         return servletInputStream.read(b, off, len);
     }
 

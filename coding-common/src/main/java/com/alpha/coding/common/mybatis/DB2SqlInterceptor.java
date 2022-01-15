@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
+import org.apache.ibatis.cache.CacheKey;
 import org.apache.ibatis.executor.Executor;
 import org.apache.ibatis.mapping.BoundSql;
 import org.apache.ibatis.mapping.MappedStatement;
@@ -32,8 +33,13 @@ import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@Intercepts(@Signature(type = Executor.class, method = "query",
-        args = {MappedStatement.class, Object.class, RowBounds.class, ResultHandler.class}))
+@Intercepts({
+        @Signature(type = Executor.class, method = "query",
+                args = {MappedStatement.class, Object.class, RowBounds.class, ResultHandler.class}),
+        @Signature(type = Executor.class, method = "query",
+                args = {MappedStatement.class, Object.class, RowBounds.class, ResultHandler.class,
+                        CacheKey.class, BoundSql.class})
+})
 public class DB2SqlInterceptor implements Interceptor {
 
     private static final String[] ARR1 = new String[] {
@@ -63,7 +69,7 @@ public class DB2SqlInterceptor implements Interceptor {
         BoundSql boundSql = mappedStatement.getBoundSql(parameter);
         Configuration configuration = mappedStatement.getConfiguration();
         final String execSql = boundSql.getSql();
-        if (StringUtils.isBlank(execSql) || execSql.toLowerCase().indexOf(" limit ") == -1) {
+        if (StringUtils.isBlank(execSql) || !execSql.toLowerCase().contains(" limit ")) {
             return invocation.proceed();
         }
         // 计算参数
@@ -131,7 +137,7 @@ public class DB2SqlInterceptor implements Interceptor {
                                           Invocation invocation, Map<Integer, ParameterWrapper> parameterPositionMap,
                                           int offsetOverOrigin) {
         paramsNo.incrementAndGet();
-        if (originSql.indexOf("(") >= 0) {
+        if (originSql.contains("(")) {
             return handleLimit(originSql.substring(0, originSql.indexOf("(")) + "(" + convertLimitSql(
                     originSql.substring(originSql.indexOf("(") + 1, originSql.lastIndexOf(")")), paramsNo, params,
                     invocation, parameterPositionMap, offsetOverOrigin + originSql.indexOf("(") + 1) + ")"
@@ -172,7 +178,7 @@ public class DB2SqlInterceptor implements Interceptor {
                 }
             }
             final char[] chars = originSql.toCharArray();
-            if (t.intValue() == 0) {
+            if (t == 0) {
                 boolean offsetFinish = false;
                 boolean limitStart = false;
                 for (int i = start + 7; i < chars.length; i++) {
@@ -193,7 +199,7 @@ public class DB2SqlInterceptor implements Interceptor {
                         }
                     }
                 }
-            } else if (t.intValue() == 1) {
+            } else if (t == 1) {
                 boolean limitFinish = false;
                 boolean offsetStart = false;
                 for (int i = start + 7; i < chars.length; i++) {
@@ -233,28 +239,28 @@ public class DB2SqlInterceptor implements Interceptor {
                         limit.toString(), offset.toString(), params.get(orderByParamKey));
             }
             // 将limit转化为db2的分页查询
-            String sql = originSql.substring(0, orderBySt < start ? orderBySt : start);
-            if (t.intValue() == 2) {
+            String sql = originSql.substring(0, Math.min(orderBySt, start));
+            if (t == 2) {
                 return String.format(DB2_PAGE_TPL_FETCH_ONLY, orderBySt < start ? orderByParamKey : "",
                         paramsNo.get(), paramsNo.get(), sql, paramsNo.get(), limit.toString());
             } else {
                 int offsetVal = 0;
                 if (offset.indexOf("?") >= 0) {
                     final ParameterWrapper wrapper = parameterPositionMap.get(offsetOriginIndex);
-                    offsetVal = Integer.valueOf(String.valueOf(wrapper.getTarget()));
+                    offsetVal = Integer.parseInt(String.valueOf(wrapper.getTarget()));
                 } else {
-                    offsetVal = Integer.valueOf(offset.toString());
+                    offsetVal = Integer.parseInt(offset.toString());
                 }
                 int limitVal = 0;
                 if (limit.indexOf("?") >= 0) {
                     final ParameterWrapper wrapper = parameterPositionMap.get(limitOriginIndex);
-                    limitVal = Integer.valueOf(String.valueOf(wrapper.getTarget()));
+                    limitVal = Integer.parseInt(String.valueOf(wrapper.getTarget()));
                 } else {
-                    limitVal = Integer.valueOf(limit.toString());
+                    limitVal = Integer.parseInt(limit.toString());
                 }
                 int betweenVal1 = offsetVal + 1;
                 int betweenVal2 = offsetVal + limitVal;
-                if (t.intValue() == 1) {
+                if (t == 1) {
                     // 回写参数 limit => betweenVal1
                     if (limit.indexOf("?") >= 0) {
                         writeNewValue(invocation, parameterPositionMap.get(limitOriginIndex), betweenVal1);
@@ -283,20 +289,20 @@ public class DB2SqlInterceptor implements Interceptor {
                 }
             }
         };
-        for (int i = 0; i < ARR1.length; i++) {
+        for (String s : ARR1) {
             for (int j = 0; j < ARR2.length; j++) {
-                final Pattern pattern = PATTERN_MAP.computeIfAbsent(ARR1[i] + ARR2[j], k -> Pattern.compile(k));
+                final Pattern pattern = PATTERN_MAP.computeIfAbsent(s + ARR2[j], Pattern::compile);
                 if (pattern.matcher(lowerCaseSQL).matches()) {
                     return function.apply(j);
                 }
             }
-            final Pattern pattern = PATTERN_MAP.computeIfAbsent(ARR1[i], k -> Pattern.compile(k));
+            final Pattern pattern = PATTERN_MAP.computeIfAbsent(s, Pattern::compile);
             if (pattern.matcher(lowerCaseSQL).matches()) {
                 return originSql;
             }
         }
         for (int j = 0; j < ARR2.length; j++) {
-            final Pattern pattern = PATTERN_MAP.computeIfAbsent(ARR2[j], k -> Pattern.compile(k));
+            final Pattern pattern = PATTERN_MAP.computeIfAbsent(ARR2[j], Pattern::compile);
             if (pattern.matcher(lowerCaseSQL).matches()) {
                 return function.apply(j);
             }
@@ -323,7 +329,7 @@ public class DB2SqlInterceptor implements Interceptor {
                         .equals(parameterObject.getClass().getName())) {
                     Map<String, Object> origin = (Map<String, Object>) metaObject.getValue("parameters");
                     final Map<Object, Object> map = new LinkedHashMap<>();
-                    origin.forEach((k, v) -> map.put(k, v));
+                    origin.forEach(map::put);
                     metaObject.setValue("parameters", map);
                     metaObject.setValue(wrapper.getName(), newVal);
                     return;

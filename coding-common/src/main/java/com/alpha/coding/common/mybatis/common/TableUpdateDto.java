@@ -1,6 +1,7 @@
 package com.alpha.coding.common.mybatis.common;
 
 import java.io.Serializable;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -25,6 +26,29 @@ public class TableUpdateDto implements Serializable {
     private Long timestamp;
     private Object before;
     private Object after;
-    private Map<String, Object> bizParams; // 业务参数
+    private volatile Map<String, Object> bizParams; // 业务参数
+
+    public TableUpdateDto appendBizParam(String key, Object value) {
+        if (this.bizParams == null) {
+            synchronized(this) {
+                if (this.bizParams == null) {
+                    this.bizParams = new LinkedHashMap<>();
+                }
+            }
+        }
+        this.bizParams.put(key, value);
+        return this;
+    }
+
+    public TableUpdateDto appendBizParam(Map<String, Object> map) {
+        if (map != null) {
+            map.forEach(this::appendBizParam);
+        }
+        return this;
+    }
+
+    public Object fetchBizParam(String key) {
+        return this.bizParams == null ? null : this.bizParams.get(key);
+    }
 
 }

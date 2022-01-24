@@ -133,7 +133,7 @@ public class RecordUpdateInterceptor extends ShowSqlInterceptor {
                         .setType(0)
                         .setId(parseKeyFromParameterObject(tableName, boundSql));
                 dto.setAfter(queryByPrimaryKey(tableName, dto.getId()));
-                dto.setBizParams(TableUpdateBeforeControl.getCopyOfContextMap());
+                dto.appendBizParam(TableUpdateBeforeControl.getCopyOfContextMap());
                 TableUpdateBeforeControl.clear();
                 listener.onUpdate(dto);
             } else if (SqlCommandType.UPDATE.equals(mappedStatement.getSqlCommandType())) {
@@ -147,7 +147,7 @@ public class RecordUpdateInterceptor extends ShowSqlInterceptor {
                 updateDtoMap.forEach((k, v) -> {
                     v.setTimestamp(timestamp);
                     v.setSqlId(sqlId);
-                    v.setBizParams(beforeControlContext);
+                    v.appendBizParam(beforeControlContext);
                     listener.onUpdate(v);
                 });
             }

@@ -94,7 +94,7 @@ public class HttpClientUtils {
      */
     public static String get(String uri, Map<String, String> params, String charset, int connTimeout, int soTimeout)
             throws IOException {
-        String url = null;
+        String url = uri;
         if (params != null && params.size() > 0) {
             StringBuilder sb = new StringBuilder();
             for (Map.Entry<String, String> entry : params.entrySet()) {

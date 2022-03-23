@@ -6,6 +6,7 @@ import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -31,7 +32,6 @@ import org.slf4j.Logger;
 import org.slf4j.MDC;
 
 import com.alpha.coding.bo.function.common.Functions;
-import com.google.common.collect.Lists;
 
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -72,7 +72,7 @@ public class HttpClientUtils {
      */
     public static HttpPost formPost(String url, Map<String, String> params) throws UnsupportedEncodingException {
         final HttpPost post = new HttpPost(url);
-        final List<NameValuePair> pairs = Lists.newArrayList();
+        final List<NameValuePair> pairs = new ArrayList<>();
         Set<String> keySet = params.keySet();
         for (String key : keySet) {
             pairs.add(new BasicNameValuePair(key, params.get(key)));
@@ -153,8 +153,7 @@ public class HttpClientUtils {
      * @throws IOException IOException
      */
     public static String get(String url, String charset, int connTimeout, int soTimeout, int retry,
-                             java.util.function.Supplier<CloseableHttpClient> clientSupplier,
-                             Consumer<HttpGet> getConsumer)
+                             Supplier<CloseableHttpClient> clientSupplier, Consumer<HttpGet> getConsumer)
             throws IOException {
         final long startTime = System.nanoTime();
         // Stopwatch stopwatch = Stopwatch.createStarted();
@@ -249,7 +248,7 @@ public class HttpClientUtils {
     public static String postParams(final String url, final Map<String, String> params, final String charset,
                                     final int connTimeout, final int soTimeout, final int retry,
                                     final Consumer<HttpPost> httpPostConsumer) throws IOException {
-        final List<BasicNameValuePair> pairs = Lists.newArrayList();
+        final List<BasicNameValuePair> pairs = new ArrayList<>();
         if (params != null) {
             for (Map.Entry<String, String> entry : params.entrySet()) {
                 pairs.add(new BasicNameValuePair(entry.getKey(), entry.getValue()));

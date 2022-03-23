@@ -3,6 +3,7 @@ package com.alpha.coding.common.log;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -33,11 +34,15 @@ public class LogMonitorAop {
 
     private static final String PROCEED_THROWABLE_MSG = "proceed error";
 
+    // private static final Pattern PROXY_CLASS_PATTERN = Pattern.compile("^proxy\\d+$");
+
     private LogType logType;
 
     private Boolean logRequest;
 
     private Boolean logResponse;
+
+    private Boolean lazyFormatRequest;
 
     private Logor logor;
 
@@ -88,6 +93,7 @@ public class LogMonitorAop {
     public LogMonitorAop() {
         this.logRequest = false;
         this.logResponse = false;
+        this.lazyFormatRequest = false;
         this.logType = LogType.SERV_OUT;
     }
 
@@ -149,6 +155,15 @@ public class LogMonitorAop {
         final Object[] params = joinPoint.getArgs();
         final String[] paramNames = signature.getParameterNames();
         final Annotation[][] parameterAnnotations = method.getParameterAnnotations();
+        String formattedRequest = null;
+        if (logCondition.isLogRequest() && !logCondition.isLazyFormatRequest()) {
+            try {
+                formattedRequest = logor.formatRequest(paramNames, params, parameterAnnotations, logCondition);
+            } catch (Throwable throwable) {
+                log.warn("format request fail, names={}, params={}, msg={}",
+                        Arrays.toString(paramNames), Arrays.toString(params), throwable.getMessage());
+            }
+        }
         final long start = System.currentTimeMillis();
         long end = 0L;
         Object result = null;
@@ -192,7 +207,8 @@ public class LogMonitorAop {
                         .setCondition(logCondition)
                         .setParameterAnnotations(parameterAnnotations)
                         .setExceptionClass(exceptionClass)
-                        .setExceptionMsg(exceptionMsg);
+                        .setExceptionMsg(exceptionMsg)
+                        .setFormattedRequest(formattedRequest);
                 logor.doLog(context);
             } catch (Exception e) {
                 log.error("log monitor error", e);
@@ -231,6 +247,7 @@ public class LogMonitorAop {
         logCondition.setLogType(this.logType);
         logCondition.setLogRequest(this.logRequest != null && this.logRequest);
         logCondition.setLogResponse(this.logResponse != null && this.logResponse);
+        logCondition.setLazyFormatRequest(this.lazyFormatRequest != null && this.lazyFormatRequest);
         logCondition.setCustomLogType(this.customLogType);
         logCondition.setUseItsLog(this.useItsLog);
         if (StringUtils.isNotBlank(this.excludeInfoKeys)) {

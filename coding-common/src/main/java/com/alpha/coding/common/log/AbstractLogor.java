@@ -5,6 +5,8 @@ import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -17,8 +19,6 @@ import com.alibaba.fastjson.JSON;
 import com.alpha.coding.common.utils.StringUtils;
 import com.alpha.coding.common.utils.json.FastjsonJsonProvider;
 import com.alpha.coding.common.utils.json.FastjsonMappingProvider;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
@@ -98,6 +98,14 @@ public abstract class AbstractLogor implements Logor {
         doApiLog(context);
     }
 
+    @Override
+    public String formatRequest(String[] paramNames, Object[] params, Annotation[][] paramAnnotations,
+                                LogCondition condition) {
+        return formatParams(paramNames, params, paramAnnotations,
+                parseReqPathMap(paramNames, condition.getReqIgnoreFieldPath()),
+                parseReqPathMap(paramNames, condition.getReqRetainFieldPath()));
+    }
+
     /**
      * 对外提供接口的日志记录方法
      *
@@ -114,7 +122,7 @@ public abstract class AbstractLogor implements Logor {
             }
             // 处理抛出异常，视为系统错误
             if (context.getResponse() instanceof ProceedThrowable) {
-                final Map<String, String> extraData = Maps.newLinkedHashMap();
+                final Map<String, String> extraData = new LinkedHashMap<>();
                 handleLogReq(context, extraData);
                 extraData.put(RESPONSE_KEY, null);
                 if (context.getExceptionClass() != null) {
@@ -132,7 +140,7 @@ public abstract class AbstractLogor implements Logor {
                 return;
             }
             if (context.getResponse() == null) {
-                final Map<String, String> extraData = Maps.newLinkedHashMap();
+                final Map<String, String> extraData = new LinkedHashMap<>();
                 handleLogReq(context, extraData);
                 extraData.put(RESPONSE_KEY, null);
                 String resultCode = context.getReturnType().equals(void.class) ? OK : UNKNOWN;
@@ -145,7 +153,7 @@ public abstract class AbstractLogor implements Logor {
                 return;
             }
             Class<?> responseClazz = context.getReturnType();
-            final Map<String, String> extraData = Maps.newLinkedHashMap();
+            final Map<String, String> extraData = new LinkedHashMap<>();
             handleLogReq(context, extraData);
             handleLogRes(context, extraData);
             MonitorLog.logService(context.getLog(), context.getThreadName(),
@@ -207,6 +215,10 @@ public abstract class AbstractLogor implements Logor {
      */
     private void handleLogReq(LogContext context, Map<String, String> extraData) {
         if (context.getCondition().isLogRequest()) {
+            if (context.getFormattedRequest() != null || !context.getCondition().isLazyFormatRequest()) {
+                extraData.put(REQUEST_KEY, context.getFormattedRequest());
+                return;
+            }
             final String[] paramNames = context.getParamNames();
             extraData.put(REQUEST_KEY, formatParams(paramNames, context.getParams(),
                     context.getParameterAnnotations(),
@@ -360,7 +372,8 @@ public abstract class AbstractLogor implements Logor {
             return true;
         }
         boolean add = false;
-        for (String key : Lists.newArrayList(CAN_NOT_JSON_MAP.keySet())) {
+        final HashSet<String> keys = new HashSet<>(CAN_NOT_JSON_MAP.keySet());
+        for (String key : keys) {
             try {
                 add = Class.forName(key).isAssignableFrom(clz);
                 if (add) {

@@ -1,12 +1,9 @@
 package com.alpha.coding.common.utils.xls;
 
-import java.util.Calendar;
-import java.util.Date;
 import java.util.List;
 
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.RichTextString;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -30,11 +27,10 @@ public class XLSUtils {
      * @param headers 头部
      * @param lines   行内容
      * @param xlsx    是否生成xlsx格式
-     *
      * @return 生成的Workbook
      */
     public static Workbook generate(Object[] headers, List<Object[]> lines, boolean xlsx)
-            throws IllegalArgumentException, IllegalAccessException {
+            throws IllegalArgumentException {
         Workbook wb = xlsx ? new XSSFWorkbook() : new HSSFWorkbook();
         Sheet sheet = wb.createSheet();
         writeSheet(sheet, headers, lines);
@@ -57,7 +53,7 @@ public class XLSUtils {
             int i = 0;
             for (Object headValue : headers) {
                 Cell cell = headRow.createCell(i++);
-                setValue(cell, headValue);
+                XLSWriter.setValue(cell, headValue);
             }
         }
         // 表内容
@@ -71,38 +67,8 @@ public class XLSUtils {
             int k = 0;
             for (Object lineValue : line) {
                 Cell cell = row.createCell(k++);
-                setValue(cell, lineValue);
+                XLSWriter.setValue(cell, lineValue);
             }
-        }
-    }
-
-    private static void setValue(Cell cell, Object obj) {
-        if (obj == null) {
-            cell.setCellValue("");
-            return;
-        }
-        if (obj instanceof String) {
-            cell.setCellValue(String.valueOf(obj));
-        } else if (obj instanceof Integer) {
-            cell.setCellValue(((Integer) obj).doubleValue());
-        } else if (obj instanceof Long) {
-            cell.setCellValue(((Long) obj).doubleValue());
-        } else if (obj instanceof Float) {
-            cell.setCellValue(((Float) obj).doubleValue());
-        } else if (obj instanceof Double) {
-            cell.setCellValue((Double) obj);
-        } else if (obj instanceof Boolean) {
-            cell.setCellValue((Boolean) obj);
-        } else if (obj instanceof Date) {
-            cell.setCellValue((Date) obj);
-        } else if (obj instanceof Calendar) {
-            cell.setCellValue((Calendar) obj);
-        } else if (obj instanceof RichTextString) {
-            cell.setCellValue((RichTextString) obj);
-        } else if (obj instanceof Number) {
-            cell.setCellValue(((Number) obj).doubleValue());
-        } else {
-            cell.setCellValue(obj.toString());
         }
     }
 

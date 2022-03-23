@@ -35,5 +35,6 @@ public class LogContext {
     private Annotation[][] parameterAnnotations;
     private Class<? extends Throwable> exceptionClass;
     private String exceptionMsg;
+    private String formattedRequest;
 
 }

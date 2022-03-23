@@ -6,17 +6,17 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.Reader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
-
-import org.apache.commons.lang.StringUtils;
-
-import com.google.common.collect.Lists;
 
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -95,7 +95,7 @@ public class IOUtils {
      */
     public static List<String> readLines(InputStream is, int maxContinuousEmptyLinesAllowed, String charset)
             throws IOException {
-        List<String> lines = Lists.newArrayList();
+        List<String> lines = new ArrayList<>();
         int emptyLineCnt = 0;
         BufferedReader reader = new BufferedReader(new InputStreamReader(is, charset));
         String line = readline(reader);
@@ -222,6 +222,29 @@ public class IOUtils {
         return new FileInputStream(file);
     }
 
+    public static FileOutputStream openOutputStream(File file) throws IOException {
+        return openOutputStream(file, false);
+    }
+
+    public static FileOutputStream openOutputStream(File file, boolean append) throws IOException {
+        if (file.exists()) {
+            if (file.isDirectory()) {
+                throw new IOException("File '" + file + "' exists but is a directory");
+            }
+
+            if (!file.canWrite()) {
+                throw new IOException("File '" + file + "' cannot be written to");
+            }
+        } else {
+            File parent = file.getParentFile();
+            if (parent != null && !parent.mkdirs() && !parent.isDirectory()) {
+                throw new IOException("Directory '" + parent + "' could not be created");
+            }
+        }
+
+        return new FileOutputStream(file, append);
+    }
+
     /**
      * 按行读取流
      *
@@ -291,6 +314,181 @@ public class IOUtils {
             }
         }
         return path1 + File.separator + path2;
+    }
+
+    /**
+     * 连接路径
+     *
+     * @param basePath 基础路径
+     * @param paths    附加路径
+     * @return 新路径
+     */
+    public static String joinPath(String basePath, String... paths) {
+        if (paths == null) {
+            return basePath;
+        }
+        String result = basePath;
+        for (String path : paths) {
+            if (path == null) {
+                continue;
+            }
+            result = joinPath(result, path);
+        }
+        return result;
+    }
+
+    /**
+     * 创建临时随机目录
+     */
+    public static String makeRandomTmpDir() {
+        final String path = joinPath(System.getProperty("java.io.tmpdir"), CommUtils.uuid());
+        File dir = new File(path);
+        if (dir.exists()) {
+            dir.delete();
+        }
+        dir.mkdirs();
+        try {
+            return dir.getCanonicalPath();
+        } catch (IOException e) {
+            return path;
+        }
+    }
+
+    /**
+     * 清理文件
+     */
+    public static boolean cleanPath(String path) {
+        File file = new File(path);
+        if (!file.exists()) {//判断是否待删除目录是否存在
+            return false;
+        }
+        if (!file.isDirectory()) {
+            file.delete();
+            return true;
+        }
+        String[] content = file.list(); // 取得当前目录下所有文件和文件夹
+        if (content != null) {
+            for (String name : content) {
+                File temp = new File(path, name);
+                if (temp.isDirectory()) { // 判断是否是目录
+                    try {
+                        cleanPath(temp.getCanonicalPath()); // 递归调用，删除目录里的内容
+                    } catch (IOException e) {
+                        cleanPath(temp.getAbsolutePath()); // 递归调用，删除目录里的内容
+                    }
+                } else {
+                    if (!temp.delete()) {//直接删除文件
+                        System.out.println("Failed to delete " + name);
+                    }
+                }
+            }
+        }
+        file.delete(); // 删除目录
+        return true;
+    }
+
+    public static void writeByteArrayToFile(final File file, final byte[] data) throws IOException {
+        writeByteArrayToFile(file, data, false);
+    }
+
+    public static void writeByteArrayToFile(final File file, final byte[] data, final boolean append)
+            throws IOException {
+        writeByteArrayToFile(file, data, 0, data.length, append);
+    }
+
+    public static void writeByteArrayToFile(final File file, final byte[] data, final int off, final int len)
+            throws IOException {
+        writeByteArrayToFile(file, data, off, len, false);
+    }
+
+    public static void writeByteArrayToFile(final File file, final byte[] data, final int off, final int len,
+                                            final boolean append) throws IOException {
+        try (OutputStream out = openOutputStream(file, append)) {
+            out.write(data, off, len);
+        }
+    }
+
+    /**
+     * 文件写入到目录
+     *
+     * @param bytes    文件内容
+     * @param fileName 文件名
+     * @param dirPath  文件保存目录
+     */
+    public static void writeFileToPath(byte[] bytes, String fileName, String dirPath) throws IOException {
+        File dir = new File(dirPath);
+        if (!dir.exists()) {
+            dir.setWritable(true, false);
+            dir.mkdirs();
+        }
+        File file = new File(joinPath(dirPath, fileName));
+        if (file.exists()) {
+            file.delete();
+        }
+        file.createNewFile();
+        writeByteArrayToFile(file, bytes, false);
+    }
+
+    /**
+     * 下载链接内容
+     */
+    public static void downloadUrlData(String url, OutputStream outputStream,
+                                       int connTimeout, int readTimeout) throws IOException {
+        HttpURLConnection httpURLConnection = (HttpURLConnection) new URL(url).openConnection();
+        try {
+            httpURLConnection.setRequestMethod("GET");
+            httpURLConnection.setRequestProperty("User-Agent",
+                    "Mozilla/5.0 (Windows NT 6.1; Win64; x64) "
+                            + "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 "
+                            + "Safari/537.36");
+            httpURLConnection.setRequestProperty("Accept-Encoding", "gzip");
+            httpURLConnection.setRequestProperty("Referer", "no-referrer");
+            httpURLConnection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+            if (connTimeout > 0) {
+                httpURLConnection.setConnectTimeout(connTimeout);
+            }
+            if (readTimeout > 0) {
+                httpURLConnection.setReadTimeout(readTimeout);
+            }
+            try (InputStream inputStream = httpURLConnection.getInputStream()) {
+                byte[] buffer = new byte[1024 * 64];
+                int length;
+                while ((length = inputStream.read(buffer)) > 0) {
+                    outputStream.write(buffer, 0, length);
+                }
+            }
+        } finally {
+            if (httpURLConnection != null) {
+                httpURLConnection.disconnect();
+            }
+        }
+    }
+
+    /**
+     * 下载链接内容
+     */
+    public static void downloadUrlData(String url, OutputStream outputStream) throws IOException {
+        downloadUrlData(url, outputStream, 10000, 30000);
+    }
+
+    /**
+     * 下载链接内容
+     */
+    public static byte[] downloadUrlData(String url) throws IOException {
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            downloadUrlData(url, outputStream, 10000, 30000);
+            return outputStream.toByteArray();
+        }
+    }
+
+    /**
+     * 下载链接内容
+     */
+    public static byte[] downloadUrlData(String url, int connTimeout, int readTimeout) throws IOException {
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            downloadUrlData(url, outputStream, connTimeout, readTimeout);
+            return outputStream.toByteArray();
+        }
     }
 
 }

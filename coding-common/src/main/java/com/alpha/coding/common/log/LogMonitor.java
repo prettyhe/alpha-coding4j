@@ -40,6 +40,11 @@ public @interface LogMonitor {
     boolean logResponse() default false;
 
     /**
+     * 方法的请求参数是否延迟打印到log中，默认不延迟
+     */
+    boolean lazyFormatRequest() default false;
+
+    /**
      * 使用自身的log实例
      */
     boolean useItsLog() default false;

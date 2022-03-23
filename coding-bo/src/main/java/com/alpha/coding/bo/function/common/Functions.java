@@ -211,4 +211,9 @@ public interface Functions {
         return formatCompact4Digits.apply(value) + " " + abbreviateTimeUnit.apply(unit);
     };
 
+    /**
+     * 字符串安全截取
+     */
+    BiFunction<String, Integer, String> safeSubstring =
+            (s, l) -> s == null ? null : (s.substring(Math.min(s.length(), l)));
 }

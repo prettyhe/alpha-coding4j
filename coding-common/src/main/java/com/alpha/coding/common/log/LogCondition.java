@@ -25,6 +25,8 @@ public class LogCondition {
 
     private boolean logResponse = false;
 
+    private boolean lazyFormatRequest = false;
+
     private boolean useItsLog = false;
 
     private Set<String> excludeInfoKeys;
@@ -71,6 +73,7 @@ public class LogCondition {
         this.logType = logMonitor.logType();
         this.logRequest = logMonitor.logRequest();
         this.logResponse = logMonitor.logResponse();
+        this.lazyFormatRequest = logMonitor.lazyFormatRequest();
         this.customLogType = logMonitor.customLogType();
         this.useItsLog = logMonitor.useItsLog();
         if (logMonitor.excludeInfoKeys().length > 0) {

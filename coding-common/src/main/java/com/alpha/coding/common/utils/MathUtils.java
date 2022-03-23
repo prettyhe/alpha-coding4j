@@ -1,10 +1,17 @@
 package com.alpha.coding.common.utils;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * MathUtils
@@ -12,10 +19,13 @@ import java.util.concurrent.atomic.AtomicLong;
  * @version 1.0
  * Date: 2020-02-21
  */
+@Slf4j
 public class MathUtils {
 
     public static final BigDecimal HUNDRED = new BigDecimal(100);
     public static final BigDecimal NEGATIVE_ONE = new BigDecimal(-1);
+    public static final Set<Class<?>> PRIMITIVE_NUMBER_TYPES = new HashSet<>(Arrays.asList(int.class, long.class,
+            short.class, byte.class, float.class, double.class));
 
     public static BigDecimal multiply(Number a, Number b) {
         if (a == null || b == null) {
@@ -204,6 +214,43 @@ public class MathUtils {
 
     public static BigDecimal setScale(BigDecimal bd, int newScale, int roundingMode) {
         return bd == null ? null : bd.setScale(newScale, roundingMode);
+    }
+
+    /**
+     * 初始化对象的数值属性为0
+     *
+     * @param target        对象
+     * @param excludeFields 排除的字段
+     */
+    public static void initNumberPropertyAsZero(Object target, String... excludeFields) {
+        if (target == null) {
+            return;
+        }
+        Class<?> superClz = target.getClass();
+        while (!superClz.equals(Object.class)) {
+            for (Field field : superClz.getDeclaredFields()) {
+                if (Modifier.isStatic(field.getModifiers())) {
+                    continue;
+                }
+                if (Arrays.stream(excludeFields).anyMatch(p -> p.equals(field.getName()))) {
+                    continue;
+                }
+                final Class<?> type = field.getType();
+                if (!Number.class.isAssignableFrom(type)) {
+                    continue;
+                }
+                try {
+                    field.setAccessible(true);
+                    if (field.get(target) == null) {
+                        field.set(target, convert(0, type));
+                    }
+                } catch (Exception e) {
+                    log.warn("init number fail, name={},type={},ex={},msg={}",
+                            field.getName(), type.getName(), e.getClass().getName(), e.getMessage());
+                }
+            }
+            superClz = superClz.getSuperclass();
+        }
     }
 
 }

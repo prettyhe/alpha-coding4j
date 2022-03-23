@@ -18,12 +18,11 @@ public class FieldUtils {
      *
      * @param targetClass taget class
      * @param ann
-     *
      * @return found {@link Field} list
      */
     public static List<Field> findMatchedFields(Class targetClass, Class ann) {
 
-        List<Field> ret = new ArrayList<Field>();
+        List<Field> ret = new ArrayList<>();
         if (targetClass == null) {
             return ret;
         }
@@ -75,7 +74,6 @@ public class FieldUtils {
      *
      * @param clazz the class to introspect
      * @param name  the name of the field
-     *
      * @return the corresponding Field object, or <code>null</code> if not found
      */
     public static Field findField(Class clazz, String name) {
@@ -89,7 +87,6 @@ public class FieldUtils {
      * @param clazz the class to introspect
      * @param name  the name of the field (may be <code>null</code> if type is specified)
      * @param type  the type of the field (may be <code>null</code> if name is specified)
-     *
      * @return the corresponding Field object, or <code>null</code> if not found
      */
     public static Field findField(Class clazz, String name, Class type) {

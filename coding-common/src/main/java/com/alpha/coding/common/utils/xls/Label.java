@@ -28,9 +28,9 @@ public @interface Label {
     int order();
 
     /**
-     * 字段java类型
+     * 输入输出转换时的中间类型，为void时不使用
      */
-    Class<?> javaType();
+    Class<?> javaType() default void.class;
 
     /**
      * 作为excel头部使用的{@link CellHandler}

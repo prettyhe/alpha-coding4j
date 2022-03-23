@@ -11,6 +11,13 @@ import com.alpha.coding.common.mybatis.common.TableUpdateDto;
 public interface TableUpdateListener {
 
     /**
+     * 更细前回调
+     */
+    default void beforeUpdate(TableUpdateDto dto) {
+        // nothing
+    }
+
+    /**
      * 监听更新事件
      */
     void onUpdate(TableUpdateDto dto);

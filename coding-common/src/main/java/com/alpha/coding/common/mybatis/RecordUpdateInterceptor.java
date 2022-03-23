@@ -44,6 +44,7 @@ import lombok.extern.slf4j.Slf4j;
  * <li>keyColumnMap:主键映射，如your_table_name=id，默认为id</li>
  * <li>keyPropertyMap:主键对应属性映射，如your_table_name=id，默认为id</li>
  * <li>recordUpdateStubMap:表更新存根，如your_table_name=your_RecordUpdateStub</li>
+ * <li>recordBeforeUpdateStubMap:表更新前存根，如your_table_name=your_RecordUpdateStub</li>
  *
  * @version 1.0
  * Date: 2021/4/13
@@ -67,6 +68,7 @@ public class RecordUpdateInterceptor extends ShowSqlInterceptor {
     private Map<String, String> keyColumnMap;
     private Map<String, String> keyPropertyMap;
     private Map<String, RecordUpdateStub> recordUpdateStubMap;
+    private Map<String, RecordUpdateStub> recordBeforeUpdateStubMap;
 
     public void setListener(TableUpdateListener listener) {
         this.listener = listener;
@@ -82,6 +84,11 @@ public class RecordUpdateInterceptor extends ShowSqlInterceptor {
 
     public void setRecordUpdateStubMap(Map<String, RecordUpdateStub> recordUpdateStubMap) {
         this.recordUpdateStubMap = recordUpdateStubMap;
+    }
+
+    public void setRecordBeforeUpdateStubMap(
+            Map<String, RecordUpdateStub> recordBeforeUpdateStubMap) {
+        this.recordBeforeUpdateStubMap = recordBeforeUpdateStubMap;
     }
 
     @Override
@@ -115,44 +122,73 @@ public class RecordUpdateInterceptor extends ShowSqlInterceptor {
         }
         final Map<Long, TableUpdateDto> updateDtoMap = new LinkedHashMap<>();
         if (SqlCommandType.UPDATE.equals(mappedStatement.getSqlCommandType())
-                && (recordUpdateStubMap != null && recordUpdateStubMap.containsKey(tableName))) {
+                && needRecordUpdateStub(tableName)) {
             try {
-                buildUpdateDtoMap(configuration, boundSql, tableName, updateDtoMap);
+                buildUpdateDtoMap(configuration, boundSql, tableName, updateDtoMap, true);
             } catch (Exception e) {
                 log.warn("build update record fail, sqlId={}, table={}", sqlId, tableName, e);
             }
+            // 变更之前回调
+            for (Long key : updateDtoMap.keySet()) {
+                final TableUpdateDto dto = updateDtoMap.get(key);
+                try {
+                    listener.beforeUpdate(dto);
+                } catch (Throwable throwable) {
+                    log.warn("P3|数据更新回调|回调异常-更新前|{}|{}", tableName, dto, throwable);
+                    throw throwable;
+                }
+            }
         }
         Object result = invocation.proceed();
-        try {
-            final long timestamp = System.currentTimeMillis();
-            if (SqlCommandType.INSERT.equals(mappedStatement.getSqlCommandType())) {
-                final TableUpdateDto dto = new TableUpdateDto()
+        final long timestamp = System.currentTimeMillis();
+        if (SqlCommandType.INSERT.equals(mappedStatement.getSqlCommandType())) {
+            TableUpdateDto dto = null;
+            try {
+                dto = new TableUpdateDto()
                         .setTimestamp(timestamp)
                         .setSqlId(sqlId)
                         .setTableName(tableName)
                         .setType(0)
                         .setId(parseKeyFromParameterObject(tableName, boundSql));
-                dto.setAfter(queryByPrimaryKey(tableName, dto.getId()));
+                dto.setAfter(queryByPrimaryKey(tableName, dto.getId(), false));
                 dto.appendBizParam(TableUpdateBeforeControl.getCopyOfContextMap());
                 TableUpdateBeforeControl.clear();
-                listener.onUpdate(dto);
-            } else if (SqlCommandType.UPDATE.equals(mappedStatement.getSqlCommandType())) {
-                if (recordUpdateStubMap != null && recordUpdateStubMap.containsKey(tableName)) {
-                    updateDtoMap.forEach((k, v) -> v.setAfter(queryByPrimaryKey(tableName, k)));
-                } else {
-                    buildUpdateDtoMap(configuration, boundSql, tableName, updateDtoMap);
-                }
-                final Map<String, Object> beforeControlContext = TableUpdateBeforeControl.getCopyOfContextMap();
-                TableUpdateBeforeControl.clear();
-                updateDtoMap.forEach((k, v) -> {
-                    v.setTimestamp(timestamp);
-                    v.setSqlId(sqlId);
-                    v.appendBizParam(beforeControlContext);
-                    listener.onUpdate(v);
-                });
+            } catch (Exception e) {
+                log.warn("parse TableUpdateDto fail from {} in {}", originalSql, sqlId, e);
             }
-        } catch (Exception e) {
-            log.warn("parse TableUpdateDto fail from {} in {}", originalSql, sqlId, e);
+            if (dto != null) {
+                try {
+                    listener.onUpdate(dto);
+                } catch (Throwable throwable) {
+                    log.warn("P3|数据更新回调|回调异常-更新后|{}|{}", tableName, dto, throwable);
+                    throw throwable;
+                }
+            }
+        } else if (SqlCommandType.UPDATE.equals(mappedStatement.getSqlCommandType())) {
+            Map<String, Object> beforeControlContext = null;
+            try {
+                if (recordUpdateStubMap != null && recordUpdateStubMap.containsKey(tableName)) {
+                    updateDtoMap.forEach((k, v) -> v.setAfter(queryByPrimaryKey(tableName, k, false)));
+                } else {
+                    buildUpdateDtoMap(configuration, boundSql, tableName, updateDtoMap, false);
+                }
+                beforeControlContext = TableUpdateBeforeControl.getCopyOfContextMap();
+                TableUpdateBeforeControl.clear();
+            } catch (Exception e) {
+                log.warn("parse TableUpdateDto fail from {} in {}", originalSql, sqlId, e);
+            }
+            for (Long key : updateDtoMap.keySet()) {
+                final TableUpdateDto dto = updateDtoMap.get(key);
+                dto.setTimestamp(timestamp);
+                dto.setSqlId(sqlId);
+                dto.appendBizParam(beforeControlContext);
+                try {
+                    listener.onUpdate(dto);
+                } catch (Throwable throwable) {
+                    log.warn("P3|数据更新回调|回调异常-更新后|{}|{}", tableName, dto, throwable);
+                    throw throwable;
+                }
+            }
         }
         return result;
     }
@@ -275,22 +311,39 @@ public class RecordUpdateInterceptor extends ShowSqlInterceptor {
         return null;
     }
 
-    private Object queryByPrimaryKey(String tableName, Long key) {
+    /**
+     * 按主键查询数据
+     *
+     * @param tableName     表名
+     * @param key           主键
+     * @param beforeOrAfter 是前置查询还是后置查询
+     */
+    private Object queryByPrimaryKey(String tableName, Long key, boolean beforeOrAfter) {
         if (key == null) {
             return null;
         }
-        if (recordUpdateStubMap != null && recordUpdateStubMap.containsKey(tableName)) {
-            try {
-                return recordUpdateStubMap.get(tableName).selectByPrimaryKey(key);
-            } catch (Exception e) {
-                log.warn("queryByPrimaryKey fail for table={},PrimaryKey={}", tableName, key, e);
+        if (beforeOrAfter) {
+            if (recordBeforeUpdateStubMap != null && recordBeforeUpdateStubMap.containsKey(tableName)) {
+                try {
+                    return recordBeforeUpdateStubMap.get(tableName).selectByPrimaryKey(key);
+                } catch (Exception e) {
+                    log.warn("queryByPrimaryKey when before fail for table={},PrimaryKey={}", tableName, key, e);
+                }
+            }
+        } else {
+            if (recordUpdateStubMap != null && recordUpdateStubMap.containsKey(tableName)) {
+                try {
+                    return recordUpdateStubMap.get(tableName).selectByPrimaryKey(key);
+                } catch (Exception e) {
+                    log.warn("queryByPrimaryKey when after fail for table={},PrimaryKey={}", tableName, key, e);
+                }
             }
         }
         return null;
     }
 
     private void buildUpdateDtoMap(Configuration configuration, BoundSql boundSql, String tableName,
-                                   Map<Long, TableUpdateDto> dtoMap) {
+                                   Map<Long, TableUpdateDto> dtoMap, boolean beforeOrAfter) {
         final String sql = showSql(configuration, boundSql).toLowerCase();
         final Long id = parseKey(tableName, sql);
         if (id != null) {
@@ -298,7 +351,7 @@ public class RecordUpdateInterceptor extends ShowSqlInterceptor {
                     .setTableName(tableName)
                     .setType(1)
                     .setId(id)
-                    .setBefore(queryByPrimaryKey(tableName, id));
+                    .setBefore(queryByPrimaryKey(tableName, id, beforeOrAfter));
             dtoMap.put(id, dto);
         } else {
             final Set<Long> set = parseKeys(tableName, sql);
@@ -308,12 +361,20 @@ public class RecordUpdateInterceptor extends ShowSqlInterceptor {
                             .setTableName(tableName)
                             .setType(1)
                             .setId(p)
-                            .setBefore(queryByPrimaryKey(tableName, p))
+                            .setBefore(queryByPrimaryKey(tableName, p, beforeOrAfter))
                             .setIds(set);
                     dtoMap.put(p, dto);
                 });
             }
         }
+    }
+
+    private boolean needRecordUpdateStub(String tableName) {
+        if (tableName == null) {
+            return false;
+        }
+        return (recordUpdateStubMap != null && recordUpdateStubMap.containsKey(tableName))
+                || (recordBeforeUpdateStubMap != null && recordBeforeUpdateStubMap.containsKey(tableName));
     }
 
 }

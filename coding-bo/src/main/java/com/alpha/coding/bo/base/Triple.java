@@ -27,7 +27,11 @@ public class Triple<F, S, T> implements Serializable {
     private T t;
 
     public static <F, S, T> Triple<F, S, T> of(F f, S s, T t) {
-        return new Triple<F, S, T>(f, s, t);
+        return new Triple<>(f, s, t);
+    }
+
+    public static <F, S, T> Triple<F, S, T> empty() {
+        return new Triple<>();
     }
 
     @Override

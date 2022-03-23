@@ -3,6 +3,7 @@ package com.alpha.coding.common.utils;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
@@ -10,10 +11,6 @@ import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
-
-import org.apache.commons.lang.StringUtils;
-
-import com.google.common.collect.Lists;
 
 /**
  * DateUtils default parse-format:{yyyy-MM-dd HH:mm:ss}
@@ -28,18 +25,19 @@ public class DateUtils {
     public static final String DEFAULT_DATE_MONTH_FORMAT = "yyyyMM";
     public static final String DATE_FORMAT = "yyyy-MM-dd";
     public static final String DATE_FORMAT_1 = "dd/MM/yyyy";
+    public static final String DATE_FORMAT_2 = "yyyy/MM/dd";
     public static final String DATE_HOUR_FORMAT = "yyyyMMddHH";
     public static final String DATE_HOUR_FORMAT_1 = "yyyy-MM-dd HH";
     public static final String DATE_HOUR_MINUTE_FORMAT = "yyyy-MM-dd HH:mm";
     public static final String DATE_MILLIS_FORMAT = "yyyy-MM-dd HH:mm:ss.SSS";
     public static final String CRON_FORMAT = "ss mm HH dd MM ?";
+    public static final String PURE_DATETIME_PATTERN = "yyyyMMddHHmmss";
+    public static final String PURE_DATETIME_MS_PATTERN = "yyyyMMddHHmmssSSS";
 
     public static final long MILLIS_DAY = 24 * 3600 * 1000;
     public static final long MILLIS_HOUR = 3600 * 1000;
     public static final long MILLIS_MINUTE = 60 * 1000;
     public static final long MILLIS_SECOND = 1000;
-
-    public static final TimeZone GMT = TimeZone.getTimeZone("GMT");
 
     public static String format(long timestamp, String format) {
         return format(new Date(timestamp), format);
@@ -53,12 +51,8 @@ public class DateUtils {
         return date == null ? null : new SimpleDateFormat(format).format(date);
     }
 
-    private static SimpleDateFormat buildDateFormat(String format, TimeZone timeZone) {
-        final SimpleDateFormat dateFormat = new SimpleDateFormat(format);
-        if (timeZone != null) {
-            dateFormat.setTimeZone(timeZone);
-        }
-        return dateFormat;
+    public static String format(Date date) {
+        return format(date, DEFAULT_FORMAT);
     }
 
     /**
@@ -72,8 +66,12 @@ public class DateUtils {
         return date == null ? null : buildDateFormat(format, timeZone).format(date);
     }
 
-    public static String format(Date date) {
-        return format(date, DEFAULT_FORMAT);
+    private static SimpleDateFormat buildDateFormat(String format, TimeZone timeZone) {
+        final SimpleDateFormat dateFormat = new SimpleDateFormat(format);
+        if (timeZone != null) {
+            dateFormat.setTimeZone(timeZone);
+        }
+        return dateFormat;
     }
 
     public static String formatTime(Date date) {
@@ -97,10 +95,6 @@ public class DateUtils {
         return dateStr == null ? null : new SimpleDateFormat(format).parse(dateStr);
     }
 
-    public static Date parseWithException(String dateStr, String format, TimeZone timeZone) throws ParseException {
-        return dateStr == null ? null : buildDateFormat(format, timeZone).parse(dateStr);
-    }
-
     /**
      * 对一指定时间进行精度调整(只能调大，比如消除:秒数/分钟数+秒数)
      *
@@ -117,42 +111,38 @@ public class DateUtils {
      * 使用于本工具里定义的几种格式的字符串转换成日期, 时间戳(或ms)自行转换即可
      */
     public static Date smartParse(String dateStr) {
-        return smartParse(dateStr, (TimeZone) null);
-    }
-
-    /**
-     * 使用于本工具里定义的几种格式的字符串转换成日期, 时间戳(或ms)自行转换即可
-     */
-    public static Date smartParse(String dateStr, TimeZone timeZone) {
         if (StringUtils.isBlank(dateStr)) {
             return null;
         }
-        if (StringUtils.isNumeric(dateStr.trim())) {
-            return parseByChoose(dateStr.trim(), Arrays.asList(
+        final String trimDate = dateStr.trim();
+        if (StringUtils.isNumeric(trimDate)) {
+            return parseByChoose(trimDate, Arrays.asList(
+                    PURE_DATETIME_MS_PATTERN,
+                    PURE_DATETIME_PATTERN,
                     DATE_HOUR_FORMAT,
                     DEFAULT_DATE_FORMAT
-            ), timeZone);
+            ));
         }
-        return parseByChoose(dateStr, Arrays.asList(
+        return parseByChoose(trimDate, Arrays.asList(
                 DATE_MILLIS_FORMAT,
                 DEFAULT_FORMAT,
                 DATE_HOUR_MINUTE_FORMAT,
                 DATE_HOUR_FORMAT_1,
                 DATE_FORMAT,
-                DATE_FORMAT_1
-        ), timeZone);
+                DATE_FORMAT_1,
+                DATE_FORMAT_2
+        ));
     }
 
     public static Date parseByChoose(String dateStr, List<String> formats) {
-        return parseByChoose(dateStr, formats, (TimeZone) null);
-    }
-
-    public static Date parseByChoose(String dateStr, List<String> formats, TimeZone timeZone) {
         for (String format : formats) {
             try {
-                return parseWithException(dateStr, format, timeZone);
+                if (dateStr.length() != format.length()) {
+                    continue;
+                }
+                return parseWithException(dateStr, format);
             } catch (Exception e) {
-                continue;
+                // continue;
             }
         }
         return null;
@@ -163,61 +153,21 @@ public class DateUtils {
     }
 
     public static Date parse(String dateStr, String format, Locale locale) {
-        return parse(dateStr, format, locale, null);
-    }
-
-    public static Date parse(String dateStr, String format, Locale locale, TimeZone timeZone) {
         if (dateStr == null) {
             return null;
         }
         DateFormat dateFormat = locale == null ? new SimpleDateFormat(format) : new SimpleDateFormat(format, locale);
-        if (timeZone != null) {
-            dateFormat.setTimeZone(timeZone);
-        }
+        Date date = null;
         try {
-            return dateFormat.parse(dateStr);
+            date = dateFormat.parse(dateStr);
         } catch (ParseException e) {
             e.printStackTrace();
         }
-        return null;
+        return date;
     }
 
     public static Date parse(String dateStr) {
         return parse(dateStr, DEFAULT_FORMAT);
-    }
-
-    /**
-     * 带偏移的格式化(将源端时间格式化成目标时区时间字符换)
-     *
-     * @param date                 源端时间
-     * @param targetFormat         目标格式
-     * @param timezoneOffsetMillis 目标时区偏移量(毫秒)
-     * @return 目标时区按照格式展示的时间
-     */
-    public static String formatWithOffset(Date date, String targetFormat, Long timezoneOffsetMillis) {
-        if (timezoneOffsetMillis == null) {
-            return format(date, targetFormat, null);
-        }
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTimeInMillis(date.getTime() + timezoneOffsetMillis);
-        return format(calendar.getTime(), targetFormat, GMT);
-    }
-
-    /**
-     * 带偏移的解析(将源端时间字符串解析成目标时区时间)
-     *
-     * @param dateStr              源端时间字符串
-     * @param timezoneOffsetMillis 源端时区偏移量(毫秒)
-     * @return 目标时区时间
-     */
-    public static Date parseWithOffset(String dateStr, Long timezoneOffsetMillis) {
-        if (timezoneOffsetMillis == null) {
-            return DateUtils.smartParse(dateStr);
-        }
-        final Date date = smartParse(dateStr, GMT);
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTimeInMillis(date.getTime() - timezoneOffsetMillis);
-        return calendar.getTime();
     }
 
     public static Date getDate(int year, int month, int day) {
@@ -267,14 +217,12 @@ public class DateUtils {
 
     public static Date getTimeNextNMinute(Date dt, int n) {
         long time = dt.getTime() + n * 60 * 1000;
-        Date result = new Date(time);
-        return result;
+        return new Date(time);
     }
 
     public static Date getTimeNextNHour(Date dt, int n) {
         long time = dt.getTime() + n * 60 * 60 * 1000;
-        Date result = new Date(time);
-        return result;
+        return new Date(time);
     }
 
     public static String getTimeInterval(long timestamp1, long timestamp2) {
@@ -296,7 +244,19 @@ public class DateUtils {
     }
 
     public static String getTimeInterval(Date time1, Date time2) {
-        return getTimeInterval(time1.getTime(), time2.getTime());
+        long secondInterval = (time2.getTime() - time1.getTime()) / 1000;
+        if (secondInterval < 60) {
+            return "1分钟以内";
+        }
+        if (secondInterval < 3600) {
+            long min = secondInterval / 60;
+            return min + "分钟前";
+        }
+        if (secondInterval < 86400) {
+            long hour = secondInterval / 3600;
+            return hour + "小时前";
+        }
+        return format(time1, "yyyy年MM月dd日");
     }
 
     public static Date getOriginTime() {
@@ -334,8 +294,7 @@ public class DateUtils {
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(specificDate);
         calendar.add(Calendar.DAY_OF_MONTH, -1 * days);
-        Date dBefore = calendar.getTime();
-        return dBefore;
+        return calendar.getTime();
     }
 
     /**
@@ -345,8 +304,7 @@ public class DateUtils {
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(specificDate);
         calendar.add(Calendar.HOUR_OF_DAY, -1 * hours);
-        Date dBefore = calendar.getTime();
-        return dBefore;
+        return calendar.getTime();
     }
 
     /**
@@ -390,7 +348,7 @@ public class DateUtils {
      * @return 拆分的时间序列
      */
     public static List<Date> splitByDay(Date start, Date end) {
-        List<Date> dates = Lists.newArrayList();
+        List<Date> dates = new ArrayList<>();
         if (start.after(end)) {
             return dates;
         }
@@ -417,7 +375,7 @@ public class DateUtils {
      * @return 拆分的时间序列
      */
     public static List<Date> splitByHour(Date start, Date end) {
-        List<Date> dates = Lists.newArrayList();
+        List<Date> dates = new ArrayList<>();
         if (start.after(end)) {
             return dates;
         }
@@ -445,7 +403,7 @@ public class DateUtils {
      * @return 拆分的时间序列
      */
     public static List<Date> splitByMinute(Date start, Date end, int minuteInterval) {
-        List<Date> dates = Lists.newArrayList();
+        List<Date> dates = new ArrayList<>();
         if (start.after(end)) {
             return dates;
         }
@@ -558,25 +516,25 @@ public class DateUtils {
         StringBuilder sb = new StringBuilder();
         final long day = delta / MILLIS_DAY;
         if (day > 0) {
-            sb.append(day + "天");
+            sb.append(day).append("天");
         }
         delta %= MILLIS_DAY;
         final long hour = delta / MILLIS_HOUR;
         if (day > 0 || hour > 0) {
-            sb.append(hour + "时");
+            sb.append(hour).append("时");
         }
         delta %= MILLIS_HOUR;
         final long minute = delta / MILLIS_MINUTE;
         if (day > 0 || hour > 0 || minute > 0) {
-            sb.append(minute + "分");
+            sb.append(minute).append("分");
         }
         delta %= MILLIS_MINUTE;
         final long second = delta / MILLIS_SECOND;
         if (day > 0 || hour > 0 || minute > 0 || second > 0) {
-            sb.append(second + "秒");
+            sb.append(second).append("秒");
         }
         delta %= MILLIS_SECOND;
-        sb.append(delta + "毫秒");
+        sb.append(delta).append("毫秒");
         return sb.toString();
     }
 
@@ -593,7 +551,7 @@ public class DateUtils {
     /**
      * 计算用户岁数，算足的
      *
-     * @param birth
+     * @param birth 生日
      * @return 年龄
      */
     public static int age(Date birth) {
@@ -603,7 +561,7 @@ public class DateUtils {
     /**
      * 计算用户岁数，算足的
      *
-     * @param birth
+     * @param birth 生日
      * @return 年龄
      */
     public static int age(Date specifyDate, Date birth) {
@@ -624,6 +582,16 @@ public class DateUtils {
     }
 
     /**
+     * 是否闰年
+     *
+     * @param year 年
+     * @return 是否闰年
+     */
+    public static boolean isLeapYear(int year) {
+        return new GregorianCalendar().isLeapYear(year);
+    }
+
+    /**
      * 返回日期的年，即yyyy-MM-dd中的yyyy
      *
      * @param date Date
@@ -638,7 +606,7 @@ public class DateUtils {
     /**
      * 返回日期的月份，1-12，即yyyy-MM-dd中的MM
      *
-     * @param date
+     * @param date 时间
      * @return 月份
      */
     public static int getMonth(Date date) {
@@ -650,7 +618,7 @@ public class DateUtils {
     /**
      * 返回日期的天数，0-31，即yyyy-MM-dd中的dd
      *
-     * @param date
+     * @param date 时间
      * @return 天数
      */
     public static int getDay(Date date) {
@@ -686,16 +654,6 @@ public class DateUtils {
      */
     public static String convertToCron(Date date, TimeZone targetTimezone) {
         return format(date, CRON_FORMAT, targetTimezone);
-    }
-
-    /**
-     * 是否闰年
-     *
-     * @param year 年
-     * @return 是否闰年
-     */
-    public static boolean isLeapYear(int year) {
-        return new GregorianCalendar().isLeapYear(year);
     }
 
     /**

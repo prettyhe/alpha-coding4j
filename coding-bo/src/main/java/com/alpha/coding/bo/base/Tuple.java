@@ -25,7 +25,11 @@ public class Tuple<F, S> implements Serializable {
     private S s;
 
     public static <F, S> Tuple<F, S> of(F f, S s) {
-        return new Tuple<F, S>(f, s);
+        return new Tuple<>(f, s);
+    }
+
+    public static <F, S> Tuple<F, S> empty() {
+        return new Tuple<>();
     }
 
     @Override

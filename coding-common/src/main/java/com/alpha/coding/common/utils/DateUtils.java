@@ -12,6 +12,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
 
+import org.apache.commons.lang.StringUtils;
+
 /**
  * DateUtils default parse-format:{yyyy-MM-dd HH:mm:ss}
  *
@@ -33,6 +35,7 @@ public class DateUtils {
     public static final String CRON_FORMAT = "ss mm HH dd MM ?";
     public static final String PURE_DATETIME_PATTERN = "yyyyMMddHHmmss";
     public static final String PURE_DATETIME_MS_PATTERN = "yyyyMMddHHmmssSSS";
+    public static final String TIME_FORMAT = "HH:mm:ss";
 
     public static final long MILLIS_DAY = 24 * 3600 * 1000;
     public static final long MILLIS_HOUR = 3600 * 1000;

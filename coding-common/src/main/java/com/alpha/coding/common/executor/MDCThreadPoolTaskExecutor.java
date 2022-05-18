@@ -63,7 +63,7 @@ public class MDCThreadPoolTaskExecutor extends ThreadPoolTaskExecutor
      */
     public static class MDCThreadPoolTaskExecutorBuilder {
 
-        private MDCThreadPoolTaskExecutor executor = new MDCThreadPoolTaskExecutor();
+        private final MDCThreadPoolTaskExecutor executor = new MDCThreadPoolTaskExecutor();
 
         private MDCThreadPoolTaskExecutorBuilder() {
         }

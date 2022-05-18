@@ -15,6 +15,7 @@ import com.alpha.coding.bo.trace.TraceIdGenerator;
 import com.google.common.collect.Maps;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
 
 /**
@@ -103,6 +104,7 @@ public class LogEnvAspect {
     }
 
     @Data
+    @EqualsAndHashCode(callSuper = true)
     protected static class AspectContext extends HashMap {
 
         public AspectContext fluentPut(Object key, Object value) {

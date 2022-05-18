@@ -3,7 +3,7 @@ package com.alpha.coding.common.http;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.LinkedHashSet;
@@ -49,7 +49,7 @@ public class HttpParameterUtils {
                     ReflectionUtils.makeAccessible(p);
                     return p.isAccessible();
                 }).collect(Collectors.toList());
-        if (fields == null || fields.size() == 0) {
+        if (fields.size() == 0) {
             return;
         }
         boolean parameterFromForm = false;
@@ -69,7 +69,7 @@ public class HttpParameterUtils {
         final AtomicReference<MultiValueMap<String, String>> queryStringParametersRef = new AtomicReference<>();
         try {
             queryStringParametersRef.set(HttpUtils.readQueryStringParams(request.getQueryString(),
-                    Charset.forName("UTF-8")));
+                    StandardCharsets.UTF_8));
             if (log.isDebugEnabled()) {
                 log.debug("contentType:{}, queryStringParameters:{}",
                         request.getContentType(), JSON.toJSONString(queryStringParametersRef.get()));
@@ -90,7 +90,7 @@ public class HttpParameterUtils {
             }
             if (testInclude(an, HttpParamFrom.Header)) {
                 try {
-                    setField(t, field, k -> request.getHeader(k));
+                    setField(t, field, request::getHeader);
                 } catch (Exception e) {
                     log.error("ParseHttpParamErr|FromHeader for url={},field={},msg={}",
                             HttpUtils.getPath(request), field.getName(), e.getMessage());
@@ -109,7 +109,7 @@ public class HttpParameterUtils {
                     if (parameterFromForm) {
                         setField(t, field, k -> formParametersRef.get().getFirst(k));
                     } else {
-                        setField(t, field, k -> request.getParameter(k));
+                        setField(t, field, request::getParameter);
                     }
                 } catch (Exception e) {
                     log.error("ParseHttpParamErr|FromParameter for url={},field={},msg={}",
@@ -124,7 +124,7 @@ public class HttpParameterUtils {
                     Optional.ofNullable(HttpUtils.parseParams(request)).ifPresent(pas -> {
                         for (Field field : fields) {
                             try {
-                                setField(t, field, k -> pas.getString(k));
+                                setField(t, field, pas::getString);
                             } catch (Exception e) {
                                 log.error("ParseHttpParamErr|FromRaw for {},msg={}",
                                         field.getName(), e.getMessage());
@@ -145,8 +145,8 @@ public class HttpParameterUtils {
         final HttpRequestParam an = field.getAnnotation(HttpRequestParam.class);
         final Set<String> names = new LinkedHashSet<>();
         names.add(field.getName());
-        if (an != null && an.name() != null) {
-            Arrays.stream(an.name()).filter(p -> !isBlank(p)).forEach(p -> names.add(p));
+        if (an != null) {
+            Arrays.stream(an.name()).filter(p -> !isBlank(p)).forEach(names::add);
         }
         String value = null;
         for (String name : names) {
@@ -168,10 +168,8 @@ public class HttpParameterUtils {
                     if (StringUtils.isNotBlank(jsonField.name())) {
                         alternateNames.add(jsonField.name());
                     }
-                    if (jsonField.alternateNames() != null && jsonField.alternateNames().length > 0) {
-                        for (String name : jsonField.alternateNames()) {
-                            alternateNames.add(name);
-                        }
+                    if (jsonField.alternateNames().length > 0) {
+                        alternateNames.addAll(Arrays.asList(jsonField.alternateNames()));
                     }
                 }
                 for (String name : alternateNames) {
@@ -215,8 +213,8 @@ public class HttpParameterUtils {
     }
 
     private static boolean testInclude(HttpRequestParam an, HttpParamFrom from) {
-        return an == null || an.excludeFrom().length == 0 ||
-                !Arrays.stream(an.excludeFrom()).filter(p -> p.equals(from)).findAny().isPresent();
+        return an == null || an.excludeFrom().length == 0
+                || Arrays.stream(an.excludeFrom()).noneMatch(p -> p.equals(from));
     }
 
     private static boolean isFormContentType(HttpServletRequest request) {
@@ -230,6 +228,17 @@ public class HttpParameterUtils {
             }
         } else {
             return false;
+        }
+    }
+
+    public static String appendQueryParam(String url, String key, String value) {
+        if (url == null || org.apache.commons.lang3.StringUtils.isBlank(key)) {
+            return url;
+        }
+        if (url.contains("?")) {
+            return url + "&" + key + "=" + value;
+        } else {
+            return url + "?" + key + "=" + value;
         }
     }
 

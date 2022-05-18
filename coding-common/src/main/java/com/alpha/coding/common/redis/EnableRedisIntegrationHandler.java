@@ -1,6 +1,7 @@
 package com.alpha.coding.common.redis;
 
 import java.io.IOException;
+import java.util.concurrent.ThreadPoolExecutor;
 
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -18,6 +19,7 @@ import com.alpha.coding.common.redis.cache.RedisCacheAspect;
 import com.alpha.coding.common.redis.cache.annotation.RedisCacheEvict;
 import com.alpha.coding.common.redis.cache.annotation.RedisCachePut;
 import com.alpha.coding.common.redis.cache.annotation.RedisCacheable;
+import com.alpha.coding.common.redis.message.RedisMessageListenerAutoConfig;
 import com.alpha.coding.common.utils.StringUtils;
 
 import lombok.extern.slf4j.Slf4j;
@@ -118,13 +120,15 @@ public class EnableRedisIntegrationHandler implements ConfigurationRegisterHandl
                         .maxPoolSize(availableProcessors * 2)
                         .keepAliveSeconds(300)
                         .namedThreadFactory("RedisMsgTask")
+                        .queueCapacity(1000)
+                        .rejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy())
                         .build());
         containerDefinitionBuilder.setScope(BeanDefinition.SCOPE_SINGLETON);
         context.getRegistry().registerBeanDefinition("redisMessageListenerContainer",
                 containerDefinitionBuilder.getBeanDefinition());
         // 注册RedisMessageListenerAutoConfig
         BeanDefinitionBuilder autoConfigDefinitionBuilder = BeanDefinitionBuilder
-                .genericBeanDefinition("com.alpha.coding.common.redis.message.RedisMessageListenerAutoConfig");
+                .genericBeanDefinition(RedisMessageListenerAutoConfig.class);
         autoConfigDefinitionBuilder.setScope(BeanDefinition.SCOPE_SINGLETON);
         context.getRegistry().registerBeanDefinition("redisMessageListenerAutoConfig",
                 autoConfigDefinitionBuilder.getBeanDefinition());

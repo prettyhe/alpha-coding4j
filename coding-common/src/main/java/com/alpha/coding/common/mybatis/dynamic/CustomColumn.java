@@ -1,6 +1,8 @@
 package com.alpha.coding.common.mybatis.dynamic;
 
+import java.math.BigDecimal;
 import java.sql.JDBCType;
+import java.util.Date;
 import java.util.Optional;
 
 import org.mybatis.dynamic.sql.BindableColumn;
@@ -48,4 +50,33 @@ public class CustomColumn<T> implements BindableColumn<T> {
     public static <T> CustomColumn<T> of(String name) {
         return new CustomColumn<>(name);
     }
+
+    public static CustomColumn<Byte> ofByte(String name) {
+        return of(name);
+    }
+
+    public static CustomColumn<Short> ofShort(String name) {
+        return of(name);
+    }
+
+    public static CustomColumn<Integer> ofInt(String name) {
+        return of(name);
+    }
+
+    public static CustomColumn<Long> ofLong(String name) {
+        return of(name);
+    }
+
+    public static CustomColumn<BigDecimal> ofBigDecimal(String name) {
+        return of(name);
+    }
+
+    public static CustomColumn<String> ofSring(String name) {
+        return of(name);
+    }
+
+    public static CustomColumn<Date> ofDate(String name) {
+        return of(name);
+    }
+
 }

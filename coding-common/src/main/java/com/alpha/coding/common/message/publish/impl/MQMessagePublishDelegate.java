@@ -17,6 +17,7 @@ import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 import com.alibaba.fastjson.JSON;
+import com.alpha.coding.bo.base.MapThreadLocalAdaptor;
 import com.alpha.coding.bo.base.Tuple;
 import com.alpha.coding.bo.function.common.Predicates;
 import com.alpha.coding.bo.trace.HalfMDCTraceIdGenerator;
@@ -114,6 +115,14 @@ public class MQMessagePublishDelegate implements MessagePublisher, MessagePublis
             record.setPublishListener(beanName);
         }
         record.setPublishConfig(config);
+        final Object tenantId = MapThreadLocalAdaptor.get("tenantId");
+        if (tenantId != null) {
+            try {
+                record.setTenantId(Integer.valueOf(String.valueOf(tenantId)));
+            } catch (NumberFormatException e) {
+                log.warn("parse tenantId fail, tenantId={}", tenantId);
+            }
+        }
         return record;
     }
 
@@ -166,7 +175,11 @@ public class MQMessagePublishDelegate implements MessagePublisher, MessagePublis
         int tryTimes = Optional.ofNullable(messageMonitor.getTryTimes()).orElse(0) + 1;
         final MessagePublishListener publishListener = applicationContext
                 .getBean(messageMonitor.getPublishListener(), MessagePublishListener.class);
+        final Object oldTenantId = MapThreadLocalAdaptor.get("tenantId");
         try {
+            if (messageMonitor.getTenantId() != null) {
+                MapThreadLocalAdaptor.put("tenantId", messageMonitor.getTenantId());
+            }
             msgId = dependencyHolder.getMessagePublishAdaptor().send(messageMonitor.getTopic(),
                     messageMonitor.getTag(), messageMonitor.getContent(),
                     messageMonitor.getBizNo(), messageMonitor.getPublishConfig());
@@ -208,11 +221,12 @@ public class MQMessagePublishDelegate implements MessagePublisher, MessagePublis
             } else {
                 messageMonitorDao.updateByPrimaryKeySelective(messageMonitor);
             }
+            MapThreadLocalAdaptor.put("tenantId", oldTenantId);
         }
         return msgId;
     }
 
-    @Async
+    @Async("messageApplicationEventHandlerExec")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT,
             value = MessageApplicationEvent.class, fallbackExecution = true)
     public void handleMessageApplicationEvent(MessageApplicationEvent event) {

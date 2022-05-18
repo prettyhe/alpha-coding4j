@@ -8,6 +8,10 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.ibatis.plugin.Interceptor;
+import org.apache.ibatis.session.Configuration;
+import org.mybatis.spring.SqlSessionFactoryBean;
+import org.mybatis.spring.mapper.MapperScannerConfigurer;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.core.annotation.AnnotationAttributes;
@@ -67,8 +71,7 @@ public class EnableMybatisAutoConfigHandler implements ConfigurationRegisterHand
         showSQLProperties.put("sqlIdAbbreviated", true);
         showSQLDefinitionBuilder.addPropertyValue("properties", showSQLProperties);
         BeanDefinitionRegistryUtils.overideBeanDefinition(registry,
-                "auto_ShowSqlInterceptor",
-                showSQLDefinitionBuilder.getBeanDefinition());
+                "auto_ShowSqlInterceptor", showSQLDefinitionBuilder.getBeanDefinition());
         // 注册mybatis相关配置
         for (AnnotationAttributes attributes : annotationAttributes) {
             final AnnotationAttributes dataSource = attributes.getAnnotation("dataSource");
@@ -91,7 +94,7 @@ public class EnableMybatisAutoConfigHandler implements ConfigurationRegisterHand
             final String tag = attributes.getString("tag");
             // 注册 SqlSessionFactoryBean
             BeanDefinitionBuilder sqlSessionFactoryBeanBuilder = BeanDefinitionBuilder
-                    .genericBeanDefinition("org.mybatis.spring.SqlSessionFactoryBean");
+                    .genericBeanDefinition(SqlSessionFactoryBean.class);
             sqlSessionFactoryBeanBuilder.addPropertyReference("dataSource", prefix + "DataSource");
             final String configuration = attributes.getString("configuration");
             if (StringUtils.isBlank(configuration)) {
@@ -100,7 +103,7 @@ public class EnableMybatisAutoConfigHandler implements ConfigurationRegisterHand
                             attributes.getString("configLocation"));
                 } else {
                     BeanDefinitionBuilder configurationBeanDefinitionBuilder = BeanDefinitionBuilder
-                            .genericBeanDefinition("org.apache.ibatis.session.Configuration");
+                            .genericBeanDefinition(Configuration.class);
                     configurationBeanDefinitionBuilder.addPropertyValue("mapUnderscoreToCamelCase", true);
                     BeanDefinitionRegistryUtils.overideBeanDefinition(registry,
                             prefix + "_ibatisSessionConfiguration" + tag,
@@ -139,15 +142,15 @@ public class EnableMybatisAutoConfigHandler implements ConfigurationRegisterHand
             }
             plugins.addAll(Arrays.asList(attributes.getStringArray("extPlugins")));
             sqlSessionFactoryBeanBuilder.addPropertyValue("plugins", ListUtils.toArray(plugins.stream()
-                    .map(x -> context.getBeanFactory().getBean(x))
-                    .collect(Collectors.toList()), loadClass("org.apache.ibatis.plugin.Interceptor")));
+                    .map(x -> new InterceptorWrapper(() -> context.getBeanFactory().getBean(x, Interceptor.class)))
+                    .collect(Collectors.toList()), InterceptorWrapper.class));
             BeanDefinitionRegistryUtils.overideBeanDefinition(registry,
                     prefix + "SqlSessionFactory" + tag,
                     sqlSessionFactoryBeanBuilder.getBeanDefinition());
             log.info("register SqlSessionFactory: {}", prefix + "SqlSessionFactory" + tag);
             // 注册 MapperScannerConfigurer
             BeanDefinitionBuilder mapperScannerConfigurerBuilder = BeanDefinitionBuilder
-                    .genericBeanDefinition("org.mybatis.spring.mapper.MapperScannerConfigurer");
+                    .genericBeanDefinition(MapperScannerConfigurer.class);
             mapperScannerConfigurerBuilder.addPropertyValue("sqlSessionFactoryBeanName",
                     prefix + "SqlSessionFactory" + tag);
             mapperScannerConfigurerBuilder.addPropertyValue("basePackage",
@@ -161,15 +164,6 @@ public class EnableMybatisAutoConfigHandler implements ConfigurationRegisterHand
     @Override
     public int getOrder() {
         return 0;
-    }
-
-    private Class loadClass(String name) {
-        try {
-            return com.alpha.coding.common.utils.ClassUtils.loadClass(name, true);
-        } catch (ClassNotFoundException e) {
-            log.warn("{} not found", name);
-            throw new RuntimeException(e);
-        }
     }
 
     @Override

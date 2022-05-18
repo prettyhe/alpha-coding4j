@@ -18,6 +18,8 @@ import org.springframework.data.redis.connection.jedis.JedisClientConfiguration;
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.serializer.JdkSerializationRedisSerializer;
+import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 import com.alpha.coding.common.bean.register.BeanDefineUtils;
 import com.alpha.coding.common.utils.StringUtils;
@@ -71,13 +73,10 @@ public class RedisIntegrationConfiguration implements EnvironmentAware {
                     environment.getProperty("redis.sentinel.master"),
                     org.springframework.util.StringUtils
                             .commaDelimitedListToSet(environment.getProperty("redis.sentinel.nodes")));
-            if (environment.containsProperty("redis.sentinel.password")) {
-                redisSentinelConfiguration
-                        .setSentinelPassword(environment.getProperty("redis.sentinel.password"));
-            }
-            if (environment.containsProperty("redis.db")) {
-                redisSentinelConfiguration.setDatabase(environment.getProperty("redis.db", Integer.class));
-            }
+            redisSentinelConfiguration.setSentinelPassword(
+                    RedisPassword.of(Optional.ofNullable(environment.getProperty("redis.sentinel.password"))
+                            .orElse(environment.getProperty("redis.password"))));
+            redisSentinelConfiguration.setDatabase(environment.getProperty("redis.db", Integer.class, 0));
             return redisSentinelConfiguration;
         }
         // RedisCluster
@@ -89,13 +88,16 @@ public class RedisIntegrationConfiguration implements EnvironmentAware {
                     Arrays.asList("redis.cluster.max-redirects", "redis.cluster.maxRedirects",
                             "redis.cluster.max_redirects"), StringUtils::isNotBlank, Integer.class, null))
                     .ifPresent(redisClusterConfiguration::setMaxRedirects);
+            redisClusterConfiguration.setPassword(
+                    RedisPassword.of(Optional.ofNullable(environment.getProperty("redis.cluster.password"))
+                            .orElse(environment.getProperty("redis.password"))));
             return redisClusterConfiguration;
         }
         // RedisStandalone
         final RedisStandaloneConfiguration configuration = new RedisStandaloneConfiguration();
         configuration.setHostName(environment.getProperty("redis.host"));
-        configuration.setPort(environment.getProperty("redis.port", Integer.class));
-        configuration.setDatabase(environment.getProperty("redis.db", Integer.class));
+        configuration.setPort(environment.getProperty("redis.port", Integer.class, 6379));
+        configuration.setDatabase(environment.getProperty("redis.db", Integer.class, 0));
         configuration.setPassword(RedisPassword.of(environment.getProperty("redis.password")));
         return configuration;
     }
@@ -124,18 +126,79 @@ public class RedisIntegrationConfiguration implements EnvironmentAware {
         }
     }
 
-    @Bean
+    /**
+     * 默认的RedisTemplate，key、hashKey使用StringRedisSerializer
+     */
     @Lazy
+    @Bean
     public RedisTemplate<Object, Object> redisTemplate() {
         RedisTemplate<Object, Object> template = new RedisTemplate<>();
+        template.setConnectionFactory(jedisConnectionFactory());
+        // keySerializer使用独立对象
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setHashKeySerializer(new StringRedisSerializer());
+        return template;
+    }
+
+    /**
+     * 原生的RedisTemplate，使用默认的RedisSerializer
+     */
+    @Lazy
+    @Bean("rawRedisTemplate")
+    public RedisTemplate<Object, Object> rawRedisTemplate() {
+        final RedisTemplate<Object, Object> template = new RedisTemplate<>();
+        // keySerializer使用独立对象
+        template.setKeySerializer(new JdkSerializationRedisSerializer(template.getClass().getClassLoader()));
         template.setConnectionFactory(jedisConnectionFactory());
         return template;
     }
 
+    /**
+     * 全String类型的RedisTemplate，所有RedisSerializer都使用StringRedisSerializer
+     */
     @Lazy
     @Bean("stringRedisTemplate")
     public RedisTemplate stringRedisTemplate() {
-        return new StringRedisTemplate(jedisConnectionFactory());
+        final StringRedisTemplate stringRedisTemplate = new StringRedisTemplate(jedisConnectionFactory());
+        // keySerializer使用独立对象
+        stringRedisTemplate.setKeySerializer(new StringRedisSerializer());
+        return stringRedisTemplate;
+    }
+
+    /**
+     * jdkValueRedisTemplate，key、hashKey使用StringRedisSerializer，value、hashValue使用JdkSerializationRedisSerializer
+     */
+    @Lazy
+    @Bean("jdkValueRedisTemplate")
+    public RedisTemplate<String, Object> jdkValueRedisTemplate() {
+        RedisTemplate<String, Object> template = new RedisTemplate<>();
+        template.setConnectionFactory(jedisConnectionFactory());
+        final JdkSerializationRedisSerializer jdkSerializationRedisSerializer = new JdkSerializationRedisSerializer();
+        template.setDefaultSerializer(jdkSerializationRedisSerializer);
+        // keySerializer使用独立对象
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setValueSerializer(jdkSerializationRedisSerializer);
+        template.setHashKeySerializer(new StringRedisSerializer());
+        template.setHashValueSerializer(jdkSerializationRedisSerializer);
+        return template;
+    }
+
+    /**
+     * jdkHashValueRedisTemplate，key、value、hashKey使用StringRedisSerializer，hashValue使用JdkSerializationRedisSerializer
+     */
+    @Lazy
+    @Bean("jdkHashValueRedisTemplate")
+    public RedisTemplate<String, Object> jdkHashValueRedisTemplate() {
+        RedisTemplate<String, Object> template = new RedisTemplate<>();
+        template.setConnectionFactory(jedisConnectionFactory());
+        final JdkSerializationRedisSerializer jdkSerializationRedisSerializer = new JdkSerializationRedisSerializer();
+        template.setDefaultSerializer(jdkSerializationRedisSerializer);
+        // keySerializer使用独立对象
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setValueSerializer(new StringRedisSerializer());
+        template.setHashKeySerializer(new StringRedisSerializer());
+        template.setHashValueSerializer(jdkSerializationRedisSerializer);
+        return template;
     }
 
     @Lazy
@@ -151,7 +214,7 @@ public class RedisIntegrationConfiguration implements EnvironmentAware {
         }
         return new JedisPool(jedisPoolConfig(),
                 environment.getProperty("redis.host"),
-                environment.getProperty("redis.port", Integer.class),
+                environment.getProperty("redis.port", Integer.class, 6379),
                 environment.getProperty("redis.timeout", Integer.class),
                 environment.getProperty("redis.password"));
     }
@@ -161,7 +224,7 @@ public class RedisIntegrationConfiguration implements EnvironmentAware {
     public RedisBean redisBean() {
         final RedisBean redisBean = new RedisBean();
         redisBean.setPool(jedisPool());
-        redisBean.setDb(environment.getProperty("redis.db", Integer.class));
+        redisBean.setDb(environment.getProperty("redis.db", Integer.class, 0));
         return redisBean;
     }
 

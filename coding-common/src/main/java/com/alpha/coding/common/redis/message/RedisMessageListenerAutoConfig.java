@@ -39,13 +39,13 @@ public class RedisMessageListenerAutoConfig implements ApplicationContextAware, 
                     if (container == null || listener == null) {
                         return;
                     }
-                    if (an.topic() != null && an.topic().length > 0) {
+                    if (an.topic().length > 0) {
                         container.addMessageListener(listener, Arrays.stream(an.topic())
-                                .map(x -> new ChannelTopic(x)).collect(Collectors.toList()));
+                                .map(ChannelTopic::new).collect(Collectors.toList()));
                     }
-                    if (an.topicPattern() != null && an.topicPattern().length > 0) {
+                    if (an.topicPattern().length > 0) {
                         container.addMessageListener(listener, Arrays.stream(an.topicPattern())
-                                .map(x -> new PatternTopic(x)).collect(Collectors.toList()));
+                                .map(PatternTopic::new).collect(Collectors.toList()));
                     }
                 };
         listenerMap.forEach((k, v) -> {
@@ -55,7 +55,7 @@ public class RedisMessageListenerAutoConfig implements ApplicationContextAware, 
                     containerMap.forEach((ck, cv) -> injectConsumer.accept(redisMessage, v, cv));
                 } else {
                     Arrays.stream(redisMessage.listenerContainer())
-                            .map(c -> containerMap.get(c)).forEach(c -> injectConsumer.accept(redisMessage, v, c));
+                            .map(containerMap::get).forEach(c -> injectConsumer.accept(redisMessage, v, c));
                 }
             }
         });

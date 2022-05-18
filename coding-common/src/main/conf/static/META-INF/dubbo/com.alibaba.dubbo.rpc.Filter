@@ -2,3 +2,5 @@ MDCTraceConsumerFilter=com.alpha.coding.common.trace.dubbo.MDCTraceConsumerFilte
 MDCTraceProviderFilter=com.alpha.coding.common.trace.dubbo.MDCTraceProviderFilter
 ComLogMonitorFilter=com.alpha.coding.common.log.dubbo.LogMonitorFilter
 LocaleRecognizeFilter=com.alpha.coding.common.dubbo.filter.LocaleRecognizeFilter
+MapThreadLocalMirrorConsumerFilter=com.alpha.coding.common.dubbo.filter.MapThreadLocalMirrorConsumerFilter
+MapThreadLocalMirrorProviderFilter=com.alpha.coding.common.dubbo.filter.MapThreadLocalMirrorProviderFilter

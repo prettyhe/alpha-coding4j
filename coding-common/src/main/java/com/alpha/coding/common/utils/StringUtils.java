@@ -13,6 +13,7 @@ public class StringUtils {
 
     private static final String SEP_DOT = "\\.";
     private static final String DOT = ".";
+    private static final String EMPTY_STRING = "";
 
     public static boolean isEmpty(String str) {
         return str == null || str.length() == 0;
@@ -93,6 +94,20 @@ public class StringUtils {
             }
             return text;
         }
+    }
+
+    public static String join(String[] array, String split) {
+        if (array == null || array.length == 0) {
+            return EMPTY_STRING;
+        }
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < array.length; i++) {
+            if (i > 0) {
+                sb.append(split);
+            }
+            sb.append(array[i]);
+        }
+        return sb.toString();
     }
 
 }

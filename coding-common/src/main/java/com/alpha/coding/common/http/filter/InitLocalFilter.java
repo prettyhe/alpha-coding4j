@@ -19,6 +19,7 @@ import com.alpha.coding.common.utils.IpUtils;
 import com.alpha.coding.common.utils.StringUtils;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 
@@ -31,6 +32,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Data
 @Accessors(chain = true)
+@EqualsAndHashCode(callSuper = false)
 public class InitLocalFilter extends AbstractEnhancerFilter {
 
     private Class<?> envContextClass;

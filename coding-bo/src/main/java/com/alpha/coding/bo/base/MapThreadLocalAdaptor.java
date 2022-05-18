@@ -12,28 +12,33 @@ import java.util.Set;
  */
 public class MapThreadLocalAdaptor {
 
-    private static InheritableThreadLocal<Map<String, Object>> inheritableThreadLocal =
+    private static final InheritableThreadLocal<Map<String, Object>> INHERITABLE_THREAD_LOCAL =
             new InheritableThreadLocal<Map<String, Object>>() {
                 @Override
                 protected Map<String, Object> childValue(Map<String, Object> parentValue) {
                     if (parentValue == null) {
                         return null;
                     }
-                    return new HashMap<String, Object>(parentValue);
+                    return new HashMap<>(parentValue);
                 }
             };
+
+    public static boolean containsKey(String key) {
+        Map<String, Object> map = INHERITABLE_THREAD_LOCAL.get();
+        return map != null && map.containsKey(key);
+    }
 
     public static void put(String key, Object val) {
         if (key == null) {
             throw new IllegalArgumentException("key cannot be null");
         }
-        Map<String, Object> map = inheritableThreadLocal.get();
+        Map<String, Object> map = INHERITABLE_THREAD_LOCAL.get();
         if (map == null) {
             synchronized(MapThreadLocalAdaptor.class) {
-                map = inheritableThreadLocal.get();
+                map = INHERITABLE_THREAD_LOCAL.get();
                 if (map == null) {
-                    map = new HashMap<String, Object>();
-                    inheritableThreadLocal.set(map);
+                    map = new HashMap<>();
+                    INHERITABLE_THREAD_LOCAL.set(map);
                 }
             }
         }
@@ -41,7 +46,7 @@ public class MapThreadLocalAdaptor {
     }
 
     public static Object get(String key) {
-        Map<String, Object> map = inheritableThreadLocal.get();
+        Map<String, Object> map = INHERITABLE_THREAD_LOCAL.get();
         if ((map != null) && (key != null)) {
             return map.get(key);
         } else {
@@ -50,22 +55,22 @@ public class MapThreadLocalAdaptor {
     }
 
     public static void remove(String key) {
-        Map<String, Object> map = inheritableThreadLocal.get();
+        Map<String, Object> map = INHERITABLE_THREAD_LOCAL.get();
         if (map != null) {
             map.remove(key);
         }
     }
 
     public static void clear() {
-        Map<String, Object> map = inheritableThreadLocal.get();
+        Map<String, Object> map = INHERITABLE_THREAD_LOCAL.get();
         if (map != null) {
             map.clear();
-            inheritableThreadLocal.remove();
+            INHERITABLE_THREAD_LOCAL.remove();
         }
     }
 
     public static Set<String> getKeys() {
-        Map<String, Object> map = inheritableThreadLocal.get();
+        Map<String, Object> map = INHERITABLE_THREAD_LOCAL.get();
         if (map != null) {
             return map.keySet();
         } else {
@@ -74,9 +79,9 @@ public class MapThreadLocalAdaptor {
     }
 
     public static Map<String, Object> getCopyOfContextMap() {
-        Map<String, Object> oldMap = inheritableThreadLocal.get();
+        Map<String, Object> oldMap = INHERITABLE_THREAD_LOCAL.get();
         if (oldMap != null) {
-            return new HashMap<String, Object>(oldMap);
+            return new HashMap<>(oldMap);
         } else {
             return null;
         }

@@ -215,5 +215,5 @@ public interface Functions {
      * 字符串安全截取
      */
     BiFunction<String, Integer, String> safeSubstring =
-            (s, l) -> s == null ? null : (s.substring(Math.min(s.length(), l)));
+            (s, l) -> s == null ? null : (s.substring(0, Math.min(s.length(), l)));
 }

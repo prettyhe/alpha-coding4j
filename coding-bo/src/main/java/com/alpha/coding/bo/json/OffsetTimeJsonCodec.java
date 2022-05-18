@@ -7,6 +7,7 @@ import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
@@ -40,7 +41,7 @@ public class OffsetTimeJsonCodec implements ObjectSerializer, ObjectDeserializer
     private static final List<String> STRING_AUTO_FORMATS = Arrays.asList("yyyy-MM-dd HH:mm:ss.SSS",
             "yyyy-MM-dd HH:mm:ss", "yyyy-MM-dd HH:mm", "yyyy-MM-dd HH", "yyyy-MM-dd", "dd/MM/yyyy");
 
-    private static ConcurrentMap<Class<? extends Supplier<Long>>, Supplier<Long>> supplierCache =
+    private static final ConcurrentMap<Class<? extends Supplier<Long>>, Supplier<Long>> SUPPLIER_CACHE =
             new ConcurrentHashMap<>();
 
     @Override
@@ -55,16 +56,16 @@ public class OffsetTimeJsonCodec implements ObjectSerializer, ObjectDeserializer
             return (T) smartParse(input, DEFAULT_FORMAT, null);
         } else {
             final Class<? extends Supplier<Long>> clz = annotation.timezoneOffsetSup();
-            if (supplierCache.get(clz) == null) {
+            if (SUPPLIER_CACHE.get(clz) == null) {
                 try {
-                    supplierCache.put(clz, clz.newInstance());
+                    SUPPLIER_CACHE.put(clz, clz.newInstance());
                 } catch (Exception e) {
                     throw new RuntimeException(clz.getName() + "can not new instance");
                 }
             }
-            String format = annotation.timeFormat() == null || annotation.timeFormat().length() == 0 ? DEFAULT_FORMAT :
-                    annotation.timeFormat();
-            return (T) smartParse(input, format, supplierCache.get(clz).get()); // 使用注解提供的偏移量提供函数得到时差偏移量解析
+            String format = annotation.timeFormat().length() == 0 ? DEFAULT_FORMAT : annotation.timeFormat();
+            // 使用注解提供的偏移量提供函数得到时差偏移量解析
+            return (T) smartParse(input, format, SUPPLIER_CACHE.get(clz).get());
         }
     }
 
@@ -85,16 +86,15 @@ public class OffsetTimeJsonCodec implements ObjectSerializer, ObjectDeserializer
             serializer.write(formatDate((Date) object, DEFAULT_FORMAT, null));
         } else {
             final Class<? extends Supplier<Long>> clz = annotation.timezoneOffsetSup();
-            if (supplierCache.get(clz) == null) {
+            if (SUPPLIER_CACHE.get(clz) == null) {
                 try {
-                    supplierCache.put(clz, clz.newInstance());
+                    SUPPLIER_CACHE.put(clz, clz.newInstance());
                 } catch (Exception e) {
                     throw new IOException(clz.getName() + "can not new instance");
                 }
             }
-            String format = annotation.timeFormat() == null || annotation.timeFormat().length() == 0 ? DEFAULT_FORMAT :
-                    annotation.timeFormat();
-            serializer.write(formatDate((Date) object, format, supplierCache.get(clz).get()));
+            String format = annotation.timeFormat().length() == 0 ? DEFAULT_FORMAT : annotation.timeFormat();
+            serializer.write(formatDate((Date) object, format, SUPPLIER_CACHE.get(clz).get()));
         }
     }
 
@@ -150,7 +150,7 @@ public class OffsetTimeJsonCodec implements ObjectSerializer, ObjectDeserializer
             return null;
         }
         TimeZone timeZone = timezoneOffsetMillis == null ? null : GMT;
-        Date date = multiParse(dateStr, Arrays.asList(targetFormat), timeZone);
+        Date date = multiParse(dateStr, Collections.singletonList(targetFormat), timeZone);
         if (date == null) {
             date = multiParse(dateStr, isNumeric(dateStr) ? NUMERIC_AUTO_FORMATS : STRING_AUTO_FORMATS, timeZone);
         }
@@ -185,6 +185,7 @@ public class OffsetTimeJsonCodec implements ObjectSerializer, ObjectDeserializer
                     return date;
                 }
             } catch (Exception e) {
+                // nothing
             }
         }
         return null;
@@ -202,7 +203,7 @@ public class OffsetTimeJsonCodec implements ObjectSerializer, ObjectDeserializer
         }
         int sz = str.length();
         for (int i = 0; i < sz; i++) {
-            if (Character.isDigit(str.charAt(i)) == false) {
+            if (!Character.isDigit(str.charAt(i))) {
                 return false;
             }
         }

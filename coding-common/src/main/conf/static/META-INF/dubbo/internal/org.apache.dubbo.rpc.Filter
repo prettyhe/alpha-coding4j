@@ -1,0 +1,2 @@
+MapThreadLocalMirrorConsumerFilter=com.alpha.coding.common.dubbo.apache.filter.MapThreadLocalMirrorConsumerFilter
+MapThreadLocalMirrorProviderFilter=com.alpha.coding.common.dubbo.apache.filter.MapThreadLocalMirrorProviderFilter

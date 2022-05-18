@@ -50,6 +50,8 @@ public class MessageMonitor implements Serializable {
     private Date sendTime;
     @Column(name = "receipt_time")
     private Date receiptTime;
+    @Column(name = "tenant_id")
+    private Integer tenantId;
     @Column(name = "create_time")
     private Date createTime;
     @Column(name = "update_time")

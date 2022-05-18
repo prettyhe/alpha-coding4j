@@ -277,6 +277,13 @@
             <artifactId>rocketmq-client</artifactId>
             <optional>true</optional>
         </dependency>
+        <!--redisson-->
+        <dependency>
+            <groupId>org.redisson</groupId>
+            <artifactId>redisson</artifactId>
+            <version>3.14.0</version>
+            <optional>true</optional>
+        </dependency>
     </dependencies>
 
 </project>

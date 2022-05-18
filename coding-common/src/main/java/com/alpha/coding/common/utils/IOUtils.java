@@ -338,20 +338,33 @@ public class IOUtils {
     }
 
     /**
+     * 初始化目录，先清空，再创建
+     */
+    public static File initDir(String path) {
+        cleanPath(path);
+        File file = new File(path);
+        file.mkdirs();
+        return file;
+    }
+
+    /**
+     * 获取文件绝对路径
+     */
+    public static String getAbsolutePath(File file) {
+        try {
+            return file.getCanonicalPath();
+        } catch (IOException e) {
+            return file.getAbsolutePath();
+        }
+    }
+
+    /**
      * 创建临时随机目录
      */
     public static String makeRandomTmpDir() {
         final String path = joinPath(System.getProperty("java.io.tmpdir"), CommUtils.uuid());
-        File dir = new File(path);
-        if (dir.exists()) {
-            dir.delete();
-        }
-        dir.mkdirs();
-        try {
-            return dir.getCanonicalPath();
-        } catch (IOException e) {
-            return path;
-        }
+        File dir = initDir(path);
+        return getAbsolutePath(dir);
     }
 
     /**
@@ -385,6 +398,19 @@ public class IOUtils {
         }
         file.delete(); // 删除目录
         return true;
+    }
+
+    /**
+     * 清理文件
+     */
+    public static boolean deleteFile(File file) {
+        String canonicalPath = null;
+        try {
+            canonicalPath = file.getCanonicalPath();
+        } catch (IOException e) {
+            canonicalPath = file.getAbsolutePath();
+        }
+        return cleanPath(canonicalPath);
     }
 
     public static void writeByteArrayToFile(final File file, final byte[] data) throws IOException {

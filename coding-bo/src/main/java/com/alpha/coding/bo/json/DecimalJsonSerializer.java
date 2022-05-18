@@ -25,9 +25,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class DecimalJsonSerializer implements ObjectSerializer {
 
-    public static final DecimalJsonSerializer instance = new DecimalJsonSerializer();
+    public static final DecimalJsonSerializer INSTANCE = new DecimalJsonSerializer();
 
-    private static final Set<Class<?>> NUMBER_TYPES = new HashSet<>();
+    private static final Set<Type> NUMBER_TYPES = new HashSet<>();
 
     static {
         NUMBER_TYPES.add(byte.class);

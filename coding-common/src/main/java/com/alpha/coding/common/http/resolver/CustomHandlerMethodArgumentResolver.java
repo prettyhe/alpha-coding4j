@@ -36,15 +36,8 @@ public class CustomHandlerMethodArgumentResolver implements HandlerMethodArgumen
         final Class<?> type = parameter.getParameterType();
         final HttpParam annotation = parameter.getParameterAnnotation(HttpParam.class);
         Object target = null;
-        if (annotation.name() != null) {
-            for (String name : annotation.name()) {
-                target = parseFromParameter(request, name, type);
-                if (target != null) {
-                    return target;
-                }
-            }
-        } else {
-            target = parseFromParameter(request, parameter.getParameterName(), type);
+        for (String name : annotation.name()) {
+            target = parseFromParameter(request, name, type);
             if (target != null) {
                 return target;
             }
@@ -55,12 +48,14 @@ public class CustomHandlerMethodArgumentResolver implements HandlerMethodArgumen
                 return target;
             }
         } catch (Exception e) {
+            // nothing
         }
         if (!type.isPrimitive()) {
             try {
                 target = type.newInstance();
                 HttpParameterUtils.parseHttpParameter(request, target);
             } catch (Exception e) {
+                // nothing
             }
         }
         return target;

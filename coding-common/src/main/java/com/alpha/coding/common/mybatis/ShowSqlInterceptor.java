@@ -1,12 +1,22 @@
 package com.alpha.coding.common.mybatis;
 
+import java.lang.reflect.Proxy;
+import java.sql.Connection;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
+import java.util.Set;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.ibatis.cache.CacheKey;
 import org.apache.ibatis.executor.Executor;
+import org.apache.ibatis.executor.statement.StatementHandler;
 import org.apache.ibatis.mapping.BoundSql;
 import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.mapping.ParameterMapping;
@@ -16,12 +26,14 @@ import org.apache.ibatis.plugin.Invocation;
 import org.apache.ibatis.plugin.Plugin;
 import org.apache.ibatis.plugin.Signature;
 import org.apache.ibatis.reflection.MetaObject;
+import org.apache.ibatis.reflection.SystemMetaObject;
 import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.session.ResultHandler;
 import org.apache.ibatis.session.RowBounds;
 import org.apache.ibatis.type.TypeHandlerRegistry;
 
 import com.alpha.coding.common.utils.DateUtils;
+import com.alpha.coding.common.utils.StringUtils;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -39,16 +51,105 @@ import lombok.extern.slf4j.Slf4j;
                 args = {MappedStatement.class, Object.class, RowBounds.class, ResultHandler.class}),
         @Signature(type = Executor.class, method = "query",
                 args = {MappedStatement.class, Object.class, RowBounds.class, ResultHandler.class,
-                        CacheKey.class, BoundSql.class})
+                        CacheKey.class, BoundSql.class}),
+        @Signature(type = StatementHandler.class, method = "prepare",
+                args = {Connection.class, Integer.class})
 })
 public class ShowSqlInterceptor implements Interceptor {
 
     private static final String PLACEHOLDER = "%s";
-    // private static final String PLACEHOLDER_FOR_SIGN = "";
     private static final String CONF_SQL_ID_ABBR = "sqlIdAbbreviated";
-    private static final String SEP_DOT = "\\.";
-    private static final String DOT = ".";
 
+    /**
+     * 静态内部类工具
+     */
+    private static final class MapThreadLocal {
+        private static final InheritableThreadLocal<Map<String, Object>> THREAD_LOCAL =
+                new InheritableThreadLocal<Map<String, Object>>() {
+                    @Override
+                    protected Map<String, Object> childValue(Map<String, Object> parentValue) {
+                        if (parentValue == null) {
+                            return null;
+                        }
+                        return new HashMap<>(parentValue);
+                    }
+                };
+
+        public static void put(String key, Object val) {
+            if (key == null) {
+                throw new IllegalArgumentException("key cannot be null");
+            }
+            Map<String, Object> map = THREAD_LOCAL.get();
+            if (map == null) {
+                synchronized(MapThreadLocal.class) {
+                    map = THREAD_LOCAL.get();
+                    if (map == null) {
+                        map = new HashMap<>();
+                        THREAD_LOCAL.set(map);
+                    }
+                }
+            }
+            map.put(key, val);
+        }
+
+        public static Object get(String key) {
+            Map<String, Object> map = THREAD_LOCAL.get();
+            if ((map != null) && (key != null)) {
+                return map.get(key);
+            } else {
+                return null;
+            }
+        }
+
+        public static void remove(String key) {
+            Map<String, Object> map = THREAD_LOCAL.get();
+            if (map != null) {
+                map.remove(key);
+            }
+        }
+
+        public static void clear() {
+            Map<String, Object> map = THREAD_LOCAL.get();
+            if (map != null) {
+                map.clear();
+                THREAD_LOCAL.remove();
+            }
+        }
+
+        public static Set<String> getKeys() {
+            Map<String, Object> map = THREAD_LOCAL.get();
+            if (map != null) {
+                return map.keySet();
+            } else {
+                return null;
+            }
+        }
+
+        public static Map<String, Object> getCopyOfContextMap() {
+            Map<String, Object> oldMap = THREAD_LOCAL.get();
+            if (oldMap != null) {
+                return new HashMap<>(oldMap);
+            } else {
+                return null;
+            }
+        }
+    }
+
+    /**
+     * 获取代理对象的实际对象
+     */
+    private static <T> T realTarget(Object target) {
+        if (Proxy.isProxyClass(target.getClass())) {
+            MetaObject metaObject = SystemMetaObject.forObject(target);
+            return realTarget(metaObject.getValue("h.target"));
+        } else {
+            return (T) target;
+        }
+    }
+
+    /**
+     * 属性配置
+     */
     private Properties properties;
 
     @Override
@@ -63,42 +164,77 @@ public class ShowSqlInterceptor implements Interceptor {
 
     @Override
     public Object intercept(Invocation invocation) throws Throwable {
-        MappedStatement mappedStatement = (MappedStatement) invocation.getArgs()[0];
-        Object parameter = null;
-        if (invocation.getArgs().length > 1) {
-            parameter = invocation.getArgs()[1];
-        }
-        String sqlId = mappedStatement.getId();
-        BoundSql boundSql = mappedStatement.getBoundSql(parameter);
-        Configuration configuration = mappedStatement.getConfiguration();
-        Object returnValue = null;
         long start = System.currentTimeMillis();
-        try {
-            returnValue = invocation.proceed();
-        } catch (Throwable throwable) {
-            log.warn("execute-sql {} fail, msg: {}", sqlId, throwable.getMessage());
-            throw throwable;
-        } finally {
-            long end = System.currentTimeMillis();
-            long time = end - start;
-            String sql = getSql(configuration, boundSql, sqlId, time);
-            if (sql != null) {
-                log.info(sql);
+        final Object target = invocation.getTarget();
+        if (target instanceof Executor) {
+            final Object[] invocationArgs = invocation.getArgs();
+            MappedStatement mappedStatement = (MappedStatement) invocationArgs[0];
+            Object parameter = null;
+            if (invocationArgs.length > 1) {
+                parameter = invocationArgs[1];
             }
+            final String sqlId = mappedStatement.getId();
+            BoundSql boundSql = null;
+            if (invocationArgs.length == 6 && invocationArgs[5] instanceof BoundSql) {
+                boundSql = (BoundSql) invocationArgs[5];
+            } else {
+                boundSql = mappedStatement.getBoundSql(parameter);
+            }
+            Configuration configuration = mappedStatement.getConfiguration();
+            Object returnValue = null;
+            try {
+                returnValue = invocation.proceed();
+            } catch (Throwable throwable) {
+                log.warn("execute-sql {} fail, msg: {}", sqlId, throwable.getMessage());
+                throw throwable;
+            } finally {
+                long end = System.currentTimeMillis();
+                long time = end - start;
+                Object sql = MapThreadLocal.get(sqlId);
+                if (sql == null) {
+                    sql = getSql(configuration, boundSql, sqlId);
+                }
+                if (sql != null) {
+                    log.info("{} cost {}ms", sql, time);
+                }
+                MapThreadLocal.remove(sqlId);
+            }
+            return returnValue;
+        } else if (target instanceof StatementHandler) {
+            final StatementHandler statementHandler = (StatementHandler) target;
+            Object returnValue = null;
+            try {
+                returnValue = invocation.proceed();
+                return returnValue;
+            } finally {
+                try {
+                    MetaObject object = SystemMetaObject.forObject(realTarget(statementHandler));
+                    final MybatisStatementHandler handler =
+                            new MybatisStatementHandler(SystemMetaObject.forObject(object.getValue("delegate")));
+                    final MappedStatement mappedStatement = handler.mappedStatement();
+                    final String sqlId = mappedStatement.getId();
+                    String sql = getSql(handler.configuration(), handler.boundSql(), mappedStatement.getId());
+                    MapThreadLocal.put(sqlId, sql);
+                } catch (Exception e) {
+                    log.warn("parse sql from StatementHandler fail for {}, msg is {}",
+                            Optional.ofNullable(statementHandler.getBoundSql()).map(BoundSql::getSql)
+                                    .map(s -> s.replaceAll("[\\s]+", " ")).orElse(null),
+                            e.getMessage());
+                }
+            }
+        } else {
+            return invocation.proceed();
         }
-        return returnValue;
     }
 
-    public String getSql(Configuration configuration, BoundSql boundSql, String sqlId, long time) {
+    public String getSql(Configuration configuration, BoundSql boundSql, String sqlId) {
         try {
             String sql = showSql(configuration, boundSql);
             StringBuilder str = new StringBuilder(100);
-            str.append(enableAbbreviateSqlId() ? abbreviateSqlId(sqlId) : sqlId);
+            str.append(enableAbbreviateSqlId() ? StringUtils.abbreviateDotSplit(sqlId, 1) : sqlId);
             str.append(": ");
             str.append(sql);
-            str.append("; cost ");
-            str.append(time);
-            str.append("ms");
+            str.append(";");
             return str.toString();
         } catch (Throwable t) {
             String originSql = null;
@@ -116,8 +252,18 @@ public class ShowSqlInterceptor implements Interceptor {
         String value = null;
         if (obj instanceof String) {
             value = "'" + obj.toString() + "'";
+        } else if (obj instanceof java.sql.Date) {
+            value = "'" + DateUtils.format((Date) obj, DateUtils.DATE_FORMAT) + "'";
+        } else if (obj instanceof java.sql.Time) {
+            value = "'" + DateUtils.format((Date) obj, DateUtils.TIME_FORMAT) + "'";
         } else if (obj instanceof Date) {
-            value = "'" + DateUtils.format((Date) obj) + "'";
+            value = "'" + DateUtils.format((Date) obj, DateUtils.DEFAULT_FORMAT) + "'";
+        } else if (obj instanceof LocalDate) {
+            value = "'" + ((LocalDate) obj).format(DateTimeFormatter.ofPattern(DateUtils.DATE_FORMAT)) + "'";
+        } else if (obj instanceof LocalTime) {
+            value = "'" + ((LocalTime) obj).format(DateTimeFormatter.ofPattern(DateUtils.TIME_FORMAT)) + "'";
+        } else if (obj instanceof LocalDateTime) {
+            value = "'" + ((LocalDateTime) obj).format(DateTimeFormatter.ofPattern(DateUtils.DEFAULT_FORMAT)) + "'";
         } else if (obj instanceof byte[]) {
             value = "''";
         } else {
@@ -178,29 +324,6 @@ public class ShowSqlInterceptor implements Interceptor {
             }
         }
         return sql;
-    }
-
-    private String abbreviateSqlId(String sqlId) {
-        if (sqlId == null) {
-            return null;
-        }
-        try {
-            final String[] arr = sqlId.split(SEP_DOT);
-            if (arr.length <= 2) {
-                return sqlId;
-            }
-            StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < arr.length - 2; i++) {
-                sb.append(arr[i], 0, 1).append(DOT);
-            }
-            sb.append(arr[arr.length - 2]).append(DOT).append(arr[arr.length - 1]);
-            return sb.toString();
-        } catch (Exception e) {
-            if (log.isDebugEnabled()) {
-                log.debug("abbreviate sqlId fail, {}", e.getMessage());
-            }
-            return sqlId;
-        }
     }
 
     private String getProperty(String key) {

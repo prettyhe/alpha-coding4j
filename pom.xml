@@ -35,9 +35,9 @@
         <coding4j.springframework.version>4.3.26.RELEASE</coding4j.springframework.version>
         <coding4j.springframework.data.version>2.2.3.RELEASE</coding4j.springframework.data.version>
         <coding4j.jedis.version>3.1.0</coding4j.jedis.version>
-        <coding4j.guava.version>28.2-jre</coding4j.guava.version>
+        <coding4j.guava.version>20.0</coding4j.guava.version>
         <coding4j.lombok.version>1.18.10</coding4j.lombok.version>
-        <coding4j.fastjson.version>1.2.75</coding4j.fastjson.version>
+        <coding4j.fastjson.version>1.2.83</coding4j.fastjson.version>
         <coding4j.jackson.version>2.10.0</coding4j.jackson.version>
         <coding4j.slf4j.version>1.7.26</coding4j.slf4j.version>
         <coding4j.log4j.version>2.17.0</coding4j.log4j.version>
@@ -48,37 +48,37 @@
         <coding4j.commons-io.version>2.7</coding4j.commons-io.version>
         <coding4j.commons-dbcp.version>1.4</coding4j.commons-dbcp.version>
         <coding4j.commons-collections.version>3.2.2</coding4j.commons-collections.version>
-        <coding4j.commons-text.version>1.6</coding4j.commons-text.version>
+        <coding4j.commons-text.version>1.8</coding4j.commons-text.version>
         <coding4j.commons-beanutils.version>1.9.4</coding4j.commons-beanutils.version>
-        <coding4j.commons-codec.version>1.11</coding4j.commons-codec.version>
+        <coding4j.commons-codec.version>1.13</coding4j.commons-codec.version>
         <coding4j.commons-validator.version>1.6</coding4j.commons-validator.version>
         <coding4j.common-email.version>1.5</coding4j.common-email.version>
         <coding4j.commons-pool.version>1.6</coding4j.commons-pool.version>
-        <coding4j.commons-pool2.version>2.4.2</coding4j.commons-pool2.version>
+        <coding4j.commons-pool2.version>2.8.0</coding4j.commons-pool2.version>
         <coding4j.commons-lang3.version>3.9</coding4j.commons-lang3.version>
         <coding4j.javax.servlet-api.version>3.1.0</coding4j.javax.servlet-api.version>
         <coding4j.httpclient.version>4.5.13</coding4j.httpclient.version>
         <coding4j.mybatis.version>3.5.6</coding4j.mybatis.version>
-        <coding4j.mybatis.spring.version>2.0.3</coding4j.mybatis.spring.version>
+        <coding4j.mybatis.spring.version>2.0.6</coding4j.mybatis.spring.version>
         <coding4j.mybatis-paginator.version>1.2.17</coding4j.mybatis-paginator.version>
         <coding4j.dubbo.version>2.6.3</coding4j.dubbo.version>
         <coding4j.jboss.netty.version>3.2.9.Final</coding4j.jboss.netty.version>
         <coding4j.zkclient.version>0.3</coding4j.zkclient.version>
         <coding4j.zookeeper.version>3.4.14</coding4j.zookeeper.version>
-        <coding4j.netty.version>4.1.36.Final</coding4j.netty.version>
+        <coding4j.netty.version>4.1.54.Final</coding4j.netty.version>
         <coding4j.junit.version>4.13.1</coding4j.junit.version>
-        <coding4j.druid.version>1.1.20</coding4j.druid.version>
+        <coding4j.druid.version>1.2.8</coding4j.druid.version>
         <coding4j.hystrix.version>1.5.12</coding4j.hystrix.version>
         <coding4j.jsoup.version>1.14.2</coding4j.jsoup.version>
         <coding4j.aspectjweaver.version>1.8.13</coding4j.aspectjweaver.version>
         <coding4j.javax.el-api.version>3.0.0</coding4j.javax.el-api.version>
         <coding4j.mysql.version>8.0.16</coding4j.mysql.version>
-        <coding4j.javassist.version>3.18.1-GA</coding4j.javassist.version>
+        <coding4j.javassist.version>3.20.0-GA</coding4j.javassist.version>
         <coding4j.disruptor.version>3.4.2</coding4j.disruptor.version>
         <coding4j.validation-api.version>2.0.1.Final</coding4j.validation-api.version>
         <coding4j.persistence-api.version>1.0.2</coding4j.persistence-api.version>
         <coding4j.poi-ooxml.version>3.15</coding4j.poi-ooxml.version>
-        <coding4j.hibernate.validator.version>5.4.3.Final</coding4j.hibernate.validator.version>
+        <coding4j.hibernate.validator.version>6.0.20.Final</coding4j.hibernate.validator.version>
         <coding4j.groovy.version>3.0.7</coding4j.groovy.version>
         <coding4j.ehcache.version>2.10.6</coding4j.ehcache.version>
         <coding4j.snakeyaml.version>1.26</coding4j.snakeyaml.version>

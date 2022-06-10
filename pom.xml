@@ -61,7 +61,7 @@
         <coding4j.mybatis.version>3.5.6</coding4j.mybatis.version>
         <coding4j.mybatis.spring.version>2.0.6</coding4j.mybatis.spring.version>
         <coding4j.mybatis-paginator.version>1.2.17</coding4j.mybatis-paginator.version>
-        <coding4j.dubbo.version>2.6.3</coding4j.dubbo.version>
+        <coding4j.dubbo.version>2.6.12</coding4j.dubbo.version>
         <coding4j.jboss.netty.version>3.2.9.Final</coding4j.jboss.netty.version>
         <coding4j.zkclient.version>0.3</coding4j.zkclient.version>
         <coding4j.zookeeper.version>3.4.14</coding4j.zookeeper.version>

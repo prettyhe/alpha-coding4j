@@ -1,4 +1,4 @@
-package com.alpha.coding.common.utils.json;
+package com.alpha.coding.bo.annotation;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -6,14 +6,14 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * JSONObjectPath
+ * JsonPath
  *
  * @version 1.0
+ * Date: 2022-08-18
  */
-@Deprecated
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.FIELD, ElementType.PARAMETER})
-public @interface JSONObjectPath {
+public @interface JsonPath {
 
     /**
      * 路径
@@ -21,13 +21,8 @@ public @interface JSONObjectPath {
     String path();
 
     /**
-     * 分隔符
+     * 忽略空值
      */
-    String sep() default "\\.";
-
-    /**
-     * 类型
-     */
-    Class<?> javaType();
+    boolean ignoreNullValue() default true;
 
 }

@@ -1,6 +1,10 @@
 package com.alpha.coding.common.utils;
 
 import java.lang.reflect.Field;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -196,8 +200,18 @@ public class SqlUtils {
             String str = null;
             if (arg instanceof String) {
                 str = "'" + arg.toString() + "'";
+            } else if (arg instanceof java.sql.Date) {
+                str = "'" + DateUtils.format((Date) arg, DateUtils.DATE_FORMAT) + "'";
+            } else if (arg instanceof java.sql.Time) {
+                str = "'" + DateUtils.format((Date) arg, DateUtils.TIME_FORMAT) + "'";
             } else if (arg instanceof Date) {
-                str = "'" + DateUtils.format((Date) arg) + "'";
+                str = "'" + DateUtils.format((Date) arg, DateUtils.DEFAULT_FORMAT) + "'";
+            } else if (arg instanceof LocalDate) {
+                str = "'" + ((LocalDate) arg).format(DateTimeFormatter.ofPattern(DateUtils.DATE_FORMAT)) + "'";
+            } else if (arg instanceof LocalTime) {
+                str = "'" + ((LocalTime) arg).format(DateTimeFormatter.ofPattern(DateUtils.TIME_FORMAT)) + "'";
+            } else if (arg instanceof LocalDateTime) {
+                str = "'" + ((LocalDateTime) arg).format(DateTimeFormatter.ofPattern(DateUtils.DEFAULT_FORMAT)) + "'";
             } else if (arg instanceof byte[]) {
                 str = "''";
             } else {

@@ -14,6 +14,12 @@ import com.alpha.coding.bo.constant.Keys;
  */
 public class TraceIdHalfInheritor implements Consumer<Map<String, String>> {
 
+    private static final TraceIdHalfInheritor INSTANCE = new TraceIdHalfInheritor();
+
+    public static TraceIdHalfInheritor getInstance() {
+        return INSTANCE;
+    }
+
     @Override
     public void accept(Map<String, String> map) {
         if (map == null || map.get(Keys.TRACE_ID) == null) {
@@ -24,7 +30,7 @@ public class TraceIdHalfInheritor implements Consumer<Map<String, String>> {
             return;
         }
         final int half = traceId.length() / 2;
-        final String newTrace = traceId.substring(0, half) + "_" + genString(traceId.length() - 1 - half);
+        final String newTrace = traceId.substring(0, half) + "-" + genString(traceId.length() - 1 - half);
         map.put(Keys.TRACE_ID, newTrace);
     }
 

@@ -1,4 +1,4 @@
-package com.alpha.coding.common.utils.xls;
+package com.alpha.coding.bo.annotation;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -6,17 +6,12 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/**
- * Label
- *
- * @version 1.0
- * @see com.alpha.coding.bo.annotation.XLSLabel
- */
+import com.alpha.coding.bo.handler.XLSCellHandler;
+
 @Target({ElementType.FIELD})
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-@Deprecated
-public @interface Label {
+public @interface XLSLabel {
 
     /**
      * 字段说明
@@ -34,14 +29,14 @@ public @interface Label {
     Class<?> javaType() default void.class;
 
     /**
-     * 作为excel头部使用的{@link CellHandler}
+     * 作为excel头部使用的{@link XLSCellHandler}
      */
-    Class<? extends CellHandler> headCellHandler() default CellHandler.class;
+    Class<? extends XLSCellHandler> headCellHandler() default XLSCellHandler.class;
 
     /**
-     * 作为excel头部使用的{@link CellHandler}
+     * 作为excel头部使用的{@link XLSCellHandler}
      */
-    Class<? extends CellHandler> cellHandler() default CellHandler.class;
+    Class<? extends XLSCellHandler> cellHandler() default XLSCellHandler.class;
 
     /**
      * 输出时间格式

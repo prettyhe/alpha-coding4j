@@ -87,10 +87,22 @@ public interface Functions {
             (t, u) -> stringSplit.apply(t, u).map(p -> p.collect(Collectors.toSet()));
 
     /**
+     * 切分字符串到LinkedHashSet
+     */
+    BiFunction<String, String, Optional<LinkedHashSet<String>>> stringSplitToLikedSet =
+            (t, u) -> stringSplit.apply(t, u).map(p -> p.collect(Collectors.toCollection(LinkedHashSet::new)));
+
+    /**
      * 切分字符串到Set
      */
     BiFunction<String, String, Set<String>> stringSplitToSetDefaultEmpty =
             (t, u) -> stringSplitToSet.apply(t, u).orElse(Collections.emptySet());
+
+    /**
+     * 切分字符串到LinkedHashSet
+     */
+    BiFunction<String, String, LinkedHashSet<String>> stringSplitToLinkedSetDefaultEmpty =
+            (t, u) -> stringSplitToLikedSet.apply(t, u).orElse(new LinkedHashSet<>(0));
 
     /**
      * 切分字符串到整数List

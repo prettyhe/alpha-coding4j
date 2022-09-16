@@ -2,9 +2,9 @@ package com.alpha.coding.common.utils.json;
 
 import java.lang.reflect.Field;
 
-import org.apache.commons.beanutils.ConvertUtils;
-
 import com.alibaba.fastjson.JSONObject;
+import com.alpha.coding.bo.annotation.JsonPath;
+import com.alpha.coding.bo.function.common.Converter;
 import com.alpha.coding.common.utils.FieldUtils;
 
 import lombok.extern.slf4j.Slf4j;
@@ -13,51 +13,47 @@ import lombok.extern.slf4j.Slf4j;
  * JSONObjectParser
  *
  * @version 1.0
- * Date: 2020-02-21
  */
 @Slf4j
 public class JSONObjectParser {
 
-    public static <T> T parse(JSONObject jsonObject, Class<T> clz)
-            throws IllegalAccessException, InstantiationException {
+    public static <T> T parse(JSONObject jsonObject, Class<T> clz) {
         return mapper(jsonObject, clz, null);
     }
 
-    public static <T> T mapper(JSONObject jsonObject, Class<T> clz, T t)
+    public static <T> T mapper(JSONObject jsonObject, Class<T> clz)
             throws IllegalAccessException, InstantiationException {
+        if (jsonObject == null) {
+            return null;
+        }
+        return mapper(jsonObject, FieldUtils.findMatchedFields(clz, null).toArray(new Field[0]), clz.newInstance());
+    }
+
+    public static <T> T mapper(JSONObject jsonObject, Class<T> clz, T t) {
         if (jsonObject == null) {
             return t;
         }
-        T instance = t == null ? clz.newInstance() : t;
-        Field[] declaredFields = clz.getDeclaredFields();
-        return mapper(jsonObject, declaredFields, instance);
+        return mapper(jsonObject, FieldUtils.findMatchedFields(clz, null).toArray(new Field[0]), t);
     }
 
-    private static <T> T mapper(JSONObject jsonObject, Field[] declaredFields, T instance) {
-        for (Field field : declaredFields) {
+    private static <T> T mapper(JSONObject jsonObject, Field[] fields, T instance) {
+        for (Field field : fields) {
             field.setAccessible(true);
-            JSONObjectPath annotation = field.getAnnotation(JSONObjectPath.class);
-            if (annotation == null) {
+            JSONObjectPath jsonObjectPath = field.getAnnotation(JSONObjectPath.class);
+            if (jsonObjectPath != null) {
+                FieldUtils.setField(instance, field.getName(),
+                        Converter.jsonConvert.apply(JSONObjectUtils.getValue(jsonObject, jsonObjectPath.path(),
+                                jsonObjectPath.sep()), field.getGenericType()));
                 continue;
             }
-            Object value = convert(JSONObjectUtils.getValue(jsonObject, annotation.path(), annotation.sep()),
-                    annotation.javaType());
-            FieldUtils.setField(instance, field.getName(), value);
+            JsonPath jsonPath = field.getAnnotation(JsonPath.class);
+            if (jsonPath != null) {
+                FieldUtils.setField(instance, field.getName(),
+                        Converter.jsonConvert.apply(JSONObjectUtils.getValue(jsonObject, jsonPath.path(),
+                                "\\."), field.getGenericType()));
+            }
         }
         return instance;
-    }
-
-    private static <T> T convert(Object value, Class<T> clz) {
-        if (value == null) {
-            return null;
-        }
-        try {
-            Object convert = ConvertUtils.convert(value, clz);
-            return (T) convert;
-        } catch (Exception e) {
-            log.error("convert-fail: value={}, clz={}", value, clz.getName(), e);
-            throw e;
-        }
     }
 
 }

@@ -51,6 +51,7 @@ public class SyncInvokeAspect implements ApplicationContextAware {
     /**
      * 切面逻辑
      */
+    @SuppressWarnings({"rawtypes"})
     public Object doAspect(final ProceedingJoinPoint joinPoint) throws Throwable {
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
         final Class<?> targetClass = AopHelper.getTargetClass(joinPoint.getTarget());

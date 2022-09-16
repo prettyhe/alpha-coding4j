@@ -19,18 +19,18 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
-import com.alpha.coding.common.utils.FieldUtils;
+import com.alpha.coding.bo.handler.XLSCellHandler;
+import com.alpha.coding.common.utils.DateUtils;
 
 /**
- * XLSWriter
+ * XLSUtils
  *
  * @version 1.0
- * Date: 2020-02-21
  */
-public class XLSWriter {
+public class XLSWriter extends XLSOperator {
 
-    private static final Map<Class<? extends CellHandler>, CellHandler> CACHE = new HashMap<>();
-    private static final Map<Sheet, Map<Class<? extends CellHandler>, CellStyle>> CELL_STYLE_CACHE =
+    private static final Map<Class<? extends XLSCellHandler>, XLSCellHandler> CACHE = new HashMap<>();
+    private static final Map<Sheet, Map<Class<? extends XLSCellHandler>, CellStyle>> CELL_STYLE_CACHE =
             new ConcurrentHashMap<>();
 
     /**
@@ -38,7 +38,7 @@ public class XLSWriter {
      *
      * @param cellHandler cell处理回调
      */
-    public static void registerCellHandler(CellHandler cellHandler) {
+    public static void registerCellHandler(XLSCellHandler cellHandler) {
         CACHE.put(cellHandler.getClass(), cellHandler);
     }
 
@@ -83,24 +83,21 @@ public class XLSWriter {
     public static <T> void writeSheet(Sheet sheet, List<T> list, Class<T> clazz, boolean withHead)
             throws IllegalAccessException {
         try {
-            List<Field> fields = FieldUtils.findMatchedFields(clazz, Label.class);
             final TreeMap<Integer, Field> canToCellFieldMap = new TreeMap<>();
-            final Map<Field, Label> fieldLabelMap = new HashMap<>();
-            for (Field field : fields) {
-                Label label = field.getAnnotation(Label.class);
-                field.setAccessible(true);
-                canToCellFieldMap.put(label.order(), field);
-                fieldLabelMap.put(field, label);
-            }
+            final Map<Field, XLSLabelContext> fieldLabelMap = XLSOperator.fieldLabelMap(clazz);
+            fieldLabelMap.forEach((k, v) -> {
+                k.setAccessible(true);
+                canToCellFieldMap.put(v.getOrder(), k);
+            });
             // 表头
             if (withHead) {
                 Row headRow = sheet.createRow(0);
                 for (Field field : canToCellFieldMap.values()) {
-                    Label label = fieldLabelMap.get(field);
-                    String value = label.memo();
-                    Cell cell = headRow.createCell(label.order());
+                    XLSLabelContext label = fieldLabelMap.get(field);
+                    String value = label.getMemo();
+                    Cell cell = headRow.createCell(label.getOrder());
                     cell.setCellValue(value);
-                    Class<? extends CellHandler> headHandlerClazz = label.headCellHandler();
+                    Class<? extends XLSCellHandler> headHandlerClazz = label.getHeadCellHandler();
                     processCell(headHandlerClazz, cell, value, String.class);
                 }
             }
@@ -113,15 +110,20 @@ public class XLSWriter {
                 T t = list.get(j);
                 Row row = sheet.createRow(j + rowOffset);
                 for (Field field : canToCellFieldMap.values()) {
-                    Label label = fieldLabelMap.get(field);
-                    Cell cell = row.createCell(label.order());
+                    XLSLabelContext label = fieldLabelMap.get(field);
+                    Cell cell = row.createCell(label.getOrder());
                     Object value = field.get(t);
                     Class<?> type = field.getType();
-                    if (label.javaType() != void.class) {
-                        value = ConvertUtils.convert(value, label.javaType());
+                    if (label.getJavaType() != void.class) {
+                        if (Date.class.isAssignableFrom(type) && label.getJavaType() == String.class) {
+                            value = DateUtils.format((Date) value, label.getOutDateFormat());
+                            type = String.class;
+                        } else {
+                            value = ConvertUtils.convert(value, label.getJavaType());
+                        }
                     }
                     setValue(cell, value);
-                    Class<? extends CellHandler> cellHandlerClazz = label.cellHandler();
+                    Class<? extends XLSCellHandler> cellHandlerClazz = label.getCellHandler();
                     processCell(cellHandlerClazz, cell, value, type);
                 }
             }
@@ -156,21 +158,22 @@ public class XLSWriter {
         }
     }
 
-    private static void processCell(Class<? extends CellHandler> handlerClazz, Cell cell, Object obj, Class<?> type) {
-        CellHandler cellHandler = CACHE.get(handlerClazz);
+    private static void processCell(Class<? extends XLSCellHandler> handlerClass, Cell cell,
+                                    Object obj, Class<?> type) {
+        XLSCellHandler cellHandler = CACHE.get(handlerClass);
         final Sheet sheet = cell.getRow().getSheet();
         final Workbook workbook = sheet.getWorkbook();
-        Map<Class<? extends CellHandler>, CellStyle> cellStyleMap = CELL_STYLE_CACHE.get(sheet);
+        Map<Class<? extends XLSCellHandler>, CellStyle> cellStyleMap = CELL_STYLE_CACHE.get(sheet);
         if (cellStyleMap == null) {
             cellStyleMap = new HashMap<>();
         }
-        CellStyle cellStyle = cellStyleMap.get(handlerClazz);
+        CellStyle cellStyle = cellStyleMap.get(handlerClass);
         if (cellStyle == null) {
             cellStyle = workbook.createCellStyle();
             if (cellHandler != null) {
                 cellHandler.processCellStyle(cellStyle, workbook);
             }
-            cellStyleMap.put(handlerClazz, cellStyle);
+            cellStyleMap.put(handlerClass, cellStyle);
             CELL_STYLE_CACHE.put(sheet, cellStyleMap);
         }
         if (cellHandler != null) {

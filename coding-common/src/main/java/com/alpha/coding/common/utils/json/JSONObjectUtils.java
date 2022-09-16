@@ -100,7 +100,7 @@ public class JSONObjectUtils {
      * @param paths      相对于根的绝对目录序列,如[a,b]
      */
     public static void removeValue(JSONObject jsonObject, String[] paths) {
-        updateNode(jsonObject, paths, (j, k) -> j.remove(k));
+        updateNode(jsonObject, paths, JSONObject::remove);
     }
 
 }

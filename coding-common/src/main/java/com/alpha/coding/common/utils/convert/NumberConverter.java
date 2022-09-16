@@ -25,6 +25,7 @@ public class NumberConverter implements Converter {
     }
 
     @Override
+    @SuppressWarnings({"unchecked"})
     public <T> T convert(Class<T> type, Object value) {
         if (type == null || (!PRIMITIVE_NUMBER_TYPES.contains(type) && !Number.class.isAssignableFrom(type))) {
             throw new IllegalArgumentException("unknown number type: " + (type == null ? null : type.getName()));

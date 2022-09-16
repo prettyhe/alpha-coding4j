@@ -94,6 +94,23 @@ public class HttpClientUtils {
      */
     public static String get(String uri, Map<String, String> params, String charset, int connTimeout, int soTimeout)
             throws IOException {
+        return get(uri, params, charset, connTimeout, soTimeout, null);
+    }
+
+    /**
+     * http get
+     *
+     * @param uri         uri，若为https，默认信任所有
+     * @param params      参数,注意参数值可能需要Encode
+     * @param charset     字符集
+     * @param connTimeout 连接超时，-1表示不设超时
+     * @param soTimeout   socket超时，-1表示不设超时
+     * @param getConsumer get请求回调函数
+     * @return 返回结果
+     * @throws IOException IOException
+     */
+    public static String get(String uri, Map<String, String> params, String charset, int connTimeout, int soTimeout,
+                             Consumer<HttpGet> getConsumer) throws IOException {
         String url = uri;
         if (params != null && params.size() > 0) {
             StringBuilder sb = new StringBuilder();
@@ -103,7 +120,7 @@ public class HttpClientUtils {
             sb.deleteCharAt(sb.lastIndexOf("&"));
             url = uri + (uri.contains("?") ? "&" : "?") + sb.toString();
         }
-        return get(url, charset, connTimeout, soTimeout, 0, null, null);
+        return get(url, charset, connTimeout, soTimeout, 0, null, getConsumer);
     }
 
     /**
@@ -156,7 +173,6 @@ public class HttpClientUtils {
                              Supplier<CloseableHttpClient> clientSupplier, Consumer<HttpGet> getConsumer)
             throws IOException {
         final long startTime = System.nanoTime();
-        // Stopwatch stopwatch = Stopwatch.createStarted();
         String ret = null;
         CloseableHttpClient httpClient = null;
         CloseableHttpResponse response = null;
@@ -417,9 +433,6 @@ public class HttpClientUtils {
     public static class HttpExecRes implements Serializable {
         private long costTime; // 耗时(ms)
         private String res; // 响应结果
-
-        public HttpExecRes() {
-        }
 
         public HttpExecRes(long costTime, String res) {
             this.costTime = costTime;

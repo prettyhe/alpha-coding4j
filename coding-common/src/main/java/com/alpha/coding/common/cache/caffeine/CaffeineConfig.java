@@ -23,12 +23,14 @@ public class CaffeineConfig implements Serializable {
     /**
      * 默认从ApplicationContext中根据{loaderName}拿
      */
+    @SuppressWarnings({"rawtypes"})
     public static final BiFunction<ApplicationContext, String, CacheLoader> CACHE_LOADER_FUNCTION =
             (ApplicationContext applicationContext, String name) ->
                     (CacheLoader) applicationContext.getBean(name);
 
     private String cacheName;
     private String loaderName;
+    @SuppressWarnings({"rawtypes"})
     private BiFunction<ApplicationContext, String, CacheLoader> loaderFunction;
     private boolean allowNullValues = true;
     private String spec;

@@ -107,7 +107,7 @@ public class MessagePublishCompensateTask implements AsyncWarmUpCallback, Dispos
             final Set<Long> existIds = new HashSet<>(); // 上一轮ID
             while (true) {
                 final List<MessageMonitor> list =
-                        messageMonitorDao.selectSinceNextSendTime(st,
+                        messageMonitorDao.selectSinceNextSendTime(st, new Date(),
                                 MessageSendStatus.WAIT_SEND.getCode(), minId, 20);
                 if (CollectionUtils.isEmpty(list)) {
                     break;
@@ -165,8 +165,7 @@ public class MessagePublishCompensateTask implements AsyncWarmUpCallback, Dispos
         final String key = dependencyHolder.bizGroup() + ":" + MIN_NEXT_SEND_TIME_CURSOR_KEY;
         Object val = valueOperations.get(key);
         if (val == null) {
-            Object value = dependencyHolder.getRedisTemplate().opsForValue()
-                    .get(dependencyHolder.bizGroup() + ":" + MIN_NEXT_SEND_TIME_KEY);
+            Object value = valueOperations.get(dependencyHolder.bizGroup() + ":" + MIN_NEXT_SEND_TIME_KEY);
             if (value == null) {
                 value = loadMinNextSendTime();
                 valueOperations.set(key, DateUtils.format((Date) value));
@@ -175,6 +174,10 @@ public class MessagePublishCompensateTask implements AsyncWarmUpCallback, Dispos
             val = value;
         }
         Date cursor = DateUtils.smartParse(String.valueOf(val));
+        if (cursor == null) {
+            cursor = loadMinNextSendTime();
+            valueOperations.set(key, DateUtils.format(cursor));
+        }
         if (newDate == null) {
             return cursor;
         }

@@ -3,6 +3,7 @@ package com.alpha.coding.common.redis.cache;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -67,11 +68,11 @@ public class RedisCacheAspect implements ApplicationContextAware {
     private ExpressionParser expressionParser = new SpelExpressionParserFactory().getInstance();
     private ParameterNameDiscoverer parameterNameDiscoverer = new DefaultParameterNameDiscoverer();
     private static final Object NO_RESULT = new Object();
-    private final Charset DEFAULT_CS = Charset.forName("UTF-8");
+    private final Charset DEFAULT_CS = StandardCharsets.UTF_8;
     private final Map<ExpressionKey, Expression> keyCache = new ConcurrentHashMap<>(64);
     private final Map<AnnotatedElementKey, JoinOperationMetadata> metadataCache = new ConcurrentHashMap<>(1024);
     private final Map<String, InvokeUtils.InvokeLock> loadLockCache = new ConcurrentHashMap<>(256);
-    private final Map<AnnotatedElementKey, RedisSerializer> serializerCache = new ConcurrentHashMap<>(256);
+    private final Map<AnnotatedElementKey, RedisSerializer<?>> serializerCache = new ConcurrentHashMap<>(256);
 
     /**
      * 切面逻辑

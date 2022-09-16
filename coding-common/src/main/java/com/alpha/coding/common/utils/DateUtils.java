@@ -3,6 +3,9 @@ package com.alpha.coding.common.utils;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -40,18 +43,40 @@ public class DateUtils {
     public static final long MILLIS_MINUTE = 60 * 1000;
     public static final long MILLIS_SECOND = 1000;
 
+    /**
+     * 格式化时间
+     *
+     * @param timestamp 时间戳，精确到毫秒
+     * @param format    格式
+     */
     public static String format(long timestamp, String format) {
         return format(new Date(timestamp), format);
     }
 
+    /**
+     * 格式化时间，yyyy-MM-dd HH:mm:ss
+     *
+     * @param timestamp 时间戳，精确到毫秒
+     */
     public static String format(long timestamp) {
         return format(timestamp, DEFAULT_FORMAT);
     }
 
+    /**
+     * 格式化时间
+     *
+     * @param date   时间
+     * @param format 格式
+     */
     public static String format(Date date, String format) {
         return date == null ? null : new SimpleDateFormat(format).format(date);
     }
 
+    /**
+     * 格式化时间，yyyy-MM-dd HH:mm:ss
+     *
+     * @param date 时间
+     */
     public static String format(Date date) {
         return format(date, DEFAULT_FORMAT);
     }
@@ -75,23 +100,51 @@ public class DateUtils {
         return dateFormat;
     }
 
+    /**
+     * 格式化时间，yyyy-MM-dd HH:mm:ss
+     *
+     * @param date 时间
+     */
     public static String formatTime(Date date) {
         return format(date, DEFAULT_FORMAT);
     }
 
-    @Deprecated
+    /**
+     * 转换到日期格式，yyyy-MM-dd
+     *
+     * @param str 时间
+     */
     public static String formatDate(String str) {
-        return changeFormat(str, DEFAULT_DATE_FORMAT, DATE_FORMAT);
+        return changeFormat(str, DATE_FORMAT);
     }
 
+    /**
+     * 转换格式
+     *
+     * @param dateStr      时间
+     * @param srcFormat    原始格式
+     * @param targetFormat 目标格式
+     */
     public static String changeFormat(String dateStr, String srcFormat, String targetFormat) {
         return format(parse(dateStr, srcFormat), targetFormat);
     }
 
+    /**
+     * 转换格式
+     *
+     * @param dateStr      时间
+     * @param targetFormat 目标格式
+     */
     public static String changeFormat(String dateStr, String targetFormat) {
         return format(smartParse(dateStr), targetFormat);
     }
 
+    /**
+     * 解析时间，有异常时抛出
+     *
+     * @param dateStr 时间
+     * @param format  格式
+     */
     public static Date parseWithException(String dateStr, String format) throws ParseException {
         return dateStr == null ? null : new SimpleDateFormat(format).parse(dateStr);
     }
@@ -135,6 +188,12 @@ public class DateUtils {
         ));
     }
 
+    /**
+     * 使用指定的几种格式依次解析
+     *
+     * @param dateStr 时间
+     * @param formats 格式
+     */
     public static Date parseByChoose(String dateStr, List<String> formats) {
         for (String format : formats) {
             try {
@@ -149,10 +208,23 @@ public class DateUtils {
         return null;
     }
 
+    /**
+     * 解析时间
+     *
+     * @param dateStr 时间
+     * @param format  格式
+     */
     public static Date parse(String dateStr, String format) {
         return parse(dateStr, format, null);
     }
 
+    /**
+     * 解析时间
+     *
+     * @param dateStr 时间
+     * @param format  格式
+     * @param locale  场所
+     */
     public static Date parse(String dateStr, String format, Locale locale) {
         if (dateStr == null) {
             return null;
@@ -167,67 +239,149 @@ public class DateUtils {
         return date;
     }
 
+    /**
+     * 解析时间，使用 yyyy-MM-dd HH:mm:ss
+     *
+     * @param dateStr 时间
+     */
     public static Date parse(String dateStr) {
         return parse(dateStr, DEFAULT_FORMAT);
     }
 
+    /**
+     * 获取日期(零点)
+     *
+     * @param year  年
+     * @param month 月
+     * @param day   日
+     */
     public static Date getDate(int year, int month, int day) {
-        Calendar cal = new GregorianCalendar(year, month - 1, day);
-        return cal.getTime();
+        return getDate(year, month, day, 0, 0, 0);
     }
 
+    /**
+     * 获取时间
+     *
+     * @param year   年
+     * @param month  月
+     * @param day    日
+     * @param hour   时(24小时制)
+     * @param minute 分
+     * @param second 秒
+     */
     public static Date getDate(int year, int month, int day, int hour, int minute, int second) {
-        Calendar cal = new GregorianCalendar(year, month - 1, day, hour, minute, second);
-        return cal.getTime();
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(Calendar.YEAR, year);
+        calendar.set(Calendar.MONTH, month - 1);
+        calendar.set(Calendar.DAY_OF_MONTH, day);
+        calendar.set(Calendar.HOUR_OF_DAY, hour);
+        calendar.set(Calendar.MINUTE, minute);
+        calendar.set(Calendar.SECOND, second);
+        calendar.set(Calendar.MILLISECOND, 0);
+        return calendar.getTime();
     }
 
+    /**
+     * 获取日期(零点)
+     */
     public static Date getDayDate(Date d) {
-        Calendar cal = new GregorianCalendar();
-        cal.setTime(d);
-        return newDate(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH) + 1, cal.get(Calendar.DAY_OF_MONTH));
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(d);
+        calendar.set(Calendar.HOUR_OF_DAY, 0);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
+        return calendar.getTime();
     }
 
+    /**
+     * 新日期(零点)
+     *
+     * @param year  年
+     * @param month 月
+     * @param day   日
+     */
     public static Date newDate(int year, int month, int day) {
-        Calendar cal = new GregorianCalendar(year, month - 1, day);
-        return cal.getTime();
+        return getDate(year, month, day);
     }
 
-    public static Date getNextDay(Date dt) {
-        if (dt == null) {
-            return null;
-        }
-        Calendar cal = new GregorianCalendar();
-        cal.setTime(dt);
-        return new GregorianCalendar(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH),
-                cal.get(Calendar.DAY_OF_MONTH) + 1).getTime();
-    }
-
+    /**
+     * 获取N年后的那天(零点)
+     *
+     * @param dt 时间
+     * @param n  间隔
+     */
     public static Date getNextNYear(Date dt, int n) {
-        Calendar cal = new GregorianCalendar();
-        cal.setTime(dt);
-        return new GregorianCalendar(cal.get(Calendar.YEAR) + n, cal.get(Calendar.MONTH),
-                cal.get(Calendar.DAY_OF_MONTH)).getTime();
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(dt);
+        calendar.add(Calendar.YEAR, n);
+        calendar.set(Calendar.HOUR_OF_DAY, 0);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
+        return calendar.getTime();
     }
 
+    /**
+     * 获取N天后的那天(零点)
+     *
+     * @param dt 时间
+     * @param n  间隔
+     */
     public static Date getNextNDay(Date dt, int n) {
-        Calendar cal = new GregorianCalendar();
-        cal.setTime(dt);
-        return new GregorianCalendar(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH),
-                cal.get(Calendar.DAY_OF_MONTH) + n).getTime();
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(dt);
+        calendar.add(Calendar.DAY_OF_MONTH, n);
+        calendar.set(Calendar.HOUR_OF_DAY, 0);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
+        return calendar.getTime();
     }
 
+    /**
+     * 获取下一天(零点)
+     *
+     * @param dt 时间
+     */
+    public static Date getNextDay(Date dt) {
+        return getNextNDay(dt, 1);
+    }
+
+    /**
+     * 获取N分钟后的时间
+     *
+     * @param dt 时间
+     * @param n  间隔
+     */
     public static Date getTimeNextNMinute(Date dt, int n) {
-        long time = dt.getTime() + n * 60 * 1000;
-        return new Date(time);
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(dt);
+        calendar.add(Calendar.MINUTE, n);
+        return calendar.getTime();
     }
 
+    /**
+     * 获取N小时后的时间
+     *
+     * @param dt 时间
+     * @param n  间隔
+     */
     public static Date getTimeNextNHour(Date dt, int n) {
-        long time = dt.getTime() + n * 60 * 60 * 1000;
-        return new Date(time);
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(dt);
+        calendar.add(Calendar.HOUR_OF_DAY, n);
+        return calendar.getTime();
     }
 
-    public static String getTimeInterval(long timestamp1, long timestamp2) {
-        long secondInterval = (timestamp2 - timestamp1) / 1000;
+    /**
+     * 获取时间间隔（end - start）
+     *
+     * @param start 起始时间
+     * @param end   终止时间
+     */
+    public static String getTimeInterval(long start, long end) {
+        long secondInterval = (end - start) / 1000;
         if (secondInterval < 60) {
             return "1分钟以内";
         }
@@ -240,56 +394,70 @@ public class DateUtils {
             return hour + "小时前";
         }
         Date date = new Date();
-        date.setTime(timestamp1);
+        date.setTime(start);
         return format(date, "yyyy年MM月dd日");
     }
 
-    public static String getTimeInterval(Date time1, Date time2) {
-        long secondInterval = (time2.getTime() - time1.getTime()) / 1000;
-        if (secondInterval < 60) {
-            return "1分钟以内";
-        }
-        if (secondInterval < 3600) {
-            long min = secondInterval / 60;
-            return min + "分钟前";
-        }
-        if (secondInterval < 86400) {
-            long hour = secondInterval / 3600;
-            return hour + "小时前";
-        }
-        return format(time1, "yyyy年MM月dd日");
+    /**
+     * 获取时间间隔（end - start）
+     *
+     * @param start 起始时间
+     * @param end   终止时间
+     */
+    public static String getTimeInterval(Date start, Date end) {
+        return getTimeInterval(start.getTime(), end.getTime());
     }
 
+    /**
+     * 固定时间: 1970-01-01 00:00:00
+     */
     public static Date getOriginTime() {
-        return parse("1970-01-01 00:00:00");
+        return getDate(1970, 1, 1);
     }
 
+    /**
+     * 固定时间: 1971-01-01 00:59:59
+     */
     public static Date getDefaultStartDate() {
-        return parse("1971-01-01 00:59:59", "yyyy-MM-dd HH:mm:ss");
+        return getDate(1971, 1, 1, 0, 59, 59);
     }
 
+    /**
+     * 固定时间: 1971-01-01 00:59:59
+     */
     public static String getDefaultStartDateStr() {
         return "1971-01-01 00:59:59";
     }
 
+    /**
+     * 固定时间: 2037-01-01 00:59:59
+     */
     public static Date getDefaultEndDate() {
-        return parse("2037-01-01 00:59:59", "yyyy-MM-dd HH:mm:ss");
+        return getDate(2037, 1, 1, 0, 59, 59);
     }
 
+    /**
+     * 固定时间: 2037-01-01 00:59:59
+     */
     public static String getDefaultEndDateStr() {
         return "2037-01-01 00:59:59";
     }
 
     /**
      * 计算字符串dateStr所表示的时间相对于起始时间(1970-01-01 00:00:00)所走过的秒数
+     *
+     * @param dateStr 时间
      */
     public static long getDeltaSeconds(String dateStr) {
-        Date date = parse(dateStr);
-        return (long) ((date.getTime() - getOriginTime().getTime()) / 1000);
+        Date date = smartParse(dateStr);
+        return (date.getTime() - getOriginTime().getTime()) / 1000;
     }
 
     /**
      * 获取指定时间的前几天时间
+     *
+     * @param specificDate 时间
+     * @param days         间隔
      */
     public static Date getTimeBeforeByDayInterval(Date specificDate, int days) {
         Calendar calendar = Calendar.getInstance();
@@ -300,6 +468,9 @@ public class DateUtils {
 
     /**
      * 获取指定时间的前几小时时间
+     *
+     * @param specificDate 时间
+     * @param hours        间隔
      */
     public static Date getTimeBeforeByHourInterval(Date specificDate, int hours) {
         Calendar calendar = Calendar.getInstance();
@@ -312,33 +483,62 @@ public class DateUtils {
      * 获取指定时间那天的开始时间：00:00:00
      */
     public static Date getDayStart(Date date) {
-        return date == null ? null : parse(format(date, "yyyy-MM-dd") + " 00:00:00");
+        return date == null ? null : getDayDate(date);
     }
 
     /**
      * 获取指定时间那天的结束时间：23:59:59
      */
     public static Date getDayEnd(Date date) {
-        return date == null ? null : parse(format(date, "yyyy-MM-dd") + " 23:59:59");
+        if (date == null) {
+            return null;
+        }
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        calendar.set(Calendar.HOUR_OF_DAY, 23);
+        calendar.set(Calendar.MINUTE, 59);
+        calendar.set(Calendar.SECOND, 59);
+        calendar.set(Calendar.MILLISECOND, 0);
+        return calendar.getTime();
     }
 
     /**
      * 取当前时间前几天的0点
+     *
+     * @param days 间隔
      */
     public static Date getDayBefore(int days) {
         return getDayStart(getTimeBeforeByDayInterval(new Date(), days));
     }
 
+    /**
+     * 获取小时起始(分、秒、毫秒 抹零)
+     *
+     * @param date 时间
+     */
     public static Date getHourStart(Date date) {
-        return parse(format(date, "yyyy-MM-dd HH") + ":00:00");
+        if (date == null) {
+            return null;
+        }
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
+        return calendar.getTime();
     }
 
     /**
      * 将时间的秒数抹零，e.g. 2015-11-11 12:34:45 ==> 2015-11-11 12:34:00
+     *
+     * @param date 时间
      */
     public static Date getDateOverlookSecond(Date date) {
-        long minutes = date.getTime() / 1000 / 60;
-        return new Date(minutes * 60 * 1000);
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
+        return calendar.getTime();
     }
 
     /**
@@ -429,17 +629,17 @@ public class DateUtils {
     }
 
     /**
-     * 获取本月第一天
+     * 获取本月第一天(零点)
      */
     public static Date getFirstDayOfMonth() {
         Calendar calendar = Calendar.getInstance();
         calendar.add(Calendar.MONTH, 0);
         calendar.set(Calendar.DAY_OF_MONTH, 1);
-        return parse(format(calendar.getTime(), DATE_FORMAT), DATE_FORMAT);
+        return getDayDate(calendar.getTime());
     }
 
     /**
-     * 获取指定时间当月的第一天
+     * 获取指定时间当月的第一天(零点)
      *
      * @param date 指定时间
      */
@@ -452,13 +652,13 @@ public class DateUtils {
     }
 
     /**
-     * 获取本月最后一天
+     * 获取本月最后一天(零点)
      */
     public static Date getLastDayOfMonth() {
         Calendar calendar = Calendar.getInstance();
         calendar.add(Calendar.MONTH, 1);
         calendar.set(Calendar.DAY_OF_MONTH, 0);
-        return parse(format(calendar.getTime(), DATE_FORMAT), DATE_FORMAT);
+        return getDayDate(calendar.getTime());
     }
 
     /**
@@ -471,7 +671,7 @@ public class DateUtils {
         calendar.setTime(date);
         calendar.add(Calendar.MONTH, 1);
         calendar.set(Calendar.DAY_OF_MONTH, 0);
-        return parse(format(calendar.getTime(), DATE_FORMAT), DATE_FORMAT);
+        return getDayDate(calendar.getTime());
     }
 
     /**
@@ -508,11 +708,23 @@ public class DateUtils {
         return calendar.getTime();
     }
 
+    /**
+     * 格式化时间差值
+     *
+     * @param st 起始时间
+     * @param et 终止时间
+     */
     public static String formatMinusDate(Date st, Date et) {
         return formatMinusDate(st.getTime(), et.getTime());
     }
 
-    public static String formatMinusDate(Long st, Long et) {
+    /**
+     * 格式化时间差值
+     *
+     * @param st 起始时间
+     * @param et 终止时间
+     */
+    public static String formatMinusDate(long st, long et) {
         long delta = et - st;
         StringBuilder sb = new StringBuilder();
         final long day = delta / MILLIS_DAY;
@@ -539,10 +751,16 @@ public class DateUtils {
         return sb.toString();
     }
 
+    /**
+     * 昨天(零点)
+     */
     public static Date yesterday() {
         return getTimeBeforeByDayInterval(getDayStart(new Date()), 1);
     }
 
+    /**
+     * 昨天此刻
+     */
     public static Date yesterdayTime() {
         Calendar calendar = Calendar.getInstance();
         calendar.add(Calendar.DAY_OF_MONTH, -1);
@@ -685,8 +903,50 @@ public class DateUtils {
      */
     public static long getDayRemainSeconds() {
         Date currentDate = new Date();
-        Date endDate = getDayEnd(new Date());
+        Date endDate = getDayEnd(currentDate);
         return (endDate.getTime() - currentDate.getTime()) / 1000;
+    }
+
+    /**
+     * 时间丢弃毫秒
+     */
+    public static Date discardMillis(Date date) {
+        if (date == null) {
+            return null;
+        }
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        calendar.set(Calendar.MILLISECOND, 0);
+        return calendar.getTime();
+    }
+
+    /**
+     * LocalDateTime 转 Date
+     *
+     * @param localDateTime LocalDateTime
+     * @param zoneId        ZoneId
+     */
+    public static Date toDate(LocalDateTime localDateTime, ZoneId zoneId) {
+        return localDateTime == null ? null
+                : Date.from(localDateTime.atZone(zoneId == null ? ZoneId.systemDefault() : zoneId).toInstant());
+    }
+
+    /**
+     * LocalDateTime 转 Date，使用系统默认ZoneId
+     *
+     * @param localDateTime LocalDateTime
+     */
+    public static Date toDate(LocalDateTime localDateTime) {
+        return localDateTime == null ? null : Date.from(localDateTime.atZone(ZoneId.systemDefault()).toInstant());
+    }
+
+    /**
+     * LocalDate 转 LocalDateTime
+     *
+     * @param localDate LocalDate
+     */
+    public static LocalDateTime toLocalDateTime(LocalDate localDate) {
+        return localDate == null ? null : localDate.atStartOfDay();
     }
 
 }

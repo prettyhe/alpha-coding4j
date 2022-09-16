@@ -24,15 +24,8 @@ public class PropertiesUtils {
         if (propertiesFileName == null) {
             return null;
         }
-        InputStream is = getResourceAsStream(propertiesFileName);
-        try {
+        try (InputStream is = getResourceAsStream(propertiesFileName)) {
             return readPropertiesFile(is);
-        } finally {
-            try {
-                is.close();
-            } catch (IOException e) {
-                // nothing to do
-            }
         }
     }
 
@@ -61,15 +54,12 @@ public class PropertiesUtils {
             URL url = urls.nextElement();
             URLConnection con = url.openConnection();
             ResourceUtils.useCachesIfNecessary(con);
-            InputStream is = con.getInputStream();
-            try {
+            try (InputStream is = con.getInputStream()) {
                 if (resourceName.endsWith(XML_FILE_EXTENSION)) {
                     props.loadFromXML(is);
                 } else {
                     props.load(is);
                 }
-            } finally {
-                is.close();
             }
         }
         return props;

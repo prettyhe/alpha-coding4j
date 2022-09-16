@@ -11,7 +11,7 @@ import lombok.extern.slf4j.Slf4j;
  * SpelExpressionParserFactory
  *
  * @version 1.0
- * Date: 2020-02-21
+ * Date: 2019年11月14日
  */
 @Slf4j
 public class SpelExpressionParserFactory {
@@ -21,13 +21,13 @@ public class SpelExpressionParserFactory {
     static {
         try {
             // since spring 4.1
-            Class modeClass = Class.forName("org.springframework.expression.spel.SpelCompilerMode");
+            Class<?> modeClass = Class.forName("org.springframework.expression.spel.SpelCompilerMode");
             try {
                 Constructor<SpelParserConfiguration> c = SpelParserConfiguration.class
                         .getConstructor(modeClass, ClassLoader.class);
                 Object mode = modeClass.getField("IMMEDIATE").get(null);
                 SpelParserConfiguration config =
-                        c.newInstance(mode, SpelExpressionParserFactory.class.getClassLoader());
+                        c.newInstance(mode, ExpressionKey.class.getClassLoader());
                 parser = new SpelExpressionParser(config);
             } catch (Exception e) {
                 log.warn("SpelExpressionParserFactory load error", e);
@@ -39,6 +39,10 @@ public class SpelExpressionParserFactory {
     }
 
     public SpelExpressionParser getInstance() {
+        return parser;
+    }
+
+    public static SpelExpressionParser getDefaultParser() {
         return parser;
     }
 

@@ -229,6 +229,9 @@ public class RegexpUtils {
     }
 
     public static String filterSpecialSymbol(String text) {
+        if (text == null) {
+            return null;
+        }
         Matcher m = SPECIAL_SYMBOL.matcher(text);
         return m.replaceAll("").trim();
     }

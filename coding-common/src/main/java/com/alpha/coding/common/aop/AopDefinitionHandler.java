@@ -39,7 +39,7 @@ public class AopDefinitionHandler implements ConfigurationRegisterHandler {
                     .setAopAdviceMethod(attributes.getString("adviceMethod"))
                     .setAopPointcut(Arrays.stream(attributes.getStringArray("pointcut"))
                             .filter(StringUtils::isNotEmpty)
-                            .reduce((x, y) -> x + " " + y).get());
+                            .reduce("", (x, y) -> x + " " + y));
             try {
                 AopBeanDefinitionRegistry.loadBeanDefinitions(context.getRegistry(), params);
             } catch (IOException e) {

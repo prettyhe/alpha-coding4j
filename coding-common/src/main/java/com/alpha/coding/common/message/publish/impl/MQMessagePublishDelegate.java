@@ -31,6 +31,7 @@ import com.alpha.coding.common.message.event.MessageApplicationEvent;
 import com.alpha.coding.common.message.publish.MessagePublishListener;
 import com.alpha.coding.common.message.publish.MessagePublisher;
 import com.alpha.coding.common.redis.RedisTemplateUtils;
+import com.alpha.coding.common.utils.DateUtils;
 import com.alpha.coding.common.utils.MD5Utils;
 
 import lombok.extern.slf4j.Slf4j;
@@ -100,9 +101,9 @@ public class MQMessagePublishDelegate implements MessagePublisher, MessagePublis
         record.setBizNo(bizNo != null ? bizNo
                 : (content != null ? MD5Utils.md5(content) : UUID.randomUUID().toString().replaceAll("-", "")));
         if (config != null && config.getDelaySendTime() != null) {
-            record.setNextSendTime(config.getDelaySendTime());
+            record.setNextSendTime(DateUtils.discardMillis(config.getDelaySendTime()));
         } else {
-            record.setNextSendTime(new Date());
+            record.setNextSendTime(DateUtils.discardMillis(new Date()));
         }
         record.setStatus(MessageSendStatus.WAIT_SEND.getCode()); // 0-待发送,1-成功,2-失败,3-待回执,4-取消
         if (config != null) {
@@ -135,6 +136,9 @@ public class MQMessagePublishDelegate implements MessagePublisher, MessagePublis
     @Override
     public void asyncSend(String topic, String tag, String content, String bizNo, MessagePublishConfig config) {
         final MessageMonitor messageMonitor = buildMessageMonitor(topic, tag, content, bizNo, config);
+        final Date now = new Date();
+        messageMonitor.setCreateTime(now);
+        messageMonitor.setUpdateTime(now);
         messageMonitorDao.insertSelective(messageMonitor);
         applicationEventPublisher.publishEvent(new MessageApplicationEvent(messageMonitor));
     }
@@ -202,21 +206,24 @@ public class MQMessagePublishDelegate implements MessagePublisher, MessagePublis
             // 无限重试模式
             if (messageMonitor.getMaxTryTimes() == null
                     || Predicates.testIntValue.test(messageMonitor.getMaxTryTimes(), -1)) {
-                messageMonitor.setNextSendTime(new Date(new Date().getTime()
-                        + defaultMessagePublishRetryInterval * 1000L));
+                messageMonitor.setNextSendTime(DateUtils.discardMillis(new Date(new Date().getTime()
+                        + defaultMessagePublishRetryInterval * 1000L)));
             } else {
                 if (messageMonitor.getMaxTryTimes() <= tryTimes) {
                     messageMonitor.setStatus(MessageSendStatus.CANCEL.getCode()); // 达到最大重试次数，任务取消
                 } else {
-                    messageMonitor.setNextSendTime(new Date(new Date().getTime()
-                            + defaultMessagePublishRetryInterval * 1000L));
+                    messageMonitor.setNextSendTime(DateUtils.discardMillis(new Date(new Date().getTime()
+                            + defaultMessagePublishRetryInterval * 1000L)));
                 }
             }
             if (publishListener != null) {
                 publishListener.onFail(messageMonitor, e);
             }
         } finally {
+            final Date now = new Date();
+            messageMonitor.setUpdateTime(now);
             if (messageMonitor.getId() == null) {
+                messageMonitor.setCreateTime(now);
                 messageMonitorDao.insertSelective(messageMonitor);
             } else {
                 messageMonitorDao.updateByPrimaryKeySelective(messageMonitor);

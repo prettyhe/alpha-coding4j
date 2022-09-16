@@ -4,6 +4,7 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.beanutils.ConvertUtils;
 import org.apache.poi.ss.usermodel.Cell;
@@ -19,7 +20,6 @@ import lombok.extern.slf4j.Slf4j;
  * XLSReader
  *
  * @version 1.0
- * Date: 2020-02-21
  */
 @Slf4j
 public class XLSReader extends XLSOperator {
@@ -91,24 +91,24 @@ public class XLSReader extends XLSOperator {
         T newInstance = null;
         try {
             newInstance = clazz.newInstance();
-            List<Field> matchedFields = FieldUtils.findMatchedFields(clazz, Label.class);
-            for (Field field : matchedFields) {
-                Label label = field.getAnnotation(Label.class);
-                if (label.order() < fieldValues.size()) {
+            final Map<Field, XLSLabelContext> fieldLabelMap = XLSOperator.fieldLabelMap(clazz);
+            for (Field field : fieldLabelMap.keySet()) {
+                final XLSLabelContext label = fieldLabelMap.get(field);
+                if (label.getOrder() < fieldValues.size()) {
                     Object value = null;
-                    final Tuple<String, Object> tuple = fieldValues.get(label.order());
+                    final Tuple<String, Object> tuple = fieldValues.get(label.getOrder());
                     try {
-                        if (label.javaType() == void.class) {
+                        if (label.getJavaType() == void.class) {
                             value = tuple.getF();
-                        } else if (Date.class.isAssignableFrom(label.javaType())) {
+                        } else if (Date.class.isAssignableFrom(label.getJavaType())) {
                             value = tuple.getS();
                             if (value != null && !(value instanceof Date)) {
-                                value = ConvertUtils.convert(value, label.javaType());
+                                value = ConvertUtils.convert(value, label.getJavaType());
                             }
                         } else {
                             value = tuple.getF();
                             if (value != null) {
-                                value = ConvertUtils.convert(value, label.javaType());
+                                value = ConvertUtils.convert(value, label.getJavaType());
                             }
                         }
                         if (value != null) {

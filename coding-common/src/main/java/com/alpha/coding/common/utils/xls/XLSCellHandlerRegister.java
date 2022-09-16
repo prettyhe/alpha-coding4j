@@ -7,11 +7,12 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 
+import com.alpha.coding.bo.handler.XLSCellHandler;
+
 /**
  * XLSCellHandlerRegister
  *
  * @version 1.0
- * Date: 2020-02-21
  */
 public class XLSCellHandlerRegister implements ApplicationContextAware, InitializingBean {
 
@@ -25,13 +26,14 @@ public class XLSCellHandlerRegister implements ApplicationContextAware, Initiali
     @Override
     public void afterPropertiesSet() throws Exception {
         try {
-            if (Class.forName("org.apache.poi.ss.usermodel.Cell") != null) {
-                Map<String, CellHandler> beans = applicationContext.getBeansOfType(CellHandler.class);
-                for (CellHandler cellHandler : beans.values()) {
-                    XLSWriter.registerCellHandler(cellHandler);
-                }
+            Class.forName("org.apache.poi.ss.usermodel.Cell");
+            Map<String, XLSCellHandler> beans = applicationContext.getBeansOfType(XLSCellHandler.class);
+            for (XLSCellHandler cellHandler : beans.values()) {
+                XLSWriter.registerCellHandler(cellHandler);
             }
         } catch (ClassNotFoundException e) {
+            // nothing
         }
     }
+
 }

@@ -73,6 +73,7 @@ public class OnceDataHolder {
         getMap().put(key, supplier);
     }
 
+    @SuppressWarnings("unchecked")
     public static <T> T getOnce(String key, Supplier<T> supplier, Boolean enableLog) {
         if (key == null) {
             throw new IllegalArgumentException("key cannot be null");
@@ -96,6 +97,7 @@ public class OnceDataHolder {
         return getOnce(key, supplier, false);
     }
 
+    @SuppressWarnings("unchecked")
     public static <T> T getUntilNotNull(String key, Supplier<T> supplier) {
         if (key == null) {
             throw new IllegalArgumentException("key cannot be null");
@@ -110,6 +112,7 @@ public class OnceDataHolder {
         return supplierHolder.get();
     }
 
+    @SuppressWarnings("unchecked")
     public static <T> Supplier<T> getSupplier(String key) {
         if (key == null) {
             throw new IllegalArgumentException("key cannot be null");
@@ -117,6 +120,7 @@ public class OnceDataHolder {
         return (Supplier<T>) getMap().get(key);
     }
 
+    @SuppressWarnings({"rawtypes"})
     public static Supplier rawSupplier(String key) {
         if (key == null) {
             throw new IllegalArgumentException("key cannot be null");

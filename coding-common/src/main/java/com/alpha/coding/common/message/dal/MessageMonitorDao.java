@@ -96,14 +96,18 @@ public class MessageMonitorDao {
                 (a, b) -> dependencyHolder.jdbcTemplate().queryForObject(sql, Date.class));
     }
 
-    public List<MessageMonitor> selectSinceNextSendTime(Date nextSendTime, int status, Long minId, int limit) {
-        String sql = "select * from message_monitor where next_send_time >= ? and status = ?";
+    /**
+     * 查询时间范围内该发送的消息
+     */
+    public List<MessageMonitor> selectSinceNextSendTime(Date nextSendTime, Date nextSendTimeEnd, int status,
+                                                        Long minId, int limit) {
+        String sql = "select * from message_monitor where next_send_time between ? and ? and status = ?";
         if (minId != null) {
             sql += " and id > ?";
         }
         sql += " order by next_send_time asc, id asc limit ?";
-        final Object[] args = minId == null ? new Object[] {nextSendTime, status, limit} :
-                new Object[] {nextSendTime, status, minId, limit};
+        final Object[] args = minId == null ? new Object[] {nextSendTime, nextSendTimeEnd, status, limit} :
+                new Object[] {nextSendTime, nextSendTimeEnd, status, minId, limit};
         return (List<MessageMonitor>) executeAndLogSQL(sql, args, (a, b) -> dependencyHolder.jdbcTemplate().query(a, b,
                 new BeanPropertyRowMapper<>(MessageMonitor.class)));
     }

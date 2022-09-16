@@ -22,4 +22,8 @@ public class PrintUtils {
         }
     }
 
+    public static void printJsonDefaultDateFormat(Object target) {
+        System.out.println(JSON.toJSONStringWithDateFormat(target, DateUtils.DEFAULT_FORMAT));
+    }
+
 }

@@ -33,7 +33,7 @@ public class AopHelper {
 
     public static Class<?> getTargetClass(Object target) {
         Class<?> targetClass = AopProxyUtils.ultimateTargetClass(target);
-        if (targetClass == null && target != null) {
+        if (targetClass == null) {
             targetClass = target.getClass();
         }
         return targetClass;
@@ -122,7 +122,7 @@ public class AopHelper {
      *
      * @param proxy 代理对象
      * @return 目标对象
-     * @throws Exception
+     * @throws Exception 异常
      */
     public static Object getTarget(Object proxy) throws Exception {
         if (!AopUtils.isAopProxy(proxy)) {
@@ -143,8 +143,7 @@ public class AopHelper {
         Object dynamicAdvisedInterceptor = h.get(proxy);
         Field advised = dynamicAdvisedInterceptor.getClass().getDeclaredField("advised");
         advised.setAccessible(true);
-        Object target = ((AdvisedSupport) advised.get(dynamicAdvisedInterceptor)).getTargetSource().getTarget();
-        return target;
+        return ((AdvisedSupport) advised.get(dynamicAdvisedInterceptor)).getTargetSource().getTarget();
     }
 
     private static Object getJdkDynamicProxyTargetObject(Object proxy) throws Exception {
@@ -153,8 +152,7 @@ public class AopHelper {
         AopProxy aopProxy = (AopProxy) h.get(proxy);
         Field advised = aopProxy.getClass().getDeclaredField("advised");
         advised.setAccessible(true);
-        Object target = ((AdvisedSupport) advised.get(aopProxy)).getTargetSource().getTarget();
-        return target;
+        return ((AdvisedSupport) advised.get(aopProxy)).getTargetSource().getTarget();
     }
 
 }

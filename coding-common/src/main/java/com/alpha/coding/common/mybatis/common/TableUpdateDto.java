@@ -27,6 +27,7 @@ public class TableUpdateDto implements Serializable {
     private Object before;
     private Object after;
     private volatile Map<String, Object> bizParams; // 业务参数
+    private Map<String, Object> extParams; // 扩展参数
 
     public TableUpdateDto appendBizParam(String key, Object value) {
         if (this.bizParams == null) {
@@ -49,6 +50,22 @@ public class TableUpdateDto implements Serializable {
 
     public Object fetchBizParam(String key) {
         return this.bizParams == null ? null : this.bizParams.get(key);
+    }
+
+    public TableUpdateDto appendExtParam(String key, Object value) {
+        if (this.extParams == null) {
+            synchronized(this) {
+                if (this.extParams == null) {
+                    this.extParams = new LinkedHashMap<>();
+                }
+            }
+        }
+        this.extParams.put(key, value);
+        return this;
+    }
+
+    public Object fetchExtParam(String key) {
+        return this.extParams == null ? null : this.extParams.get(key);
     }
 
 }

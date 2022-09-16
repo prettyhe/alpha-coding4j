@@ -3,12 +3,13 @@ package com.alpha.coding.common.utils.json;
 import java.lang.reflect.Field;
 
 import com.alibaba.fastjson.JSONObject;
+import com.alpha.coding.bo.annotation.JsonPath;
+import com.alpha.coding.common.utils.FieldUtils;
 
 /**
  * JSONObjectGenerator
  *
  * @version 1.0
- * Date: 2020-02-21
  */
 public class JSONObjectGenerator {
 
@@ -18,14 +19,18 @@ public class JSONObjectGenerator {
         }
         JSONObject jsonObject = new JSONObject();
         Class<?> clz = object.getClass();
-        Field[] declaredFields = clz.getDeclaredFields();
+        Field[] declaredFields = FieldUtils.findMatchedFields(clz, null).toArray(new Field[0]);
         for (Field field : declaredFields) {
             field.setAccessible(true);
-            JSONObjectPath annotation = field.getAnnotation(JSONObjectPath.class);
-            if (annotation == null) {
+            JSONObjectPath jsonObjectPath = field.getAnnotation(JSONObjectPath.class);
+            if (jsonObjectPath != null) {
+                JSONObjectUtils.putValue(jsonObject, jsonObjectPath.path(), jsonObjectPath.sep(), field.get(object));
                 continue;
             }
-            JSONObjectUtils.putValue(jsonObject, annotation.path(), annotation.sep(), field.get(object));
+            JsonPath jsonPath = field.getAnnotation(JsonPath.class);
+            if (jsonPath != null) {
+                JSONObjectUtils.putValue(jsonObject, jsonPath.path(), "\\.", field.get(object));
+            }
         }
         return jsonObject;
     }

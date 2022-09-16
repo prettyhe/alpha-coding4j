@@ -13,7 +13,6 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
  * XLSUtils
  *
  * @version 1.0
- * Date: 2020-02-21
  */
 public class XLSUtils {
 
@@ -31,8 +30,22 @@ public class XLSUtils {
      */
     public static Workbook generate(Object[] headers, List<Object[]> lines, boolean xlsx)
             throws IllegalArgumentException {
+        return generate(headers, lines, xlsx, null);
+    }
+
+    /**
+     * excel Workbook生成
+     *
+     * @param headers   头部
+     * @param lines     行内容
+     * @param xlsx      是否生成xlsx格式
+     * @param sheetName sheet名
+     * @return 生成的Workbook
+     */
+    public static Workbook generate(Object[] headers, List<Object[]> lines, boolean xlsx, String sheetName)
+            throws IllegalArgumentException {
         Workbook wb = xlsx ? new XSSFWorkbook() : new HSSFWorkbook();
-        Sheet sheet = wb.createSheet();
+        Sheet sheet = sheetName != null ? wb.createSheet(sheetName) : wb.createSheet();
         writeSheet(sheet, headers, lines);
         return wb;
     }

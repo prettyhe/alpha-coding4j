@@ -85,24 +85,40 @@ public class DataSourceRegisterUtils {
         BeanDefineUtils.setIfAbsent(builder, environment, "minIdle",
                 keysFunction.apply("jdbc.minIdle"), Integer.class, 1, propertyMap);
         BeanDefineUtils.setIfAbsent(builder, environment, "maxActive",
-                keysFunction.apply("jdbc.maxActive"), Integer.class, 1, propertyMap);
+                keysFunction.apply("jdbc.maxActive"), Integer.class, 5, propertyMap);
         BeanDefineUtils.setIfAbsent(builder, environment, "maxWait",
                 keysFunction.apply("jdbc.maxWait"), Long.class, 60000L, propertyMap);
         BeanDefineUtils.setIfAbsent(builder, environment, "timeBetweenEvictionRunsMillis",
                 keysFunction.apply("jdbc.timeBetweenEvictionRunsMillis"), Long.class, 60000L, propertyMap);
         BeanDefineUtils.setIfAbsent(builder, environment, "minEvictableIdleTimeMillis",
                 keysFunction.apply("jdbc.minEvictableIdleTimeMillis"), Long.class, 300000L, propertyMap);
-        // 检查连接的SQL，默认=>SELECT 'x' from dual, DB2默认=>SELECT 1 FROM SYSIBM.DUAL，可自定义覆盖
+        BeanDefineUtils.setIfAbsent(builder, environment, "maxEvictableIdleTimeMillis",
+                keysFunction.apply("jdbc.maxEvictableIdleTimeMillis"), Long.class, null, propertyMap);
+        // 检查连接的SQL，默认=>SELECT 1, DB2默认=>SELECT 1 FROM SYSIBM.DUAL，可自定义覆盖
         BeanDefineUtils.setIfAbsent(builder, environment, "validationQuery",
                 keysFunction.apply("jdbc.validationQuery"), null,
-                !"db2".equals(createDataSourceEnv.getType()) ? "SELECT 'x' from dual" : "SELECT 1 FROM SYSIBM.DUAL",
+                !"db2".equals(createDataSourceEnv.getType()) ? "SELECT 1" : "SELECT 1 FROM SYSIBM.DUAL",
                 propertyMap);
+        BeanDefineUtils.setIfAbsent(builder, environment, "validationQueryTimeout",
+                keysFunction.apply("jdbc.validationQueryTimeout"), Long.class, null, propertyMap);
         BeanDefineUtils.setIfAbsent(builder, environment, "testWhileIdle",
                 keysFunction.apply("jdbc.testWhileIdle"), Boolean.class, true, propertyMap);
         BeanDefineUtils.setIfAbsent(builder, environment, "testOnBorrow",
                 keysFunction.apply("jdbc.testOnBorrow"), Boolean.class, false, propertyMap);
         BeanDefineUtils.setIfAbsent(builder, environment, "testOnReturn",
                 keysFunction.apply("jdbc.testOnReturn"), Boolean.class, false, propertyMap);
+        BeanDefineUtils.setIfAbsent(builder, environment, "poolPreparedStatements",
+                keysFunction.apply("jdbc.poolPreparedStatements"), Boolean.class, null, propertyMap);
+        BeanDefineUtils.setIfAbsent(builder, environment, "maxOpenPreparedStatements",
+                keysFunction.apply("jdbc.maxOpenPreparedStatements"), Integer.class, null, propertyMap);
+        BeanDefineUtils.setIfAbsent(builder, environment, "maxPoolPreparedStatementPerConnectionSize",
+                keysFunction.apply("jdbc.maxPoolPreparedStatementPerConnectionSize"), Integer.class, null, propertyMap);
+        BeanDefineUtils.setIfAbsent(builder, environment, "keepAlive",
+                keysFunction.apply("jdbc.keepAlive"), Boolean.class, null, propertyMap);
+        BeanDefineUtils.setIfAbsent(builder, environment, "keepAliveBetweenTimeMillis",
+                keysFunction.apply("jdbc.keepAliveBetweenTimeMillis"), Long.class, null, propertyMap);
+        BeanDefineUtils.setIfAbsent(builder, environment, "filters",
+                keysFunction.apply("jdbc.filters"), String.class, null, propertyMap);
     }
 
 }

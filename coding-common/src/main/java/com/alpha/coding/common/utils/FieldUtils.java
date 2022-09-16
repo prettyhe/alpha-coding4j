@@ -16,8 +16,8 @@ public class FieldUtils {
     /**
      * To find out matched {@link Field} marked as {@code ann} annotation
      *
-     * @param targetClass taget class
-     * @param ann
+     * @param targetClass target class
+     * @param ann         注解类型
      * @return found {@link Field} list
      */
     public static List<Field> findMatchedFields(Class targetClass, Class ann) {
@@ -29,12 +29,15 @@ public class FieldUtils {
 
         // Keep backing up the inheritance hierarchy.
         do {
-            // Copy each field declared on this class unless it's static or
-            // file.
+            // Copy each field declared on this class unless it's static or file.
             Field[] fields = targetClass.getDeclaredFields();
             for (int i = 0; i < fields.length; i++) {
-                Annotation annotation = fields[i].getAnnotation(ann);
-                if (annotation != null) {
+                if (ann != null) {
+                    Annotation annotation = fields[i].getAnnotation(ann);
+                    if (annotation != null) {
+                        ret.add(fields[i]);
+                    }
+                } else {
                     ret.add(fields[i]);
                 }
             }

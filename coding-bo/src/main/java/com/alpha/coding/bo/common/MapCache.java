@@ -28,6 +28,7 @@ public class MapCache {
     /**
      * 缓存容器
      */
+    @SuppressWarnings({"rawtypes"})
     private final ConcurrentHashMap<String, CacheValueWrapper> valMap = new ConcurrentHashMap<>();
     /**
      * 锁容器
@@ -52,6 +53,7 @@ public class MapCache {
         private final AtomicLong freshTimestamp = new AtomicLong(0);
     }
 
+    @SuppressWarnings({"unchecked"})
     public <T> T computeIfAbsent(String key, Function<String, T> loader) {
         final CacheValueWrapper<T> wrapper = valMap.computeIfAbsent(key, k -> new CacheValueWrapper<T>());
         long delta = System.nanoTime() - wrapper.freshTimestamp.get();
@@ -82,6 +84,7 @@ public class MapCache {
     /**
      * 同步加载
      */
+    @SuppressWarnings({"unchecked"})
     public <T> T syncComputeIfAbsent(String key, Function<String, T> loader, Long awaitMillis) {
         final CacheValueWrapper<T> wrapper = valMap.computeIfAbsent(key, k -> new CacheValueWrapper<T>());
         long delta = System.nanoTime() - wrapper.freshTimestamp.get();

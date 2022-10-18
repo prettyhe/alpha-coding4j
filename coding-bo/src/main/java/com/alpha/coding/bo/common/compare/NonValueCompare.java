@@ -16,12 +16,13 @@ public class NonValueCompare extends ValueCompare {
     }
 
     @Override
+    @SuppressWarnings({"rawtypes"})
     public CompareResult compare(Object input, Object benchmark, Function function) {
         if (benchmark == null && input != null) {
             return CompareResult.PASS;
-        } else if (benchmark == null && input == null) {
+        } else if (benchmark == null) {
             return CompareResult.FAIL;
-        } else if (benchmark != null && input == null) {
+        } else if (input == null) {
             return CompareResult.FAIL;
         } else {
             return super.compare(input, benchmark, function).reverse();

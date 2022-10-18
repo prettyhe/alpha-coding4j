@@ -18,6 +18,7 @@ public class RangeCompare implements ConditionCompare {
     }
 
     @Override
+    @SuppressWarnings({"rawtypes", "unchecked"})
     public CompareResult compare(Object input, Object benchmark, Function function) {
         if (benchmark == null) {
             return CompareResult.PASS;
@@ -70,6 +71,7 @@ public class RangeCompare implements ConditionCompare {
         return rangeRet;
     }
 
+    @SuppressWarnings({"rawtypes", "unchecked"})
     private CompareResult compareValueToRange(Comparable value, ComparableRange benchmarkRange) {
         if (value == null) {
             return CompareResult.UNKNOWN;

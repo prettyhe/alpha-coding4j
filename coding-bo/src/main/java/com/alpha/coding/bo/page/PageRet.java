@@ -40,6 +40,7 @@ public class PageRet implements Serializable {
      */
     private List<Tuple<String, String>> orderBys;
 
+    @SuppressWarnings({"rawtypes", "unchecked"})
     public PageRet(Page page) {
         if (page != null) {
             this.pageNo = page.getPageNo();
@@ -48,14 +49,15 @@ public class PageRet implements Serializable {
         }
     }
 
+    @SuppressWarnings({"rawtypes"})
     public PageRet(Page page, long totalCount) {
         this(page);
         this.totalCount = totalCount;
     }
 
     public PageRet(Integer pageNo, Integer pageSize, long totalCount) {
-        this.pageNo = pageNo == null ? 0 : pageNo.intValue();
-        this.pageSize = pageSize == null ? 0 : pageSize.intValue();
+        this.pageNo = pageNo == null ? 0 : pageNo;
+        this.pageSize = pageSize == null ? 0 : pageSize;
         this.totalCount = totalCount;
     }
 

@@ -3,6 +3,9 @@ package com.alpha.coding.bo.base;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -19,6 +22,10 @@ public class MapThreadLocalDiscardAspect {
 
     public MapThreadLocalDiscardAspect(String[] discardKeys) {
         this.discardKeys = discardKeys;
+    }
+
+    public static MapThreadLocalDiscardAspect of(String[] discardKeys) {
+        return new MapThreadLocalDiscardAspect(discardKeys);
     }
 
     /**
@@ -130,6 +137,7 @@ public class MapThreadLocalDiscardAspect {
     /**
      * 后置处理，将丢弃的数据还原到MapThreadLocalAdaptor
      */
+    @SuppressWarnings({"unchecked"})
     public void doAfter() {
         try {
             Integer version = (Integer) MapThreadLocal.get(ASPECT_VERSION_KEY);
@@ -147,6 +155,72 @@ public class MapThreadLocalDiscardAspect {
             }
         } catch (Exception e) {
             log.warn("doAfter error", e);
+        }
+    }
+
+    /**
+     * 增强处理，Runnable 结束时会恢复 MapThreadLocalAdaptor
+     *
+     * @param runnable    被增强函数
+     * @param discardKeys 函数执行时丢弃的MapThreadLocalAdaptor的key
+     */
+    public static void enhance(Runnable runnable, String[] discardKeys) {
+        final MapThreadLocalDiscardAspect aspect = MapThreadLocalDiscardAspect.of(discardKeys);
+        try {
+            aspect.doBefore();
+            runnable.run();
+        } finally {
+            aspect.doAfter();
+        }
+    }
+
+    /**
+     * 增强处理，Consumer 结束时会恢复 MapThreadLocalAdaptor
+     *
+     * @param consumer    被增强函数
+     * @param t           被增强函数输入值
+     * @param discardKeys 函数执行时丢弃的MapThreadLocalAdaptor的key
+     */
+    public static <T> void enhance(Consumer<T> consumer, T t, String[] discardKeys) {
+        final MapThreadLocalDiscardAspect aspect = MapThreadLocalDiscardAspect.of(discardKeys);
+        try {
+            aspect.doBefore();
+            consumer.accept(t);
+        } finally {
+            aspect.doAfter();
+        }
+    }
+
+    /**
+     * 增强处理，Supplier 结束时会恢复 MapThreadLocalAdaptor
+     *
+     * @param supplier    被增强函数
+     * @param discardKeys 函数执行时丢弃的MapThreadLocalAdaptor的key
+     */
+    public static <T> T enhance(Supplier<T> supplier, String[] discardKeys) {
+        final MapThreadLocalDiscardAspect aspect = MapThreadLocalDiscardAspect.of(discardKeys);
+        try {
+            aspect.doBefore();
+            return supplier.get();
+        } finally {
+            aspect.doAfter();
+        }
+    }
+
+    /**
+     * 增强处理，Function 结束时会恢复 MapThreadLocalAdaptor
+     *
+     * @param function    被增强函数
+     * @param t           被增强函数输入值
+     * @param discardKeys 函数执行时丢弃的MapThreadLocalAdaptor的key
+     */
+    public static <T, R> R enhance(Function<T, R> function, T t, String[] discardKeys) {
+        final MapThreadLocalDiscardAspect aspect = MapThreadLocalDiscardAspect.of(discardKeys);
+        try {
+            aspect.doBefore();
+            return function.apply(t);
+        } finally {
+            aspect.doAfter();
         }
     }
 

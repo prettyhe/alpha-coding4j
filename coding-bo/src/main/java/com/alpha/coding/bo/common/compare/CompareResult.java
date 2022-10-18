@@ -26,6 +26,7 @@ public enum CompareResult implements CodeSupplyEnum<CompareResult> {
     private final String desc;
 
     @Override
+    @SuppressWarnings({"rawtypes"})
     public Supplier codeSupply() {
         return this::getCode;
     }

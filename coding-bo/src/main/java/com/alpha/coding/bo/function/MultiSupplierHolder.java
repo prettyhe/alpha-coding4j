@@ -11,6 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class MultiSupplierHolder {
 
+    @SuppressWarnings({"rawtypes"})
     private final Map<String, SupplierHolder> holderMap = new ConcurrentHashMap<>();
 
     /**
@@ -19,6 +20,7 @@ public class MultiSupplierHolder {
      * @param key    标识
      * @param holder 持有器
      */
+    @SuppressWarnings({"rawtypes"})
     public SupplierHolder computeIfAbsent(String key, SupplierHolder holder) {
         return holderMap.computeIfAbsent(key, k -> holder);
     }
@@ -28,6 +30,7 @@ public class MultiSupplierHolder {
      *
      * @param key 标识
      */
+    @SuppressWarnings({"rawtypes"})
     public SupplierHolder get(String key) {
         return holderMap.get(key);
     }
@@ -37,6 +40,7 @@ public class MultiSupplierHolder {
      *
      * @param key 标识
      */
+    @SuppressWarnings({"rawtypes"})
     public Object getValue(String key) {
         SupplierHolder holder = get(key);
         return holder == null ? null : holder.get();

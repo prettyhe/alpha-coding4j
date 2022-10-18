@@ -15,7 +15,9 @@ import lombok.experimental.Accessors;
 @Accessors(chain = true)
 public class ComparableRange implements Serializable {
 
+    @SuppressWarnings({"rawtypes"})
     private Comparable min;
+    @SuppressWarnings({"rawtypes"})
     private Comparable max;
 
 }

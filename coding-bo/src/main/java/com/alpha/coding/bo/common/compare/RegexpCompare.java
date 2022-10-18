@@ -22,6 +22,7 @@ public class RegexpCompare implements ConditionCompare {
     }
 
     @Override
+    @SuppressWarnings({"rawtypes", "unchecked"})
     public CompareResult compare(Object input, Object benchmark, Function function) {
         if (benchmark == null) {
             return CompareResult.PASS;

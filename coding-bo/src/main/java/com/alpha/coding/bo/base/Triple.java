@@ -35,6 +35,7 @@ public class Triple<F, S, T> implements Serializable {
     }
 
     @Override
+    @SuppressWarnings({"rawtypes"})
     public boolean equals(Object obj) {
         if (this == obj) {
             return true;

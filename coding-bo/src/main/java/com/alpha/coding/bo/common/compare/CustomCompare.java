@@ -20,6 +20,7 @@ public class CustomCompare implements ConditionCompare {
     }
 
     @Override
+    @SuppressWarnings({"rawtypes", "unchecked"})
     public CompareResult compare(Object input, Object benchmark, Function function) {
         return (CompareResult) function.apply(new Tuple<>(input, benchmark));
     }

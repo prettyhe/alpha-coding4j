@@ -5,10 +5,10 @@ import java.io.InputStream;
 import java.io.Serializable;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
-import java.util.regex.Pattern;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
@@ -19,8 +19,8 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.alpha.coding.bo.enums.util.CodeSupplyEnum;
 import com.alpha.coding.bo.enums.util.EnumUtils;
+import com.alpha.coding.bo.util.PatternMatchTool;
 import com.alpha.coding.common.http.HttpClientUtils;
-import com.google.common.collect.Maps;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -39,15 +39,16 @@ public class BankCardUtils {
 
     private static List<BankInfoItem> bankInfoItems;
     private static long refreshTimestamp = System.currentTimeMillis();
-    private static final Map<String, BankInfoItem> bankMap = Maps.newHashMap();
-    private static final Map<String, String> bankCodeMap = Maps.newHashMap();
-    private static final Map<String, CardCheckResult> cardBinBankMap = Maps.newHashMap();
-    private static final String aliValidateBankNoUrl = "https://ccdcapi.alipay.com/validateAndCacheCardInfo"
-            + ".json?_input_charset=utf-8&cardNo=%s&cardBinCheck=true";
+    private static final Map<String, BankInfoItem> bankMap = new HashMap<>();
+    private static final Map<String, String> bankCodeMap = new HashMap<>();
+    private static final Map<String, CardCheckResult> cardBinBankMap = new HashMap<>();
+    private static final String aliValidateBankNoUrl = "https://ccdcapi.alipay.com/validateAndCacheCardInfo.json"
+            + "?_input_charset=utf-8&cardNo=%s&cardBinCheck=true";
+    private static final String NUMERIC_PATTERN = "\\d+";
 
     @Getter
     @AllArgsConstructor
-    public static enum CardTypeEnum implements CodeSupplyEnum<CardTypeEnum> {
+    public enum CardTypeEnum implements CodeSupplyEnum<CardTypeEnum> {
         DC("DC", "借记卡"),
         CC("CC", "贷记卡"),
         SCC("SCC", "准贷记卡"),
@@ -57,8 +58,9 @@ public class BankCardUtils {
         private final String desc;
 
         @Override
+        @SuppressWarnings({"rawtypes"})
         public Supplier codeSupply() {
-            return this::getCode;
+            return CardTypeEnum.this::getCode;
         }
 
         public static CardTypeEnum valueOfCode(String code) {
@@ -68,6 +70,7 @@ public class BankCardUtils {
         public static String getDescByCode(String code) {
             return CodeSupplyEnum.getDescByCode(code);
         }
+
     }
 
     @Data
@@ -89,6 +92,7 @@ public class BankCardUtils {
     @Data
     @Accessors(chain = true)
     public static class CardCheckResult implements Serializable {
+        private String bin; // 卡bin
         private Boolean validate; // 卡bin校验:null表示卡号不全未做校验
         private String bankCode; // 银行编号
         private String bankName; // 银行名
@@ -134,6 +138,7 @@ public class BankCardUtils {
                                         int cardLenExcludeBin = Integer.parseInt(tokens[2].split("[{}]")[1]);
                                         for (String bin : tokens[1].split("\\|")) {
                                             CardCheckResult info = new CardCheckResult()
+                                                    .setBin(bin)
                                                     .setBankCode(item.getBankCode())
                                                     .setBankName(item.getBankName())
                                                     .setBankAlias(item.getBankAlias())
@@ -178,8 +183,7 @@ public class BankCardUtils {
     }
 
     public static CardCheckResult validate(List<BankInfoItem> bankInfoItems, String cardNo) {
-        if (bankInfoItems == null || StringUtils.isBlank(cardNo)
-                || !Pattern.compile("\\d+").matcher(cardNo).matches()) {
+        if (bankInfoItems == null || StringUtils.isBlank(cardNo) || !PatternMatchTool.match(NUMERIC_PATTERN, cardNo)) {
             return null;
         }
         CardCheckResult result = new CardCheckResult();
@@ -187,8 +191,8 @@ public class BankCardUtils {
         String cardNoCheckCode = cardNo.substring(0, cardNo.length() - 1);
         int sum = 0;
         for (int i = 0; i < cardNoCheckCode.length(); i++) {
-            int temp = Integer.parseInt(
-                    cardNoCheckCode.substring(cardNoCheckCode.length() - i - 1, cardNoCheckCode.length() - i));
+            int temp = Integer.parseInt(cardNoCheckCode.substring(cardNoCheckCode.length() - i - 1,
+                    cardNoCheckCode.length() - i));
             if (i % 2 == 0) {
                 temp *= 2;
                 sum += temp % 10 + temp / 10;
@@ -206,12 +210,19 @@ public class BankCardUtils {
                 if (StringUtils.isBlank(pattern.getRegexp())) {
                     continue;
                 }
-                if (Pattern.compile(pattern.getRegexp()).matcher(cardNo).matches()) {
+                if (PatternMatchTool.match(pattern.getRegexp(), cardNo)) {
                     result.setBankCode(item.getBankCode())
                             .setBankName(item.getBankName())
                             .setBankAlias(item.getBankAlias())
                             .setCardType(EnumUtils.safeParse(CardTypeEnum.class, pattern.getCardType()))
                             .setCardLength(cardNo.length());
+                    final String[] tokens = pattern.getRegexp().split("[()]");
+                    for (String bin : tokens[1].split("\\|")) {
+                        if (cardNo.startsWith(bin)) {
+                            result.setBin(bin);
+                            break;
+                        }
+                    }
                 }
             }
         }
@@ -225,8 +236,8 @@ public class BankCardUtils {
      * @param timeout 超时时间，ms
      */
     public static CardCheckResult validateByAli(String cardNo, int timeout) throws IOException {
-        final String res =
-                HttpClientUtils.get(String.format(aliValidateBankNoUrl, cardNo), "UTF-8", timeout, timeout, 0);
+        final String res = HttpClientUtils.get(String.format(aliValidateBankNoUrl, cardNo),
+                "UTF-8", timeout, timeout, 0);
         if (StringUtils.isBlank(res)) {
             return null;
         }

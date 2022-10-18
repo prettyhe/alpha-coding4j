@@ -19,6 +19,7 @@ public class ExcludeCompare implements ConditionCompare {
     }
 
     @Override
+    @SuppressWarnings({"rawtypes", "unchecked"})
     public CompareResult compare(Object input, Object benchmark, Function function) {
         if (benchmark == null) {
             return CompareResult.PASS;
@@ -32,8 +33,7 @@ public class ExcludeCompare implements ConditionCompare {
         if (input == null) {
             return CompareResult.UNKNOWN;
         }
-        Set excludes = new HashSet();
-        excludes.addAll((Collection) benchmark);
+        Set excludes = new HashSet((Collection) benchmark);
         return excludes.contains(function == null ? input : function.apply(input)) ? CompareResult.FAIL
                 : CompareResult.PASS;
     }

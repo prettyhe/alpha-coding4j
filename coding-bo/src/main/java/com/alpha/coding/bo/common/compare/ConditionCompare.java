@@ -1,7 +1,6 @@
 package com.alpha.coding.bo.common.compare;
 
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.function.Function;
 
 import com.alpha.coding.bo.enums.util.EnumUtils;
@@ -34,6 +33,7 @@ public interface ConditionCompare {
      * @param benchmark 基准
      * @param function  输入类型转基准类型(元素类型)的函数
      */
+    @SuppressWarnings({"rawtypes"})
     CompareResult compare(Object input, Object benchmark, Function function);
 
     /**
@@ -43,13 +43,14 @@ public interface ConditionCompare {
      * @param benchmark 基准
      * @param function  输入类型转基准类型(元素类型)的函数
      */
+    @SuppressWarnings({"rawtypes"})
     default CompareResult and(Collection inputs, Object benchmark, Function function) {
         if (inputs == null || inputs.size() == 0) {
             return CompareResult.UNKNOWN;
         }
         CompareResult result = CompareResult.PASS;
-        for (Iterator iterator = inputs.iterator(); iterator.hasNext(); ) {
-            result = CompareResult.and(result, compare(iterator.next(), benchmark, function));
+        for (Object input : inputs) {
+            result = CompareResult.and(result, compare(input, benchmark, function));
         }
         return result;
     }
@@ -61,13 +62,14 @@ public interface ConditionCompare {
      * @param benchmark 基准
      * @param function  输入类型转基准类型(元素类型)的函数
      */
+    @SuppressWarnings({"rawtypes"})
     default CompareResult or(Collection inputs, Object benchmark, Function function) {
         if (inputs == null || inputs.size() == 0) {
             return CompareResult.UNKNOWN;
         }
         CompareResult result = CompareResult.FAIL;
-        for (Iterator iterator = inputs.iterator(); iterator.hasNext(); ) {
-            result = CompareResult.or(result, compare(iterator.next(), benchmark, function));
+        for (Object input : inputs) {
+            result = CompareResult.or(result, compare(input, benchmark, function));
         }
         return result;
     }

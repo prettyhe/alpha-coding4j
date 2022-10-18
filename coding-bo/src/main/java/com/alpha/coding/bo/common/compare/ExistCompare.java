@@ -16,6 +16,7 @@ public class ExistCompare implements ConditionCompare {
     }
 
     @Override
+    @SuppressWarnings({"rawtypes", "unchecked"})
     public CompareResult compare(Object input, Object benchmark, Function function) {
         if (function != null) {
             return function.apply(input) == null ? CompareResult.FAIL : CompareResult.PASS;

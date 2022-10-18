@@ -39,6 +39,7 @@ package com.alpha.coding.bo.enums.util;
  */
 public interface CodeSupplyEnum<E extends Enum<E>> extends EnumWithCodeSupplier {
 
+    @SuppressWarnings({"unchecked"})
     static <E extends Enum<E> & CodeSupplyEnum<E>> E valueOf(Object code) {
         StackTraceElement[] stElements = Thread.currentThread().getStackTrace();
         for (int i = 1; i < stElements.length; i++) {

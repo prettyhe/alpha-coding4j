@@ -1,8 +1,11 @@
 package com.alpha.coding.bo.base;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * MapThreadLocalAdaptor
@@ -52,6 +55,26 @@ public class MapThreadLocalAdaptor {
         } else {
             return null;
         }
+    }
+
+    public static <T> T getAndConvert(String key, Function<Object, T> converter) {
+        return converter.apply(get(key));
+    }
+
+    public static String getAsString(String key) {
+        final Object val = get(key);
+        return val == null ? null : String.valueOf(val);
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    public static Object getFirst(List<String> keys, Predicate predicate) {
+        for (String key : keys) {
+            final Object val = get(key);
+            if (predicate == null || predicate.test(val)) {
+                return val;
+            }
+        }
+        return null;
     }
 
     public static void remove(String key) {

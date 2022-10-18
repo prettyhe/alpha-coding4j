@@ -19,6 +19,7 @@ public class NullSupplier<T> implements Supplier<T> {
         this.runnable = runnable;
     }
 
+    @SuppressWarnings({"unchecked"})
     public static <T> NullSupplier<T> empty() {
         if (EMPTY == null) {
             EMPTY = new NullSupplier<>(null);
@@ -33,7 +34,7 @@ public class NullSupplier<T> implements Supplier<T> {
     @Override
     public T get() {
         Optional.ofNullable(runnable).ifPresent(Runnable::run);
-        return (T) null;
+        return null;
     }
 
 }

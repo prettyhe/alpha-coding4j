@@ -32,7 +32,7 @@
         <maven.resources.overwrite>true</maven.resources.overwrite>
         <maven.source.version>1.8</maven.source.version>
         <maven.target.version>1.8</maven.target.version>
-        <coding4j.springframework.version>4.3.26.RELEASE</coding4j.springframework.version>
+        <coding4j.springframework.version>5.2.20.RELEASE</coding4j.springframework.version>
         <coding4j.springframework.data.version>2.2.3.RELEASE</coding4j.springframework.data.version>
         <coding4j.jedis.version>3.1.0</coding4j.jedis.version>
         <coding4j.guava.version>20.0</coding4j.guava.version>
@@ -48,7 +48,7 @@
         <coding4j.commons-io.version>2.7</coding4j.commons-io.version>
         <coding4j.commons-dbcp.version>1.4</coding4j.commons-dbcp.version>
         <coding4j.commons-collections.version>3.2.2</coding4j.commons-collections.version>
-        <coding4j.commons-text.version>1.8</coding4j.commons-text.version>
+        <coding4j.commons-text.version>1.10.0</coding4j.commons-text.version>
         <coding4j.commons-beanutils.version>1.9.4</coding4j.commons-beanutils.version>
         <coding4j.commons-codec.version>1.13</coding4j.commons-codec.version>
         <coding4j.commons-validator.version>1.6</coding4j.commons-validator.version>
@@ -61,7 +61,7 @@
         <coding4j.mybatis.version>3.5.6</coding4j.mybatis.version>
         <coding4j.mybatis.spring.version>2.0.6</coding4j.mybatis.spring.version>
         <coding4j.mybatis-paginator.version>1.2.17</coding4j.mybatis-paginator.version>
-        <coding4j.dubbo.version>2.6.3</coding4j.dubbo.version>
+        <coding4j.dubbo.version>2.6.12</coding4j.dubbo.version>
         <coding4j.jboss.netty.version>3.2.9.Final</coding4j.jboss.netty.version>
         <coding4j.zkclient.version>0.3</coding4j.zkclient.version>
         <coding4j.zookeeper.version>3.4.14</coding4j.zookeeper.version>
@@ -322,7 +322,7 @@
             <dependency>
                 <groupId>org.apache.dubbo</groupId>
                 <artifactId>dubbo</artifactId>
-                <version>2.7.13</version>
+                <version>2.7.18</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.ant</groupId>

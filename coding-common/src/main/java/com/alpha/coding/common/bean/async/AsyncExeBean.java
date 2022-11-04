@@ -42,6 +42,7 @@ public class AsyncExeBean implements InitializingBean, DisposableBean {
 
     @Setter
     @Accessors(chain = true)
+    @SuppressWarnings("rawtypes")
     private Consumer<List> callback;
 
     @Setter
@@ -50,6 +51,7 @@ public class AsyncExeBean implements InitializingBean, DisposableBean {
 
     private volatile boolean initialized;
     private Executor monitor;
+    @SuppressWarnings("rawtypes")
     private BlockingQueue queue;
     @Getter
     private volatile boolean running;
@@ -76,7 +78,7 @@ public class AsyncExeBean implements InitializingBean, DisposableBean {
             queue = asyncConfiguration.getQueue();
         } else {
             if (queue == null) {
-                queue = new LinkedBlockingQueue(asyncConfiguration.getQueueCapacity());
+                queue = new LinkedBlockingQueue<>(asyncConfiguration.getQueueCapacity());
             }
         }
         if (executor == null) {
@@ -108,6 +110,7 @@ public class AsyncExeBean implements InitializingBean, DisposableBean {
         }
     }
 
+    @SuppressWarnings("unchecked")
     public void put(Object obj) throws InterruptedException, AsyncException {
         if (running) {
             queue.put(obj);
@@ -116,6 +119,7 @@ public class AsyncExeBean implements InitializingBean, DisposableBean {
         }
     }
 
+    @SuppressWarnings("unchecked")
     public boolean add(Object obj) throws AsyncException {
         if (running) {
             return queue.add(obj);
@@ -124,6 +128,7 @@ public class AsyncExeBean implements InitializingBean, DisposableBean {
         }
     }
 
+    @SuppressWarnings("unchecked")
     public boolean offer(Object obj) throws AsyncException {
         if (running) {
             return queue.offer(obj);
@@ -138,6 +143,7 @@ public class AsyncExeBean implements InitializingBean, DisposableBean {
         start();
     }
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public synchronized void start() {
         if (!initialized) {
             init();
@@ -168,6 +174,7 @@ public class AsyncExeBean implements InitializingBean, DisposableBean {
         }
     }
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public synchronized void stop() {
         running = false;
         while (queue.size() > 0) {

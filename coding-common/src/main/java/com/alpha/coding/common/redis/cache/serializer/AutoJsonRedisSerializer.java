@@ -3,6 +3,7 @@ package com.alpha.coding.common.redis.cache.serializer;
 import java.io.InputStream;
 import java.lang.reflect.Type;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -31,25 +32,23 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class AutoJsonRedisSerializer implements RedisSerializer {
 
-    private static final Charset CHARSET = Charset.forName("UTF-8");
-    private static final Map<String, TypeReference> TYPE_CACHE = new ConcurrentHashMap<String, TypeReference>(64);
+    private static final Charset CHARSET = StandardCharsets.UTF_8;
+    private static final Map<String, TypeReference> TYPE_CACHE = new ConcurrentHashMap<>(64);
     private static final AtomicLong COUNT = new AtomicLong(1);
     private static final Class<?> BYTE_ARRAY_TYPE = new byte[0].getClass();
 
-    private Class<?> targetType;
-    private Type genericType;
-    //    private TypeReference typeReference;
-    private Type type;
+    private final Class<?> targetType;
+    private final Type genericType;
+    private final Type type;
 
     public AutoJsonRedisSerializer(Class<?> targetType, Type genericType) {
         this.targetType = targetType;
         this.genericType = genericType;
-        //        this.typeReference = loadTypeReference(genericType);
         this.type = genericType == null ? null : TypeToken.of(genericType).getType();
     }
 
     /**
-     * 动态编译得到TypeReference
+     * 通过动态编译类生成TypeReference
      */
     private TypeReference loadTypeReference(Type genericType) {
         if (genericType == null || targetType.isPrimitive() || genericType.equals(targetType)) {

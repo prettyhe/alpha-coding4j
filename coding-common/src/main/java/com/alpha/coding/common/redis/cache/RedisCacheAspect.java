@@ -109,8 +109,8 @@ public class RedisCacheAspect implements ApplicationContextAware {
         if (cacheOperation == CacheOperation.DEL) {
             final RedisTemplate redisTemplate = loadRedisTemplate(cacheConfig);
             if (redisTemplate != null) {
-                final RedisSerializer redisSerializer = getRedisSerializer(cacheConfig, metadataCacheKey, metadata);
-                final byte[] rawKey = redisSerializer.serialize(cacheKey);
+                final RedisSerializer keySerializer = redisTemplate.getKeySerializer();
+                final byte[] rawKey = keySerializer.serialize(cacheKey);
                 redisTemplate.execute((RedisConnection connection) -> connection.del(rawKey));
             }
             if (localCache != null) {
@@ -145,20 +145,21 @@ public class RedisCacheAspect implements ApplicationContextAware {
             log.error("CacheError: InvalidRedisTemplate");
             return proceedLocalCacheFunction.get();
         }
-        final RedisSerializer redisSerializer = getRedisSerializer(cacheConfig, metadataCacheKey, metadata);
+        final RedisSerializer keySerializer = redisTemplate.getKeySerializer();
+        final RedisSerializer valueSerializer = getRedisSerializer(cacheConfig, metadataCacheKey, metadata);
         final Object redisVal = redisTemplate.execute((RedisConnection connection) ->
-                connection.get(redisSerializer.serialize(cacheKey)));
+                connection.get(keySerializer.serialize(cacheKey)));
         if (redisVal == null) {
-            return conditionSyncLoad(joinPoint, cacheConfig, redisTemplate, redisSerializer,
+            return conditionSyncLoad(joinPoint, cacheConfig, redisTemplate, valueSerializer,
                     metadata, cacheKey, localCache);
         } else {
             try {
-                final Object result = parseOriginValue(cacheConfig, (byte[]) redisVal, redisSerializer);
+                final Object result = parseOriginValue(cacheConfig, (byte[]) redisVal, valueSerializer);
                 putIntoLocalCache(localCache, cacheConfig, cacheKey, result);
                 return result;
             } catch (IOException e) {
                 log.warn("parseFromCache fail for key={},msg={}", cacheKey, e.getMessage());
-                return conditionSyncLoad(joinPoint, cacheConfig, redisTemplate, redisSerializer,
+                return conditionSyncLoad(joinPoint, cacheConfig, redisTemplate, valueSerializer,
                         metadata, cacheKey, localCache);
             }
         }
@@ -193,20 +194,20 @@ public class RedisCacheAspect implements ApplicationContextAware {
     private Object conditionSyncLoad(final ProceedingJoinPoint joinPoint,
                                      final CacheConfig cacheConfig,
                                      final RedisTemplate redisTemplate,
-                                     final RedisSerializer redisSerializer,
+                                     final RedisSerializer valueSerializer,
                                      final JoinOperationMetadata metadata,
                                      final String cacheKey,
                                      final Cache localCache) throws Throwable {
         if (!cacheConfig.isSyncLoad()) {
             Object result = joinPoint.proceed();
             putIntoCache(joinPoint.getArgs(), result, cacheKey, cacheConfig,
-                    redisTemplate, redisSerializer, localCache);
+                    redisTemplate, valueSerializer, localCache);
             return result;
         } else {
             return InvokeUtils.syncInvoke(loadLockCache, cacheKey, null,
-                    () -> joinPoint.proceed(),
+                    joinPoint::proceed,
                     val -> putIntoCache(joinPoint.getArgs(), val, cacheKey, cacheConfig,
-                            redisTemplate, redisSerializer, localCache)
+                            redisTemplate, valueSerializer, localCache)
             ).getData();
         }
     }
@@ -237,7 +238,7 @@ public class RedisCacheAspect implements ApplicationContextAware {
                               final String cacheKey,
                               final CacheConfig cacheConfig,
                               final RedisTemplate redisTemplate,
-                              final RedisSerializer redisSerializer,
+                              final RedisSerializer valueSerializer,
                               final Cache localCache) {
         try {
             Object value = returnValue;
@@ -254,9 +255,9 @@ public class RedisCacheAspect implements ApplicationContextAware {
                 return;
             }
             try {
-                final byte[] rawKey = redisSerializer.serialize(cacheKey);
-                final byte[] rawValue = cacheConfig.isGzip() ? CompressUtils.gzip(redisSerializer.serialize(value))
-                        : redisSerializer.serialize(value);
+                final byte[] rawKey = redisTemplate.getKeySerializer().serialize(cacheKey);
+                final byte[] rawValue = cacheConfig.isGzip() ? CompressUtils.gzip(valueSerializer.serialize(value))
+                        : valueSerializer.serialize(value);
                 redisTemplate.execute((RedisConnection connection) -> {
                     try {
                         final Method setEx =

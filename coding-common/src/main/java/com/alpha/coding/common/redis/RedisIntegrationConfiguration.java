@@ -74,8 +74,8 @@ public class RedisIntegrationConfiguration implements EnvironmentAware {
                     org.springframework.util.StringUtils
                             .commaDelimitedListToSet(environment.getProperty("redis.sentinel.nodes")));
             redisSentinelConfiguration.setSentinelPassword(
-                    RedisPassword.of(Optional.ofNullable(environment.getProperty("redis.sentinel.password"))
-                            .orElse(environment.getProperty("redis.password"))));
+                    RedisPassword.of(environment.getProperty("redis.sentinel.password")));
+            redisSentinelConfiguration.setPassword(RedisPassword.of(environment.getProperty("redis.password")));
             redisSentinelConfiguration.setDatabase(environment.getProperty("redis.db", Integer.class, 0));
             return redisSentinelConfiguration;
         }

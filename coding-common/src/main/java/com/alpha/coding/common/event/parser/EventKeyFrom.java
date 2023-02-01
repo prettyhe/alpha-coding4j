@@ -51,9 +51,14 @@ public enum EventKeyFrom {
     /**
      * 请求参数与返回结果的tuple
      */
-    REQUEST_RETURN_WRAPPER(7, "请求参数与返回结果的wrapper");
+    REQUEST_RETURN_WRAPPER(7, "请求参数与返回结果的wrapper"),
 
-    private int type;
-    private String name;
+    /**
+     * 表达式
+     */
+    EXPRESSION(8, "表达式计算结果");
+
+    private final int type;
+    private final String name;
 
 }

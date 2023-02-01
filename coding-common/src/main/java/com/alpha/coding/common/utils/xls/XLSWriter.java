@@ -19,19 +19,26 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
+import com.alpha.coding.bo.base.MapThreadLocalAdaptor;
 import com.alpha.coding.bo.handler.XLSCellHandler;
 import com.alpha.coding.common.utils.DateUtils;
+import com.alpha.coding.common.utils.StringUtils;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
- * XLSUtils
+ * XLSWriter
  *
  * @version 1.0
  */
+@Slf4j
 public class XLSWriter extends XLSOperator {
 
-    private static final Map<Class<? extends XLSCellHandler>, XLSCellHandler> CACHE = new HashMap<>();
+    private static final Map<Class<? extends XLSCellHandler>, XLSCellHandler> CELL_HANDLER_CACHE =
+            new ConcurrentHashMap<>();
     private static final Map<Sheet, Map<Class<? extends XLSCellHandler>, CellStyle>> CELL_STYLE_CACHE =
             new ConcurrentHashMap<>();
+    private static final String XLS_CELL_HANDLER_LOCAL_KEY = "XLSCellHandlerMap";
 
     /**
      * 添加cell处理
@@ -39,7 +46,7 @@ public class XLSWriter extends XLSOperator {
      * @param cellHandler cell处理回调
      */
     public static void registerCellHandler(XLSCellHandler cellHandler) {
-        CACHE.put(cellHandler.getClass(), cellHandler);
+        CELL_HANDLER_CACHE.put(cellHandler.getClass(), cellHandler);
     }
 
     /**
@@ -58,6 +65,20 @@ public class XLSWriter extends XLSOperator {
     /**
      * excel Workbook生成
      *
+     * @param list      对象list
+     * @param clazz     对象类型
+     * @param xlsx      是否生成xlsx格式
+     * @param sheetName Sheet名称
+     * @return 生成的Workbook
+     */
+    public static <T> Workbook generate(List<T> list, Class<T> clazz, boolean xlsx, String sheetName)
+            throws IllegalArgumentException, IllegalAccessException {
+        return generate(list, clazz, xlsx, true, sheetName);
+    }
+
+    /**
+     * excel Workbook生成
+     *
      * @param list     对象list
      * @param clazz    对象类型
      * @param xlsx     是否生成xlsx格式
@@ -66,8 +87,28 @@ public class XLSWriter extends XLSOperator {
      */
     public static <T> Workbook generate(List<T> list, Class<T> clazz, boolean xlsx, boolean withHead)
             throws IllegalArgumentException, IllegalAccessException {
+        return generate(list, clazz, xlsx, withHead, null);
+    }
+
+    /**
+     * excel Workbook生成
+     *
+     * @param list      对象list
+     * @param clazz     对象类型
+     * @param xlsx      是否生成xlsx格式
+     * @param withHead  是否包含头部
+     * @param sheetName Sheet名称
+     * @return 生成的Workbook
+     */
+    public static <T> Workbook generate(List<T> list, Class<T> clazz, boolean xlsx, boolean withHead, String sheetName)
+            throws IllegalArgumentException, IllegalAccessException {
         Workbook wb = xlsx ? new XSSFWorkbook() : new HSSFWorkbook();
-        Sheet sheet = wb.createSheet();
+        Sheet sheet = null;
+        if (StringUtils.isNotBlank(sheetName)) {
+            sheet = wb.createSheet(sheetName);
+        } else {
+            sheet = wb.createSheet();
+        }
         writeSheet(sheet, list, clazz, withHead);
         return wb;
     }
@@ -97,8 +138,10 @@ public class XLSWriter extends XLSOperator {
                     String value = label.getMemo();
                     Cell cell = headRow.createCell(label.getOrder());
                     cell.setCellValue(value);
-                    Class<? extends XLSCellHandler> headHandlerClazz = label.getHeadCellHandler();
-                    processCell(headHandlerClazz, cell, value, String.class);
+                    Class<? extends XLSCellHandler>[] headHandlerClazz = label.getHeadCellHandler();
+                    for (Class<? extends XLSCellHandler> handlerClazz : headHandlerClazz) {
+                        processCell(handlerClazz, cell, value, String.class);
+                    }
                 }
             }
             // 表内容
@@ -123,8 +166,10 @@ public class XLSWriter extends XLSOperator {
                         }
                     }
                     setValue(cell, value);
-                    Class<? extends XLSCellHandler> cellHandlerClazz = label.getCellHandler();
-                    processCell(cellHandlerClazz, cell, value, type);
+                    Class<? extends XLSCellHandler>[] cellHandlerClazz = label.getCellHandler();
+                    for (Class<? extends XLSCellHandler> handlerClazz : cellHandlerClazz) {
+                        processCell(handlerClazz, cell, value, type);
+                    }
                 }
             }
         } finally {
@@ -133,6 +178,7 @@ public class XLSWriter extends XLSOperator {
             } catch (Exception e) {
                 e.printStackTrace();
             }
+            MapThreadLocalAdaptor.remove(XLS_CELL_HANDLER_LOCAL_KEY);
         }
     }
 
@@ -158,9 +204,22 @@ public class XLSWriter extends XLSOperator {
         }
     }
 
+    @SuppressWarnings({"unckecked"})
     private static void processCell(Class<? extends XLSCellHandler> handlerClass, Cell cell,
                                     Object obj, Class<?> type) {
-        XLSCellHandler cellHandler = CACHE.get(handlerClass);
+        XLSCellHandler cellHandler = CELL_HANDLER_CACHE.get(handlerClass);
+        if (cellHandler == null && handlerClass != XLSCellHandler.class && handlerClass != CellHandler.class) {
+            Map<Class<? extends XLSCellHandler>, XLSCellHandler> handlerMap =
+                    MapThreadLocalAdaptor.computeIfAbsent(XLS_CELL_HANDLER_LOCAL_KEY, k -> new HashMap<>());
+            cellHandler = handlerMap.computeIfAbsent(handlerClass, c -> {
+                try {
+                    return c.newInstance();
+                } catch (InstantiationException | IllegalAccessException e) {
+                    log.warn("create XLSCellHandler fail for {}", handlerClass.getName(), e);
+                }
+                return null;
+            });
+        }
         final Sheet sheet = cell.getRow().getSheet();
         final Workbook workbook = sheet.getWorkbook();
         Map<Class<? extends XLSCellHandler>, CellStyle> cellStyleMap = CELL_STYLE_CACHE.get(sheet);

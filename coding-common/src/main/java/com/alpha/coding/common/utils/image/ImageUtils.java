@@ -1,6 +1,7 @@
 package com.alpha.coding.common.utils.image;
 
 import java.awt.Color;
+import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
@@ -8,10 +9,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.regex.PatternSyntaxException;
 
 import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
@@ -35,13 +37,15 @@ import lombok.extern.slf4j.Slf4j;
 public class ImageUtils {
 
     private static final double DEFAULT_PRECISION = 0.001d;
+    private static final String FILE_NAME_REGEXP = "[？~`!@#$%^&*()=_+\\\\{}|;:,.<>?～•！￥…×（）—『』【】、；'：《》，。\"\\[\\]\\-]";
+    private static final Pattern FILE_NAME_PATTERN = Pattern.compile(FILE_NAME_REGEXP);
 
     /**
      * 获取图片类型
      *
      * @param imageBytes 图片bytes
      * @return 图片类型的名称
-     * @throws IOException
+     * @throws IOException IOException
      */
     public static String getImageType(final byte[] imageBytes) throws IOException {
         try (ByteArrayInputStream input = new ByteArrayInputStream(imageBytes);
@@ -64,7 +68,7 @@ public class ImageUtils {
      *
      * @param imageBytes 图片bytes
      * @return 图片元数据
-     * @throws IOException
+     * @throws IOException IOException
      */
     public static ImageMeta getImageMeta(final byte[] imageBytes) throws IOException {
         try (ByteArrayInputStream input = new ByteArrayInputStream(imageBytes);
@@ -89,7 +93,7 @@ public class ImageUtils {
      *
      * @param imageBytes 图片bytes
      * @return 图片JPEG格式下bytes
-     * @throws IOException
+     * @throws IOException IOException
      */
     public static byte[] img2Jpg(byte[] imageBytes, double quality) throws IOException, IllegalArgumentException {
         if (quality > 1.0d || quality < 0.0d) {
@@ -117,7 +121,7 @@ public class ImageUtils {
      * @param rectWidth  缩放后的宽度
      * @param rectHeight 缩放后的高度
      * @return 缩放图片数据
-     * @throws IOException
+     * @throws IOException IOException
      */
     public static byte[] scale(byte[] data, int rectWidth, int rectHeight) throws IOException {
         BufferedImage img = ImageIO.read(new ByteArrayInputStream(data));
@@ -145,7 +149,7 @@ public class ImageUtils {
      * @param destHeight 目标宽度
      * @param destWidth  目标高度
      * @return 缩略图数据
-     * @throws IOException
+     * @throws IOException IOException
      */
     public static byte[] createSnapshot(byte[] imageBytes, int destWidth, int destHeight, Double precision)
             throws IOException {
@@ -186,7 +190,7 @@ public class ImageUtils {
      *
      * @param imageBytes 图片bytes
      * @return 是-当前支持的图片格式，否-非图片或非当前支持的图片格式
-     * @throws IOException
+     * @throws IOException IOException
      */
     public static boolean isValidImageFormat(byte[] imageBytes) throws IOException {
         String format = getImageType(imageBytes);
@@ -206,12 +210,9 @@ public class ImageUtils {
      *
      * @param imageName 图片名
      * @return 过滤后的图片名
-     * @throws PatternSyntaxException
      */
-    public static String filterImageName(String imageName) throws PatternSyntaxException {
-        String regEx = "[？~`!@#$%^&*()=_+\\\\{}|;:,.<>?～•！￥…×（）—『』【】、；'：《》，。\"\\[\\]\\-]";
-        Pattern p = Pattern.compile(regEx);
-        Matcher m = p.matcher(imageName);
+    public static String filterImageName(String imageName) {
+        Matcher m = FILE_NAME_PATTERN.matcher(imageName);
         return m.replaceAll("").trim();
     }
 
@@ -221,7 +222,7 @@ public class ImageUtils {
      * @param inputStream  图片输入流
      * @param outputStream 图片输出流
      * @param alpha        alpha值
-     * @param formatName   输出图片类型
+     * @param formatName   输出图片类型，默认为png
      */
     public static void transparentImage(InputStream inputStream, OutputStream outputStream,
                                         int alpha, String formatName) throws IOException {
@@ -252,7 +253,7 @@ public class ImageUtils {
                 }
             }
         }
-        ImageIO.write(bi, StringUtils.isBlank(formatName) ? "png" : formatName, outputStream);
+        writeImageAsBytes(bi, StringUtils.isBlank(formatName) ? "png" : formatName, outputStream);
     }
 
     /**
@@ -279,10 +280,11 @@ public class ImageUtils {
      * @param destWidth    目标宽度
      * @param destHeight   目标高度
      * @param precision    精度
+     * @param formatName   输出格式，默认为png
      */
-    private static void createThumbnail(InputStream inputStream, OutputStream outputStream,
-                                        int destWidth, int destHeight, double precision,
-                                        String formatName) throws IOException {
+    public static void createThumbnail(InputStream inputStream, OutputStream outputStream,
+                                       int destWidth, int destHeight, double precision,
+                                       String formatName) throws IOException {
         BufferedImage src = ImageIO.read(inputStream);
         int srcHeight = src.getHeight();
         int srcWidth = src.getWidth();
@@ -294,7 +296,7 @@ public class ImageUtils {
             BufferedImage scaled = new BufferedImage(destWidth, destHeight, BufferedImage.TYPE_INT_RGB);
             Image scaledIns = src.getScaledInstance(destWidth, destHeight, BufferedImage.SCALE_SMOOTH);
             scaled.createGraphics().drawImage(scaledIns, 0, 0, Color.WHITE, null);
-            ImageIO.write(scaled, StringUtils.isBlank(formatName) ? "png" : formatName, outputStream);
+            writeImageAsBytes(scaled, StringUtils.isBlank(formatName) ? "png" : formatName, outputStream);
         } else if (widthScalePercent < heightScalePercent) {
             // 宽比小，按照宽比缩放，然后居中裁剪高
             int scaleHeight = (int) (srcHeight / widthScalePercent);
@@ -304,7 +306,7 @@ public class ImageUtils {
             // 裁剪
             int y = (scaleHeight - destHeight) / 2;
             BufferedImage retImage = scaled.getSubimage(0, y, destWidth, destHeight);
-            ImageIO.write(retImage, StringUtils.isBlank(formatName) ? "png" : formatName, outputStream);
+            writeImageAsBytes(retImage, StringUtils.isBlank(formatName) ? "png" : formatName, outputStream);
         } else {
             // 高比小，按照高比缩放，然后居中裁剪宽
             int scaleWidth = (int) (srcWidth / heightScalePercent);
@@ -314,7 +316,103 @@ public class ImageUtils {
             // 裁剪
             int x = (scaleWidth - destWidth) / 2;
             BufferedImage retImage = scaled.getSubimage(x, 0, destWidth, destHeight);
-            ImageIO.write(retImage, StringUtils.isBlank(formatName) ? "png" : formatName, outputStream);
+            writeImageAsBytes(retImage, StringUtils.isBlank(formatName) ? "png" : formatName, outputStream);
+        }
+    }
+
+    /**
+     * 将宽度相同的图片，竖向追加在一起，默认输出为jpeg格式
+     * <p>注意：宽度必须相同</p>
+     *
+     * @param imageList    文件流数组
+     * @param outputStream 输出流
+     * @param formatName   输出图片格式，默认为jpeg
+     */
+    public static void spliceImages(List<BufferedImage> imageList, OutputStream outputStream, String formatName)
+            throws IOException {
+        if (imageList == null || imageList.size() <= 0) {
+            return;
+        }
+        int height = 0; // 总高度
+        int width = 0; // 总宽度
+        int tmpHeight = 0; // 临时的高度 , 或保存偏移高度
+        int tmpEveryHeight = 0; // 临时的高度，主要保存每个高度
+        int picNum = imageList.size();// 图片的数量
+        int[] heightArray = new int[picNum]; // 保存每个文件的高度
+        BufferedImage buffer = null; // 保存图片流
+        List<int[]> imgRGB = new ArrayList<>(picNum); // 保存所有的图片的RGB
+        int[] imgRGBs; // 保存一张图片中的RGB数据
+        for (int i = 0; i < picNum; i++) {
+            buffer = imageList.get(i);
+            heightArray[i] = tmpHeight = buffer.getHeight();// 图片高度
+            if (i == 0) {
+                width = buffer.getWidth();// 图片宽度
+            }
+            height += tmpHeight; // 获取总高度
+            imgRGBs = new int[width * tmpHeight];// 从图片中读取RGB
+            imgRGBs = buffer.getRGB(0, 0, width, tmpHeight, imgRGBs, 0, width);
+            imgRGB.add(imgRGBs);
+        }
+        tmpHeight = 0; // 设置偏移高度为0
+        // 生成新图片
+        BufferedImage imageResult = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+        for (int i = 0; i < picNum; i++) {
+            tmpEveryHeight = heightArray[i];
+            if (i != 0) {
+                tmpHeight += (tmpEveryHeight); // 计算偏移高度
+            }
+            imageResult.setRGB(0, tmpHeight, width, tmpEveryHeight, imgRGB.get(i), 0, width); // 写入流中
+        }
+        writeImageAsBytes(imageResult, StringUtils.isBlank(formatName) ? "jpeg" : formatName, outputStream); // 写图片
+    }
+
+    /**
+     * 将宽度相同的图片，竖向追加在一起，默认输出为jpeg格式
+     * <p>注意：宽度必须相同</p>
+     *
+     * @param imageList    文件流数组
+     * @param outputStream 输出流
+     */
+    public static void spliceImages(List<BufferedImage> imageList, OutputStream outputStream) throws IOException {
+        spliceImages(imageList, outputStream, "jpeg");
+    }
+
+    /**
+     * 将{@link BufferedImage}生成formatName指定格式的图像数据
+     *
+     * @param source       图片源
+     * @param formatName   图像格式名，图像格式名错误则抛出异常
+     * @param outputStream 输出流
+     */
+    public static void writeImageAsBytes(BufferedImage source, String formatName, OutputStream outputStream)
+            throws IOException {
+        Graphics2D graphics2D = null;
+        try {
+            for (BufferedImage targetSrc = source; !ImageIO.write(targetSrc, formatName, outputStream); ) {
+                if (graphics2D != null) {
+                    throw new IllegalArgumentException(String.format("not found writer for '%s'", formatName));
+                }
+                targetSrc = new BufferedImage(source.getWidth(), source.getHeight(), BufferedImage.TYPE_INT_RGB);
+                graphics2D = targetSrc.createGraphics();
+                graphics2D.drawImage(source, 0, 0, null);
+            }
+        } finally {
+            if (graphics2D != null) {
+                graphics2D.dispose();
+            }
+        }
+    }
+
+    /**
+     * 将{@link BufferedImage}生成formatName指定格式的图像数据
+     *
+     * @param source     图片源
+     * @param formatName 图像格式名，图像格式名错误则抛出异常
+     */
+    public static byte[] writeImageAsBytes(BufferedImage source, String formatName) throws IOException {
+        try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+            writeImageAsBytes(source, formatName, output);
+            return output.toByteArray();
         }
     }
 

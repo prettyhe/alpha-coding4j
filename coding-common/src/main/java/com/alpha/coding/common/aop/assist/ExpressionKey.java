@@ -18,7 +18,7 @@ public class ExpressionKey implements Comparable<ExpressionKey> {
 
     private final String expression;
 
-    protected ExpressionKey(AnnotatedElementKey element, String expression) {
+    public ExpressionKey(AnnotatedElementKey element, String expression) {
         this.element = element;
         this.expression = expression;
     }
@@ -32,8 +32,8 @@ public class ExpressionKey implements Comparable<ExpressionKey> {
             return false;
         }
         ExpressionKey otherKey = (ExpressionKey) other;
-        return (this.element.equals(otherKey.element) &&
-                        ObjectUtils.nullSafeEquals(this.expression, otherKey.expression));
+        return (this.element.equals(otherKey.element)
+                        && ObjectUtils.nullSafeEquals(this.expression, otherKey.expression));
     }
 
     @Override

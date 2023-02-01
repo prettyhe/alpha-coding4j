@@ -2,6 +2,8 @@ package com.alpha.coding.common.event.aop;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -11,17 +13,20 @@ import java.util.function.BiFunction;
 
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
-import org.aspectj.lang.annotation.Around;
-import org.aspectj.lang.annotation.Aspect;
-import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.expression.AnnotatedElementKey;
-import org.springframework.stereotype.Component;
+import org.springframework.core.DefaultParameterNameDiscoverer;
+import org.springframework.core.ParameterNameDiscoverer;
+import org.springframework.expression.ExpressionParser;
 
 import com.alibaba.fastjson.JSON;
 import com.alpha.coding.bo.enums.util.EnumWithCodeSupplier;
 import com.alpha.coding.common.aop.assist.AopHelper;
+import com.alpha.coding.common.aop.assist.JoinPointContext;
+import com.alpha.coding.common.aop.assist.SpelExpressionParserFactory;
 import com.alpha.coding.common.event.AbstractEvent;
 import com.alpha.coding.common.event.annotations.EventMonitor;
 import com.alpha.coding.common.event.annotations.EventType;
@@ -32,6 +37,7 @@ import com.alpha.coding.common.event.parser.EventKeyFrom;
 import com.alpha.coding.common.event.parser.EventKeyParser;
 import com.alpha.coding.common.event.parser.EventKeyParserFactory;
 import com.alpha.coding.common.event.parser.ParseSrcWrapper;
+import com.alpha.coding.common.spring.spel.GlobalExpressionCache;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
@@ -45,9 +51,14 @@ import lombok.extern.slf4j.Slf4j;
  * Date: 2020-02-21
  */
 @Slf4j
-@Aspect
-@Component
-public class EventMonitorAspect {
+public class EventMonitorAspect implements ApplicationContextAware {
+
+    @Setter
+    private ExpressionParser expressionParser = SpelExpressionParserFactory.getDefaultParser();
+    @Setter
+    private ParameterNameDiscoverer parameterNameDiscoverer = new DefaultParameterNameDiscoverer();
+    @Setter
+    private ApplicationContext applicationContext;
 
     @Setter
     @Autowired
@@ -67,14 +78,10 @@ public class EventMonitorAspect {
     private ConcurrentMap<EventAnnotatedElementKey, BiFunction<Class<? extends EnumWithCodeSupplier>, String,
             EnumWithCodeSupplier>> eventTypeParseCache = new ConcurrentHashMap<>(64);
 
-    @Pointcut("@annotation(com.alpha.coding.common.event.annotations.EventMonitor) || "
-            + "@annotation(com.alpha.coding.common.event.annotations.EventMonitor.List)")
-    public void eventMonitorAspect() {
-        // point cut
-    }
-
-    @Around("eventMonitorAspect()")
-    public Object process(ProceedingJoinPoint joinPoint) throws Throwable {
+    /**
+     * 切面方法
+     */
+    public Object doAspect(ProceedingJoinPoint joinPoint) throws Throwable {
         // 执行方法，获取返回的对象
         Object returnValue = joinPoint.proceed(joinPoint.getArgs());
         EventMonitor.List monitors = getAnnotation(joinPoint, EventMonitor.List.class);
@@ -82,17 +89,14 @@ public class EventMonitorAspect {
         try {
             if (monitors != null) {
                 List<EventMonitor> monitorList = Lists.newArrayList();
-                for (EventMonitor mon : monitors.value()) {
-                    monitorList.add(mon);
-                }
+                monitorList.addAll(Arrays.asList(monitors.value()));
                 if (monitor != null) {
                     monitorList.add(monitor);
                 }
                 processMulti(joinPoint, returnValue, monitorList);
-            } else {
-                if (monitor != null) {
-                    processSingle(joinPoint, returnValue, monitor);
-                }
+            }
+            if (monitor != null) {
+                processSingle(joinPoint, returnValue, monitor);
             }
         } catch (Exception e) {
             log.error("event-monitor-aspect-error", e);
@@ -103,23 +107,11 @@ public class EventMonitorAspect {
     /**
      * 获取method上面的注解信息
      */
-    private <T extends Annotation> T getAnnotation(JoinPoint joinPoint, Class<T> annotationClass)
-            throws ClassNotFoundException {
-        // 获取目标类名
-        String targetName = joinPoint.getTarget().getClass().getName();
-        // 获取方法名
-        String methodName = joinPoint.getSignature().getName();
-        // 生成类对象
-        Class targetClass = Class.forName(targetName);
-        // 获取该类中的方法
-        Method[] methods = targetClass.getMethods();
-        for (Method method : methods) {
-            if (!method.getName().equals(methodName)) {
-                continue;
-            }
-            return method.getAnnotation(annotationClass);
-        }
-        return null;
+    private <T extends Annotation> T getAnnotation(JoinPoint joinPoint, Class<T> annotationClass) {
+        MethodSignature signature = (MethodSignature) joinPoint.getSignature();
+        final Class<?> targetClass = AopHelper.getTargetClass(joinPoint.getTarget());
+        final Method method = AopHelper.getTargetMethod(targetClass, signature.getMethod());
+        return method.getAnnotation(annotationClass);
     }
 
     private void processSingle(final ProceedingJoinPoint joinPoint, final Object returnValue,
@@ -156,10 +148,10 @@ public class EventMonitorAspect {
                 return;
             }
             if (configuration.getAllowedPublishEventSet() != null
-                    && !configuration.getAllowedPublishEventSet().contains(eventType)) {
+                    && !configuration.getAllowedPublishEventSet().contains(eventTypeObject)) {
                 return;
             }
-            AbstractEvent event = new AbstractEvent(eventTypeObject, keys);
+            AbstractEvent event = new AbstractEvent(eventTypeObject, keys, monitor.syncPost());
             eventBusFactory.post(event);
         } catch (Exception e) {
             log.error("process-event-pointCut error, monitor={}", JSON.toJSONString(monitor), e);
@@ -219,6 +211,29 @@ public class EventMonitorAspect {
         return Sets.newHashSet(parseSrcWrapper);
     }
 
+    private Set getKeysByExpression(JoinPoint joinPoint, Object returnValue, String[] keyExpressions) {
+        if (keyExpressions == null || keyExpressions.length == 0) {
+            return null;
+        }
+        final ParseSrcWrapper parseSrcWrapper = new ParseSrcWrapper();
+        parseSrcWrapper.setReturnValue(returnValue);
+        parseSrcWrapper.setArgs(joinPoint.getArgs());
+        final JoinPointContext joinPointContext = new JoinPointContext(joinPoint);
+        final Set keys = new HashSet();
+        for (String expression : keyExpressions) {
+            final Object value = AopHelper.evalSpELExpress(GlobalExpressionCache.getCache(),
+                    joinPointContext.getMetadataCacheKey(), expression, expressionParser,
+                    AopHelper.createMethodBasedWithResultEvaluationContext(joinPointContext.getMethod(),
+                            joinPointContext.getArgs(), joinPointContext.getTarget(),
+                            joinPointContext.getTargetClass(), returnValue,
+                            applicationContext, parameterNameDiscoverer));
+            if (value != null) {
+                keys.add(value);
+            }
+        }
+        return keys;
+    }
+
     private Set getFinalKeys(final ProceedingJoinPoint joinPoint, final Object returnValue, EventMonitor monitor) {
         EventKeyFrom keyFrom = monitor.keyFrom();
         if (keyFrom.equals(EventKeyFrom.NONE)) {
@@ -237,6 +252,8 @@ public class EventMonitorAspect {
             return getKeysByCustom(joinPoint, returnValue, monitor);
         } else if (keyFrom.equals(EventKeyFrom.REQUEST_RETURN_WRAPPER)) {
             return getKeysByRequestReturnWrapper(joinPoint, returnValue);
+        } else if (keyFrom.equals(EventKeyFrom.EXPRESSION)) {
+            return getKeysByExpression(joinPoint, returnValue, monitor.keyExpressions());
         }
         throw new RuntimeException("unknown keyFrom type: " + monitor.keyFrom());
     }
@@ -250,7 +267,7 @@ public class EventMonitorAspect {
         }
         Set<K> ret = Sets.newHashSet();
         for (K k : a) {
-            if (b.contains(a)) {
+            if (b.contains(k)) {
                 continue;
             }
             ret.add(k);
@@ -258,14 +275,14 @@ public class EventMonitorAspect {
         return ret;
     }
 
-    private Set union(Set a, Set b) {
+    private <K> Set<K> union(Set<K> a, Set<K> b) {
         if (a == null) {
             return b;
         }
         if (b == null) {
             return a;
         }
-        Set ret = Sets.newHashSet(a);
+        Set<K> ret = Sets.newHashSet(a);
         ret.addAll(b);
         return ret;
     }
@@ -275,12 +292,12 @@ public class EventMonitorAspect {
             return null;
         }
         Set<K> ret = union(a, b);
-        for (Iterator iterator = ret.iterator(); iterator.hasNext(); ) {
-            K k = (K) iterator.next();
+        for (Iterator<K> it = ret.iterator(); it.hasNext(); ) {
+            K k = it.next();
             if (a.contains(k) && b.contains(k)) {
                 continue;
             }
-            iterator.remove();
+            it.remove();
         }
         return ret;
     }

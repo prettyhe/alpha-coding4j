@@ -8,6 +8,7 @@ import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.core.annotation.AnnotationAttributes;
 
+import com.alpha.coding.common.bean.register.BeanDefineUtils;
 import com.alpha.coding.common.bean.spi.ConfigurationRegisterHandler;
 import com.alpha.coding.common.bean.spi.RegisterBeanDefinitionContext;
 import com.alpha.coding.common.event.configuration.EventConfiguration;
@@ -44,6 +45,12 @@ public class EnableAutoConfigEventBusHandler implements ConfigurationRegisterHan
                     beanDefinitionBuilder.addPropertyReference("eventBusInstance",
                             attribute.getString("eventBusInstanceName"));
                 }
+                beanDefinitionBuilder.addPropertyValue("pollingEventInterval", BeanDefineUtils
+                        .resolveValue(context, attribute.getString("pollingEventInterval"), Integer.class));
+                beanDefinitionBuilder.addPropertyValue("enableAsyncPost", BeanDefineUtils
+                        .resolveValue(context, attribute.getString("enableAsyncPost"), Boolean.class));
+                beanDefinitionBuilder.addPropertyValue("enableEventPostMonitor", BeanDefineUtils
+                        .resolveValue(context, attribute.getString("enableEventPostMonitor"), Boolean.class));
                 registry.registerBeanDefinition(beanName, beanDefinitionBuilder.getRawBeanDefinition());
             }
         }
@@ -53,4 +60,5 @@ public class EnableAutoConfigEventBusHandler implements ConfigurationRegisterHan
     public int getOrder() {
         return 0;
     }
+
 }

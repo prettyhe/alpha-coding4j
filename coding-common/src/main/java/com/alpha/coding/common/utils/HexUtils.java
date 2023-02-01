@@ -1,6 +1,7 @@
 package com.alpha.coding.common.utils;
 
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 /**
  * HexUtils
@@ -10,7 +11,7 @@ import java.nio.charset.Charset;
  */
 public class HexUtils {
 
-    private static final Charset UTF8 = Charset.forName("UTF-8");
+    private static final Charset UTF8 = StandardCharsets.UTF_8;
     private static final char[] DIGITS =
             new char[] {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 

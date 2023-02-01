@@ -1,6 +1,7 @@
 package com.alpha.coding.common.event.configuration;
 
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -11,7 +12,6 @@ import com.alibaba.fastjson.JSON;
 import com.alpha.coding.bo.enums.util.EnumUtils;
 import com.alpha.coding.bo.enums.util.EnumWithCodeSupplier;
 import com.alpha.coding.common.utils.StringUtils;
-import com.google.common.eventbus.EventBus;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -55,7 +55,7 @@ public class EventConfiguration implements InitializingBean {
      */
     @Setter
     @Getter
-    private EventBus eventBusInstance;
+    private com.google.common.eventbus.EventBus eventBusInstance;
 
     /**
      * 是否允许发布空事件
@@ -83,6 +83,28 @@ public class EventConfiguration implements InitializingBean {
     @Setter
     private Function<String, EnumWithCodeSupplier> stringToSpecifyEventFunc =
             t -> EnumUtils.safeParseEnumByName(identity, t);
+
+    /**
+     * 轮询拉取事件间隔(ms)
+     */
+    @Setter
+    @Getter
+    private int pollingEventInterval = 200;
+
+    /**
+     * 是否开启异步发送
+     */
+    @Setter
+    @Getter
+    private boolean enableAsyncPost = true;
+
+    /**
+     * 是否开启事件发送监控
+     */
+    @Setter
+    @Getter
+    private boolean enableEventPostMonitor = true;
+
     // ------------------预处理项---------------------
     @Getter
     private Set<EnumWithCodeSupplier> effectedEventTypeSet;
@@ -99,7 +121,7 @@ public class EventConfiguration implements InitializingBean {
                 .map(String::trim)
                 .filter(StringUtils::isNotBlank)
                 .map(stringToSpecifyEventFunc)
-                .filter(p -> p != null)
+                .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
         if (StringUtils.isNotBlank(effectedEventTypes)) {
             effectedEventTypeSet = function.apply(effectedEventTypes);

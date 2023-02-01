@@ -119,6 +119,8 @@ public class DataSourceRegisterUtils {
                 keysFunction.apply("jdbc.keepAliveBetweenTimeMillis"), Long.class, null, propertyMap);
         BeanDefineUtils.setIfAbsent(builder, environment, "filters",
                 keysFunction.apply("jdbc.filters"), String.class, null, propertyMap);
+        BeanDefineUtils.setIfAbsent(builder, environment, "connectionProperties",
+                keysFunction.apply("jdbc.connectionProperties"), String.class, null, propertyMap);
     }
 
 }

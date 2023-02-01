@@ -32,7 +32,7 @@ public @interface EventType {
     String type();
 
     /**
-     * 字符串类型解析成对应时间类型的函数
+     * 字符串类型解析成对应事件类型的函数
      */
     Class<? extends BiFunction<Class<? extends EnumWithCodeSupplier>, String, EnumWithCodeSupplier>> typeParser() default EnumEventTypeParser.class;
 

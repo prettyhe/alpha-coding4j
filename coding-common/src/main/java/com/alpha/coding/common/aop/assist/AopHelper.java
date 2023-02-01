@@ -18,6 +18,8 @@ import org.springframework.expression.EvaluationContext;
 import org.springframework.expression.Expression;
 import org.springframework.expression.ExpressionParser;
 
+import com.alpha.coding.common.spring.spel.MethodBasedWithResultEvaluationContext;
+
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -61,6 +63,9 @@ public class AopHelper {
         return targetMethod;
     }
 
+    /**
+     * 执行SpEL表达式，适用于方法上注解级别的
+     */
     public static Object evalSpELExpress(Map<ExpressionKey, Expression> cache, AnnotatedElementKey methodKey,
                                          String keyExpression, ExpressionParser expressionParser,
                                          EvaluationContext evalContext) {
@@ -87,6 +92,9 @@ public class AopHelper {
         return expr;
     }
 
+    /**
+     * 创建基于注解的表达式的key
+     */
     private static ExpressionKey createKey(AnnotatedElementKey elementKey, String expression) {
         return new ExpressionKey(elementKey, expression);
     }
@@ -101,7 +109,8 @@ public class AopHelper {
      * @param result                  the return value
      * @param beanFactory             the beanFactory
      * @param parameterNameDiscoverer the parameterNameDiscoverer
-     * @return the evaluation context
+     * @return the evaluation context MethodBasedEvaluationContext
+     * @see MethodBasedEvaluationContext
      */
     public static EvaluationContext createEvaluationContext(Method method, Object[] args, Object target,
                                                             Class<?> targetClass, Object result,
@@ -109,8 +118,39 @@ public class AopHelper {
                                                             ParameterNameDiscoverer parameterNameDiscoverer) {
         ExpressionRootObject rootObject = new ExpressionRootObject(method, args, target, targetClass);
         Method targetMethod = getTargetMethod(targetClass, method);
-        MethodBasedEvaluationContext evaluationContext = new MethodBasedEvaluationContext(
-                rootObject, targetMethod, args, parameterNameDiscoverer);
+        MethodBasedEvaluationContext evaluationContext = new MethodBasedEvaluationContext(rootObject,
+                targetMethod, args, parameterNameDiscoverer);
+        if (beanFactory != null) {
+            evaluationContext.setBeanResolver(new BeanFactoryResolver(beanFactory));
+        }
+        return evaluationContext;
+    }
+
+    /**
+     * Create an {@link EvaluationContext}.
+     *
+     * @param method                  the method
+     * @param args                    the method arguments
+     * @param target                  the target object
+     * @param targetClass             the target class
+     * @param result                  the return value
+     * @param beanFactory             the beanFactory
+     * @param parameterNameDiscoverer the parameterNameDiscoverer
+     * @return the evaluation context MethodBasedWithResultEvaluationContext
+     * @see MethodBasedWithResultEvaluationContext
+     */
+    public static MethodBasedWithResultEvaluationContext createMethodBasedWithResultEvaluationContext(Method method,
+                                                                                                      Object[] args,
+                                                                                                      Object target,
+                                                                                                      Class<?> targetClass,
+                                                                                                      Object result,
+                                                                                                      BeanFactory beanFactory,
+                                                                                                      ParameterNameDiscoverer parameterNameDiscoverer) {
+        ExpressionRootObject rootObject = new ExpressionRootObject(method, args, target, targetClass);
+        Method targetMethod = getTargetMethod(targetClass, method);
+        MethodBasedWithResultEvaluationContext evaluationContext =
+                new MethodBasedWithResultEvaluationContext(rootObject, targetMethod,
+                        args, parameterNameDiscoverer, result);
         if (beanFactory != null) {
             evaluationContext.setBeanResolver(new BeanFactoryResolver(beanFactory));
         }

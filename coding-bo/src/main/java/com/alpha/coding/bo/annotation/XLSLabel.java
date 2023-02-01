@@ -29,14 +29,14 @@ public @interface XLSLabel {
     Class<?> javaType() default void.class;
 
     /**
-     * 作为excel头部使用的{@link XLSCellHandler}
+     * 作为excel头部cell使用的{@link XLSCellHandler}
      */
-    Class<? extends XLSCellHandler> headCellHandler() default XLSCellHandler.class;
+    Class<? extends XLSCellHandler>[] headCellHandler() default {};
 
     /**
-     * 作为excel头部使用的{@link XLSCellHandler}
+     * 作为excel数据cell使用的{@link XLSCellHandler}
      */
-    Class<? extends XLSCellHandler> cellHandler() default XLSCellHandler.class;
+    Class<? extends XLSCellHandler>[] cellHandler() default {};
 
     /**
      * 输出时间格式

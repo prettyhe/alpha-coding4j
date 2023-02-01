@@ -5,7 +5,9 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Date;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiPredicate;
@@ -243,5 +245,25 @@ public interface Predicates {
      * 时间是否在指定区间内(前闭后开)
      */
     TiPredicate<Date, Date, Date> isBetweenClosedOpen = (d, st, et) -> d.compareTo(st) >= 0 && d.compareTo(et) < 0;
+
+    /**
+     * 判断集合是否为空
+     */
+    Predicate<Collection<?>> isEmptyColl = coll -> coll == null || coll.isEmpty();
+
+    /**
+     * 判断集合是否非空
+     */
+    Predicate<Collection<?>> isNotEmptyColl = isEmptyColl.negate();
+
+    /**
+     * 判断Map是否为空
+     */
+    Predicate<Map<?, ?>> isEmptyMap = map -> map == null || map.isEmpty();
+
+    /**
+     * 判断Map是否非空
+     */
+    Predicate<Map<?, ?>> isNotEmptyMap = isEmptyMap.negate();
 
 }

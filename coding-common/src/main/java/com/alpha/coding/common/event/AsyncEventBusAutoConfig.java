@@ -42,6 +42,12 @@ public class AsyncEventBusAutoConfig implements BeanFactoryPostProcessor {
             BeanDefinitionBuilder eventBusTemplateBeanDefinitionBuilder =
                     BeanDefinitionBuilder.genericBeanDefinition(EventBusTemplate.class);
             eventBusTemplateBeanDefinitionBuilder.addPropertyValue("identity", v.getIdentity());
+            eventBusTemplateBeanDefinitionBuilder.addPropertyValue("pollingEventInterval",
+                    v.getPollingEventInterval());
+            eventBusTemplateBeanDefinitionBuilder.addPropertyValue("enableAsyncPost",
+                    v.isEnableAsyncPost());
+            eventBusTemplateBeanDefinitionBuilder.addPropertyValue("enableEventPostMonitor",
+                    v.isEnableEventPostMonitor());
             eventBusTemplateBeanDefinitionBuilder.addPropertyValue("eventBusInstance", v.getEventBusInstance());
             eventBusTemplateBeanDefinitionBuilder.addPropertyReference("eventListenerFactory",
                     "eventListenerFactory");
@@ -49,4 +55,5 @@ public class AsyncEventBusAutoConfig implements BeanFactoryPostProcessor {
                     eventBusTemplateBeanDefinitionBuilder.getRawBeanDefinition());
         });
     }
+
 }

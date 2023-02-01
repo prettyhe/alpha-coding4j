@@ -76,8 +76,9 @@ public class BeanDefineUtils {
         final String value = stringValueResolver.resolveStringValue(valueExpr);
         BeanExpressionResolver beanExpressionResolver = defaultListableBeanFactory.getBeanExpressionResolver();
         if (beanExpressionResolver == null) {
-            beanExpressionResolver = new StandardBeanExpressionResolver(context.getResourceLoader().getClassLoader());
-            defaultListableBeanFactory.setBeanClassLoader(context.getResourceLoader().getClassLoader());
+            final ClassLoader classLoader = context.getResourceLoader().getClassLoader();
+            beanExpressionResolver = new StandardBeanExpressionResolver(classLoader);
+            defaultListableBeanFactory.setBeanClassLoader(classLoader);
         }
         final Object evaluate = beanExpressionResolver.evaluate(value,
                 new BeanExpressionContext(defaultListableBeanFactory, null));

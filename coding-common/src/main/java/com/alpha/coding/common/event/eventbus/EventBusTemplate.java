@@ -25,7 +25,6 @@ import com.alpha.coding.common.event.common.MetaMonitor;
 import com.alpha.coding.common.event.listener.EventListener;
 import com.alpha.coding.common.event.listener.EventListenerFactory;
 import com.google.common.collect.Lists;
-import com.google.common.eventbus.AsyncEventBus;
 
 import lombok.Data;
 import lombok.Setter;
@@ -55,11 +54,29 @@ public class EventBusTemplate implements InitializingBean, DisposableBean, BeanF
      * guava EventBus 实例
      */
     @Setter
-    protected AsyncEventBus eventBusInstance;
+    protected com.google.common.eventbus.EventBus eventBusInstance;
+
+    /**
+     * 轮询拉取事件间隔(ms)
+     */
+    @Setter
+    protected int pollingEventInterval = 200;
+
+    /**
+     * 是否开启异步发送
+     */
+    @Setter
+    protected boolean enableAsyncPost = true;
+
+    /**
+     * 是否开启事件发送监控
+     */
+    @Setter
+    private boolean enableEventPostMonitor = true;
 
     protected BlockingQueue<Object> queue = new LinkedBlockingQueue<>();
-    protected ExecutorService postExecutor = NamedExecutorPool.newFixedThreadPool("EventBusPost", 2);
-    protected ExecutorService monitorExecutor = NamedExecutorPool.newFixedThreadPool("EventBusMonitor", 1);
+    protected ExecutorService postExecutor;
+    protected ExecutorService monitorExecutor;
     private static final int BATCH_SIZE = 100;
     protected boolean isRunning = false;
     protected AtomicLong postCnt = new AtomicLong();
@@ -81,8 +98,18 @@ public class EventBusTemplate implements InitializingBean, DisposableBean, BeanF
             }
         }
         isRunning = true;
-        asyncPost();
-        monitor();
+        if (enableAsyncPost) {
+            if (postExecutor == null) {
+                postExecutor = NamedExecutorPool.newFixedThreadPool("EventBusPost", 2);
+            }
+            asyncPost();
+        }
+        if (enableEventPostMonitor) {
+            if (monitorExecutor == null) {
+                monitorExecutor = NamedExecutorPool.newFixedThreadPool("EventBusMonitor", 1);
+            }
+            monitor();
+        }
         if (log.isDebugEnabled()) {
             log.debug("init EventBusTemplate for {}", this.identity.getName());
         }
@@ -100,8 +127,14 @@ public class EventBusTemplate implements InitializingBean, DisposableBean, BeanF
                 eventBusInstance.unregister(eventListener);
             }
         }
-        postExecutor.shutdown();
-        monitorExecutor.shutdown();
+        if (postExecutor != null) {
+            postExecutor.shutdown();
+            postExecutor = null;
+        }
+        if (monitorExecutor != null) {
+            monitorExecutor.shutdown();
+            monitorExecutor = null;
+        }
     }
 
     @Override
@@ -118,13 +151,17 @@ public class EventBusTemplate implements InitializingBean, DisposableBean, BeanF
             return;
         }
         if (isRunning) {
-            EventContext<AE> eventContext = new EventContext<>();
-            eventContext.setEvent(event)
-                    .setSuperMDCContext(MDC.getCopyOfContextMap())
-                    .setSuperMapThreadLocalAdaptorContext(MapThreadLocalAdaptor.getCopyOfContextMap());
-            queue.offer(eventContext);
-            postCnt.incrementAndGet();
-            notifyQueue.offer((byte) 0);
+            if (event.isSyncPost() || !enableAsyncPost) {
+                handleRealEvent(event);
+            } else {
+                EventContext<AE> eventContext = new EventContext<>();
+                eventContext.setEvent(event)
+                        .setSuperMDCContext(MDC.getMDCAdapter() != null ? MDC.getCopyOfContextMap() : null)
+                        .setSuperMapThreadLocalAdaptorContext(MapThreadLocalAdaptor.getCopyOfContextMap());
+                queue.offer(eventContext);
+                postCnt.incrementAndGet();
+                notifyQueue.offer((byte) 0);
+            }
         }
     }
 
@@ -132,9 +169,7 @@ public class EventBusTemplate implements InitializingBean, DisposableBean, BeanF
      * 异步发送，子类可覆盖
      */
     protected <K, E extends EnumWithCodeSupplier, AE extends AbstractEvent<K, E>> void asyncPost() {
-        /**
-         * 轮询任务
-         */
+        // 轮询任务
         postExecutor.submit(() -> {
             if (log.isDebugEnabled()) {
                 log.debug("start polling-event-post task");
@@ -142,16 +177,14 @@ public class EventBusTemplate implements InitializingBean, DisposableBean, BeanF
             while (true) {
                 List<Object> events = Lists.newArrayList();
                 queue.drainTo(events, BATCH_SIZE);
-                if (events == null || events.isEmpty()) {
-                    sleep(100);
+                if (events.isEmpty()) {
+                    sleep(pollingEventInterval);
                     continue;
                 }
                 handleEvents(events);
             }
         });
-        /**
-         * 通知任务
-         */
+        // 通知任务
         postExecutor.submit(() -> {
             if (log.isDebugEnabled()) {
                 log.debug("start notify-event-post task");
@@ -167,7 +200,6 @@ public class EventBusTemplate implements InitializingBean, DisposableBean, BeanF
                 }
             }
         });
-
     }
 
     private <K, E extends EnumWithCodeSupplier, AE extends AbstractEvent<K, E>> void handleEvents(List<Object> events) {
@@ -178,26 +210,30 @@ public class EventBusTemplate implements InitializingBean, DisposableBean, BeanF
             EventContext<AE> eventContext = (EventContext<AE>) p;
             AE event = eventContext.getEvent();
             if (eventContext.getSuperMDCContext() != null && MDC.getMDCAdapter() != null) {
-                eventContext.getSuperMDCContext().forEach((k, v) -> MDC.put(k, v));
+                eventContext.getSuperMDCContext().forEach(MDC::put);
             }
             if (eventContext.getSuperMapThreadLocalAdaptorContext() != null) {
-                eventContext.getSuperMapThreadLocalAdaptorContext().forEach((k, v) -> MapThreadLocalAdaptor.put(k, v));
+                eventContext.getSuperMapThreadLocalAdaptorContext().forEach(MapThreadLocalAdaptor::put);
             }
             try {
                 if (log.isDebugEnabled()) {
                     log.debug("event-post: eventID={}", event.getEventID());
                 }
-                eventBusInstance.post(event);
+                handleRealEvent(event);
             } finally {
                 if (eventContext.getSuperMDCContext() != null && MDC.getMDCAdapter() != null) {
-                    eventContext.getSuperMDCContext().keySet().forEach(k -> MDC.remove(k));
+                    eventContext.getSuperMDCContext().keySet().forEach(MDC::remove);
                 }
                 if (eventContext.getSuperMapThreadLocalAdaptorContext() != null) {
                     eventContext.getSuperMapThreadLocalAdaptorContext().keySet()
-                            .forEach(k -> MapThreadLocalAdaptor.remove(k));
+                            .forEach(MapThreadLocalAdaptor::remove);
                 }
             }
         });
+    }
+
+    private <K, E extends EnumWithCodeSupplier, AE extends AbstractEvent<K, E>> void handleRealEvent(AE event) {
+        eventBusInstance.post(event);
     }
 
     protected void sleep(long ms) {

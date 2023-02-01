@@ -139,7 +139,7 @@ public class EventBusFactory implements ApplicationContextAware, InitializingBea
         for (Map.Entry<Class<? extends EnumWithCodeSupplier>, Map<EnumWithCodeSupplier, Integer>> entry :
                 eventToHandleCntMap.entrySet()) {
             for (Map.Entry<EnumWithCodeSupplier, Integer> en : entry.getValue().entrySet()) {
-                if (en.getValue() != null && en.getValue().intValue() > 0) {
+                if (en.getValue() != null && en.getValue() > 0) {
                     return false;
                 }
             }

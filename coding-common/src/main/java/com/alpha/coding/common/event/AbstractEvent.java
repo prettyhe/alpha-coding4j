@@ -48,16 +48,26 @@ public class AbstractEvent<K, E extends EnumWithCodeSupplier> {
     @Getter
     private final Map<String, Object> context = new HashMap<>();
 
+    @Getter
+    private final boolean syncPost;
+
     public AbstractEvent(E type, Collection<K> keys) {
+        this(type, keys, false);
+    }
+
+    public AbstractEvent(E type, Collection<K> keys, boolean syncPost) {
         this.type = type;
+        this.syncPost = syncPost;
         if (keys == null) {
             this.keys = null;
         } else {
             this.keys = ImmutableSet.copyOf(keys);
         }
-        final Map<String, String> mdcCopyOfContextMap = MDC.getCopyOfContextMap();
-        if (mdcCopyOfContextMap != null) {
-            context.put(MDC_CONTEXT, mdcCopyOfContextMap);
+        if (MDC.getMDCAdapter() != null) {
+            final Map<String, String> mdcCopyOfContextMap = MDC.getCopyOfContextMap();
+            if (mdcCopyOfContextMap != null) {
+                context.put(MDC_CONTEXT, mdcCopyOfContextMap);
+            }
         }
         final Map<String, Object> mapThreadLocalAdaptorCopyOfContextMap = MapThreadLocalAdaptor.getCopyOfContextMap();
         if (mapThreadLocalAdaptorCopyOfContextMap != null) {

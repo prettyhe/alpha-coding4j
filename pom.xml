@@ -45,7 +45,7 @@
         <coding4j.commons-configuration.version>1.10</coding4j.commons-configuration.version>
         <coding4j.commons-net.version>3.6</coding4j.commons-net.version>
         <coding4j.commons-lang.version>2.6</coding4j.commons-lang.version>
-        <coding4j.commons-io.version>2.7</coding4j.commons-io.version>
+        <coding4j.commons-io.version>2.11.0</coding4j.commons-io.version>
         <coding4j.commons-dbcp.version>1.4</coding4j.commons-dbcp.version>
         <coding4j.commons-collections.version>3.2.2</coding4j.commons-collections.version>
         <coding4j.commons-text.version>1.10.0</coding4j.commons-text.version>
@@ -55,7 +55,7 @@
         <coding4j.common-email.version>1.5</coding4j.common-email.version>
         <coding4j.commons-pool.version>1.6</coding4j.commons-pool.version>
         <coding4j.commons-pool2.version>2.8.0</coding4j.commons-pool2.version>
-        <coding4j.commons-lang3.version>3.9</coding4j.commons-lang3.version>
+        <coding4j.commons-lang3.version>3.12.0</coding4j.commons-lang3.version>
         <coding4j.javax.servlet-api.version>3.1.0</coding4j.javax.servlet-api.version>
         <coding4j.httpclient.version>4.5.13</coding4j.httpclient.version>
         <coding4j.mybatis.version>3.5.6</coding4j.mybatis.version>

@@ -25,21 +25,21 @@ import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.RedisSerializer;
 import org.springframework.expression.EvaluationContext;
-import org.springframework.expression.Expression;
 import org.springframework.expression.ExpressionParser;
 
 import com.alpha.coding.bo.base.Tuple;
 import com.alpha.coding.bo.function.ThrowableSupplier;
 import com.alpha.coding.common.aop.assist.AopHelper;
-import com.alpha.coding.common.aop.assist.ExpressionKey;
 import com.alpha.coding.common.aop.assist.JoinOperationContext;
 import com.alpha.coding.common.aop.assist.JoinOperationMetadata;
+import com.alpha.coding.common.aop.assist.JoinPointContext;
 import com.alpha.coding.common.aop.assist.SpelExpressionParserFactory;
 import com.alpha.coding.common.redis.cache.annotation.CacheIgnore;
 import com.alpha.coding.common.redis.cache.annotation.RedisCacheEvict;
 import com.alpha.coding.common.redis.cache.annotation.RedisCachePut;
 import com.alpha.coding.common.redis.cache.annotation.RedisCacheable;
 import com.alpha.coding.common.redis.cache.serializer.AutoJsonRedisSerializer;
+import com.alpha.coding.common.spring.spel.GlobalExpressionCache;
 import com.alpha.coding.common.utils.CompressUtils;
 import com.alpha.coding.common.utils.InvokeUtils;
 
@@ -65,12 +65,10 @@ public class RedisCacheAspect implements ApplicationContextAware {
 
     private String nullValueSubstitute = "\u0001\u0001\u0001"; // null值缓存时的转义值
     private KeyGenerator keyGenerator = new SimpleKeyGenerator();
-    private ExpressionParser expressionParser = new SpelExpressionParserFactory().getInstance();
+    private ExpressionParser expressionParser = SpelExpressionParserFactory.getDefaultParser();
     private ParameterNameDiscoverer parameterNameDiscoverer = new DefaultParameterNameDiscoverer();
     private static final Object NO_RESULT = new Object();
     private final Charset DEFAULT_CS = StandardCharsets.UTF_8;
-    private final Map<ExpressionKey, Expression> keyCache = new ConcurrentHashMap<>(64);
-    private final Map<AnnotatedElementKey, JoinOperationMetadata> metadataCache = new ConcurrentHashMap<>(1024);
     private final Map<String, InvokeUtils.InvokeLock> loadLockCache = new ConcurrentHashMap<>(256);
     private final Map<AnnotatedElementKey, RedisSerializer<?>> serializerCache = new ConcurrentHashMap<>(256);
 
@@ -85,15 +83,9 @@ public class RedisCacheAspect implements ApplicationContextAware {
         }
         final CacheConfig cacheConfig = cacheConfigCacheOperationTuple.getF();
         final CacheOperation cacheOperation = cacheConfigCacheOperationTuple.getS();
-        MethodSignature signature = (MethodSignature) joinPoint.getSignature();
-        final Cache localCache = loadLocalCache(cacheConfig, signature);
-        final Class<?> targetClass = AopHelper.getTargetClass(joinPoint.getTarget());
-        AnnotatedElementKey metadataCacheKey = new AnnotatedElementKey(signature.getMethod(), targetClass);
-        if (metadataCache.get(metadataCacheKey) == null) {
-            metadataCache.put(metadataCacheKey, new JoinOperationMetadata(signature.getMethod(),
-                    targetClass, signature));
-        }
-        JoinOperationMetadata metadata = metadataCache.get(metadataCacheKey);
+        final JoinPointContext joinPointContext = new JoinPointContext(joinPoint);
+        final Cache localCache = loadLocalCache(cacheConfig, joinPointContext.getMethodSignature());
+        final JoinOperationMetadata metadata = joinPointContext.getJoinOperationMetadata();
         JoinOperationContext cacheOperationContext = new JoinOperationContext(metadata,
                 joinPoint.getArgs(), joinPoint.getTarget());
         final String cacheKey = buildCacheKey(cacheOperationContext, cacheConfig);
@@ -126,7 +118,7 @@ public class RedisCacheAspect implements ApplicationContextAware {
                 return proceedLocalCacheFunction.get();
             }
             return conditionSyncLoad(joinPoint, cacheConfig, redisTemplate,
-                    getRedisSerializer(cacheConfig, metadataCacheKey, metadata),
+                    getRedisSerializer(cacheConfig, joinPointContext.getMetadataCacheKey(), metadata),
                     metadata, cacheKey, localCache);
         }
         // fetch from local cache
@@ -146,7 +138,8 @@ public class RedisCacheAspect implements ApplicationContextAware {
             return proceedLocalCacheFunction.get();
         }
         final RedisSerializer keySerializer = redisTemplate.getKeySerializer();
-        final RedisSerializer valueSerializer = getRedisSerializer(cacheConfig, metadataCacheKey, metadata);
+        final RedisSerializer valueSerializer = getRedisSerializer(cacheConfig,
+                joinPointContext.getMetadataCacheKey(), metadata);
         final Object redisVal = redisTemplate.execute((RedisConnection connection) ->
                 connection.get(keySerializer.serialize(cacheKey)));
         if (redisVal == null) {
@@ -408,8 +401,8 @@ public class RedisCacheAspect implements ApplicationContextAware {
     }
 
     private Object generateKey(String keyExpression, AnnotatedElementKey methodKey, EvaluationContext evalContext) {
-        return AopHelper.getExpression(this.keyCache, methodKey, keyExpression, getExpressionParser())
-                .getValue(evalContext);
+        return AopHelper.getExpression(GlobalExpressionCache.getCache(), methodKey,
+                keyExpression, getExpressionParser()).getValue(evalContext);
     }
 
 }

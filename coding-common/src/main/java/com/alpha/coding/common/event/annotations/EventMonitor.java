@@ -48,8 +48,20 @@ public @interface EventMonitor {
 
     /**
      * 自定义获取key的回调(回调参数为{ParseSrcWrapper})
+     *
+     * @see com.alpha.coding.common.event.parser.ParseSrcWrapper
      */
     Class<? extends EventKeyParser> customKeyParser() default DefaultKeyParser.class;
+
+    /**
+     * 通过表达式获取key的配置，表达式输入参数returnObj代表返回值
+     */
+    String[] keyExpressions() default {};
+
+    /**
+     * 是否同步发送
+     */
+    boolean syncPost() default false;
 
     @Target({ElementType.METHOD, ElementType.TYPE})
     @Retention(RetentionPolicy.RUNTIME)

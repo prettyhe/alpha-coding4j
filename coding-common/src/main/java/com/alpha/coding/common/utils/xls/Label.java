@@ -34,14 +34,14 @@ public @interface Label {
     Class<?> javaType() default void.class;
 
     /**
-     * 作为excel头部使用的{@link CellHandler}
+     * 作为excel头部cell使用的{@link CellHandler}
      */
-    Class<? extends CellHandler> headCellHandler() default CellHandler.class;
+    Class<? extends CellHandler>[] headCellHandler() default {};
 
     /**
-     * 作为excel头部使用的{@link CellHandler}
+     * 作为excel数据cell使用的{@link CellHandler}
      */
-    Class<? extends CellHandler> cellHandler() default CellHandler.class;
+    Class<? extends CellHandler>[] cellHandler() default {};
 
     /**
      * 输出时间格式

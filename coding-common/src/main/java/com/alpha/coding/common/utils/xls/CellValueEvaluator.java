@@ -12,6 +12,14 @@ import com.alpha.coding.bo.base.Tuple;
  */
 public interface CellValueEvaluator {
 
+    int CELL_TYPE_NONE = -1;
+    int CELL_TYPE_NUMERIC = 0;
+    int CELL_TYPE_STRING = 1;
+    int CELL_TYPE_FORMULA = 2;
+    int CELL_TYPE_BLANK = 3;
+    int CELL_TYPE_BOOLEAN = 4;
+    int CELL_TYPE_ERROR = 5;
+
     /**
      * cell取值
      */

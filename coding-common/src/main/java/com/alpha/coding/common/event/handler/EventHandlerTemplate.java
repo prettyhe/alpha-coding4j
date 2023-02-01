@@ -24,7 +24,7 @@ public abstract class EventHandlerTemplate<K, E extends EnumWithCodeSupplier, R 
         implements EventHandler<K, E>, HandleStrategy<K, R>, InitializingBean {
 
     private static final String HANDLE_ERROR_LOG = "event-handle-error: {}";
-    private Class handlerClass;
+    private Class<?> handlerClass;
 
     @Override
     public void afterPropertiesSet() throws Exception {

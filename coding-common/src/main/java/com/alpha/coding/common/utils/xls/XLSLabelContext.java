@@ -21,8 +21,8 @@ public class XLSLabelContext {
     private String memo;
     private int order;
     private Class<?> javaType;
-    private Class<? extends XLSCellHandler> headCellHandler;
-    private Class<? extends XLSCellHandler> cellHandler;
+    private Class<? extends XLSCellHandler>[] headCellHandler;
+    private Class<? extends XLSCellHandler>[] cellHandler;
     private String outDateFormat;
 
     public XLSLabelContext(Label label) {

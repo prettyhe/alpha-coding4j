@@ -26,8 +26,7 @@ public class SpelExpressionParserFactory {
                 Constructor<SpelParserConfiguration> c = SpelParserConfiguration.class
                         .getConstructor(modeClass, ClassLoader.class);
                 Object mode = modeClass.getField("IMMEDIATE").get(null);
-                SpelParserConfiguration config =
-                        c.newInstance(mode, ExpressionKey.class.getClassLoader());
+                SpelParserConfiguration config = c.newInstance(mode, ExpressionKey.class.getClassLoader());
                 parser = new SpelExpressionParser(config);
             } catch (Exception e) {
                 log.warn("SpelExpressionParserFactory load error", e);

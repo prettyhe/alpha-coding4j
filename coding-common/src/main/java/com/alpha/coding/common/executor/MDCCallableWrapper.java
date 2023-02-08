@@ -3,7 +3,6 @@ package com.alpha.coding.common.executor;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
@@ -15,7 +14,6 @@ import lombok.experimental.Accessors;
  * Date: 2020-02-21
  */
 @Data
-@AllArgsConstructor
 @NoArgsConstructor
 @Accessors(chain = true)
 public class MDCCallableWrapper<V> implements Callable<V> {
@@ -27,6 +25,13 @@ public class MDCCallableWrapper<V> implements Callable<V> {
     public MDCCallableWrapper(Callable<V> callable, Map<String, String> superMDCContext) {
         this.callable = callable;
         this.superMDCContext = superMDCContext;
+    }
+
+    public MDCCallableWrapper(Callable<V> callable, Map<String, String> superMDCContext,
+                              Map<String, Object> superMapThreadLocalAdaptorContext) {
+        this.callable = callable;
+        this.superMDCContext = superMDCContext;
+        this.superMapThreadLocalAdaptorContext = superMapThreadLocalAdaptorContext;
     }
 
     @Override

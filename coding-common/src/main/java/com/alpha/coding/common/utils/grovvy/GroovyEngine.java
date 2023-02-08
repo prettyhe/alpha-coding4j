@@ -1,12 +1,11 @@
 package com.alpha.coding.common.utils.grovvy;
 
 import java.util.Map;
-import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.codehaus.groovy.runtime.InvokerHelper;
 
 import com.alpha.coding.common.utils.MD5Utils;
-import com.google.common.collect.Maps;
 
 import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
@@ -23,15 +22,14 @@ public class GroovyEngine {
     /**
      * 脚本缓存
      */
-    private static ConcurrentMap<String, Script> SCRIPT_CACHE = Maps.newConcurrentMap();
+    private static final Map<String, Object> SCRIPT_CACHE = new ConcurrentHashMap<>();
 
     /**
      * 根据groovy代码执行脚本
      *
      * @param groovyCode groovy脚本
      * @param variables  变量
-     *
-     * @return 脚本执行结果
+     * @return 执行结果
      */
     public static Object eval(String groovyCode, Map<String, ?> variables) {
         return eval(groovyCode, new Binding(variables));
@@ -43,13 +41,12 @@ public class GroovyEngine {
      * @param groovyCode groovy脚本
      * @param variables  变量
      * @param initVars   初始化变量
-     *
-     * @return 脚本执行结果
+     * @return 执行结果
      */
     public static Object eval(String groovyCode, Map<String, ?> variables, Map<String, ?> initVars) {
         Binding binding = new Binding(initVars == null ? variables : initVars);
         if (initVars != null && variables != null) {
-            variables.forEach((k, v) -> binding.setVariable(k, v));
+            variables.forEach(binding::setVariable);
         }
         return eval(groovyCode, binding);
     }
@@ -59,12 +56,11 @@ public class GroovyEngine {
      *
      * @param groovyCode groovy脚本
      * @param binding    变量
-     *
-     * @return 脚本执行结果
+     * @return 执行结果
      */
     public static Object eval(String groovyCode, Binding binding) {
-        final String key = MD5Utils.md5(groovyCode);
-        Script shell = SCRIPT_CACHE.computeIfAbsent(key, k -> new GroovyShell().parse(groovyCode));
+        final Script shell = (Script) SCRIPT_CACHE.computeIfAbsent(MD5Utils.md5(groovyCode),
+                k -> new GroovyShell().parse(groovyCode));
         return InvokerHelper.createScript(shell.getClass(), binding).run();
     }
 

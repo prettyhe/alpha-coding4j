@@ -62,8 +62,8 @@ public class JSONObjectUtils {
      * @param paths      相对于根的绝对目录序列,如[a,b]
      * @param value      值，如test，结果jsonObject变成{"a":{"b":"test"},"c":1}
      */
-    public static void putValue(JSONObject jsonObject, String[] paths, Object value) {
-        updateNode(jsonObject, paths, (j, k) -> j.put(k, value));
+    public static void putValue(JSONObject jsonObject, String[] paths, final Object value) {
+        updateNode(jsonObject, paths, (json, key) -> json.put(key, value));
     }
 
     private static JSONObject getJSONObjectExceptionToNull(JSONObject parent, String key) {

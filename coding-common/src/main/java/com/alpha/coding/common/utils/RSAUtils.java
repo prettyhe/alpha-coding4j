@@ -7,6 +7,8 @@ import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.Signature;
 import java.security.SignatureException;
@@ -39,7 +41,6 @@ public class RSAUtils {
      */
     private static final int MAX_ENCRYPT_BLOCK = 117;
 
-    /** */
     /**
      * RSA最大解密密文大小
      */
@@ -54,7 +55,6 @@ public class RSAUtils {
      * 随机生成密钥对
      *
      * @param length 长度：512/1024/2048
-     *
      * @return 密钥对
      */
     public static KeyPair genKeyPair(int length) {
@@ -66,17 +66,14 @@ public class RSAUtils {
             return null;
         }
         keyPairGen.initialize(length, new SecureRandom());
-        KeyPair keyPair = keyPairGen.generateKeyPair();
-        return keyPair;
+        return keyPairGen.generateKeyPair();
     }
 
     /**
      * 公钥字符串转成PublicKey实例
      *
      * @param publicKey 公钥字符串(base64编码)
-     *
      * @return 根据公钥字符串解析成公钥
-     *
      * @throws Exception 解析过程中的异常
      */
     public static RSAPublicKey parseRSAPublicKey(String publicKey) throws Exception {
@@ -90,9 +87,7 @@ public class RSAUtils {
      * 公钥字符串转成PublicKey实例
      *
      * @param privateKey 私钥字符串(base64编码)
-     *
      * @return 根据私钥字符串解析成公钥
-     *
      * @throws Exception 解析过程中的异常
      */
     public static RSAPrivateKey parseRSAPrivateKey(String privateKey) throws Exception {
@@ -107,9 +102,7 @@ public class RSAUtils {
      *
      * @param publicKey  公钥
      * @param cipherData 密文数据
-     *
      * @return 公钥解密字节数组
-     *
      * @throws Exception 异常信息
      */
     public static byte[] rsaDecryptByPublicKey(RSAPublicKey publicKey, byte[] cipherData) throws Exception {
@@ -139,9 +132,7 @@ public class RSAUtils {
      *
      * @param privateKey    私钥
      * @param plainTextData 明文数据
-     *
      * @return 加密字节数组
-     *
      * @throws Exception 加密过程中的异常信息
      */
     public static byte[] rsaEncryptByPrivateKey(RSAPrivateKey privateKey, byte[] plainTextData) throws Exception {
@@ -171,9 +162,7 @@ public class RSAUtils {
      *
      * @param privateKey 私钥
      * @param cipherData 密文数据
-     *
      * @return 解密字节数组
-     *
      * @throws Exception 解密过程中的异常信息
      */
     public static byte[] rsaDecryptByPrivateKey(RSAPrivateKey privateKey, byte[] cipherData) throws Exception {
@@ -203,9 +192,7 @@ public class RSAUtils {
      *
      * @param publicKey     公钥
      * @param plainTextData 明文数据
-     *
      * @return 加密字节数组
-     *
      * @throws Exception 加密过程中的异常信息
      */
     public static byte[] rsaEncryptByPublicKey(RSAPublicKey publicKey, byte[] plainTextData) throws Exception {
@@ -230,13 +217,71 @@ public class RSAUtils {
         }
     }
 
+    /**
+     * 公钥加密
+     *
+     * @param plainBytes      明文数据
+     * @param publicKey       公钥
+     * @param keyLength       密钥长度(1024/2048/4096)
+     * @param reserveSize     保留长度(如11)
+     * @param cipherAlgorithm 算法(如RSA/ECB/PKCS1Padding)
+     */
+    public static byte[] encryptByPubKey(byte[] plainBytes, PublicKey publicKey,
+                                         int keyLength, int reserveSize, String cipherAlgorithm) throws Exception {
+        try {
+            int keyByteSize = keyLength / 8;
+            int encryptBlockSize = keyByteSize - reserveSize;
+            Cipher cipher = Cipher.getInstance(cipherAlgorithm);
+            cipher.init(Cipher.ENCRYPT_MODE, publicKey);
+            return doByCipher(cipher, plainBytes, encryptBlockSize);
+        } catch (NoSuchAlgorithmException e) {
+            throw new Exception("无此加密算法");
+        } catch (NoSuchPaddingException e) {
+            throw new Exception("算法错误:" + e.getMessage());
+        } catch (InvalidKeyException e) {
+            throw new Exception("加密公钥非法");
+        } catch (IllegalBlockSizeException e) {
+            throw new Exception("明文长度非法");
+        } catch (BadPaddingException e) {
+            throw new Exception("明文数据已损坏");
+        }
+    }
+
+    /**
+     * 私钥解密
+     *
+     * @param encryptedBytes  加密数据
+     * @param privateKey      私钥
+     * @param keyLength       密钥长度(1024/2048/4096)
+     * @param cipherAlgorithm 算法(如RSA/ECB/PKCS1Padding)
+     */
+    public static byte[] decryptByPriKey(byte[] encryptedBytes, PrivateKey privateKey,
+                                         int keyLength, String cipherAlgorithm) throws Exception {
+        int keyByteSize = keyLength / 8;
+        try {
+            Cipher cipher = Cipher.getInstance(cipherAlgorithm);
+            cipher.init(Cipher.DECRYPT_MODE, privateKey);
+            return doByCipher(cipher, encryptedBytes, keyByteSize);
+        } catch (NoSuchAlgorithmException e) {
+            throw new Exception("无此解密算法");
+        } catch (NoSuchPaddingException e) {
+            throw new Exception("算法错误:" + e.getMessage());
+        } catch (InvalidKeyException e) {
+            throw new Exception("解密私钥非法");
+        } catch (IllegalBlockSizeException e) {
+            throw new Exception("密文长度非法");
+        } catch (BadPaddingException e) {
+            throw new Exception("密文数据已损坏");
+        }
+    }
+
     private static byte[] doByCipher(final Cipher cipher, final byte[] data, final int blockSize)
             throws IOException, BadPaddingException, IllegalBlockSizeException {
         try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             final int length = data.length;
             int offset = 0;
             while (offset < length) {
-                int size = length - offset > blockSize ? blockSize : length - offset;
+                int size = Math.min(length - offset, blockSize);
                 byte[] cache = cipher.doFinal(data, offset, size);
                 out.write(cache, 0, cache.length);
                 offset += size;
@@ -250,14 +295,39 @@ public class RSAUtils {
      *
      * @param privateKey 私钥
      * @param dataBytes  待签名的byte数组
-     *
      * @return 签名字节数组
-     *
      * @throws Exception 签名过程中的异常信息
      */
-    public static byte[] rsaSignByPrivateKey(RSAPrivateKey privateKey, byte[] dataBytes) throws Exception {
+    public static byte[] rsaSignByPrivateKey(PrivateKey privateKey, byte[] dataBytes) throws Exception {
+        return signByPrivateKey(ALGORITHM_RSA_SIGN, privateKey, dataBytes);
+    }
+
+    /**
+     * 使用SHA256WithRSA算法验签
+     *
+     * @param publicKey 公钥
+     * @param dataBytes 待签名的byte数组
+     * @param signBytes 签名的byte数组
+     * @return 验签结果(true - 通过, false - 失败)
+     * @throws Exception 验签过程中的异常信息
+     */
+    public static boolean rsaVerifySignByPublicKey(PublicKey publicKey, byte[] dataBytes, byte[] signBytes)
+            throws Exception {
+        return verifySignByPublicKey(ALGORITHM_RSA_SIGN, publicKey, dataBytes, signBytes);
+    }
+
+    /**
+     * 使用算法签名
+     *
+     * @param algorithm  算法，如SHA256WithRSA
+     * @param privateKey 私钥
+     * @param dataBytes  待签名的byte数组
+     * @return 签名后的byte[]
+     */
+    public static byte[] signByPrivateKey(String algorithm, PrivateKey privateKey,
+                                          byte[] dataBytes) throws Exception {
         try {
-            Signature signature = Signature.getInstance(ALGORITHM_RSA_SIGN);
+            Signature signature = Signature.getInstance(algorithm);
             signature.initSign(privateKey);
             signature.update(dataBytes);
             return signature.sign();
@@ -271,20 +341,18 @@ public class RSAUtils {
     }
 
     /**
-     * 使用SHA256WithRSA算法验签
+     * 使用算法验签
      *
+     * @param algorithm 算法，如SHA256WithRSA
      * @param publicKey 公钥
      * @param dataBytes 待签名的byte数组
      * @param signBytes 签名的byte数组
-     *
-     * @return 验签结果(true - 通过, false - 失败)
-     *
-     * @throws Exception 验签过程中的异常信息
+     * @return 验签结果
      */
-    public static boolean rsaVerifySignByPublicKey(RSAPublicKey publicKey, byte[] dataBytes, byte[] signBytes)
-            throws Exception {
+    public static boolean verifySignByPublicKey(String algorithm, PublicKey publicKey,
+                                                byte[] dataBytes, byte[] signBytes) throws Exception {
         try {
-            Signature signature = Signature.getInstance(ALGORITHM_RSA_SIGN);
+            Signature signature = Signature.getInstance(algorithm);
             signature.initVerify(publicKey);
             signature.update(dataBytes);
             return signature.verify(signBytes);

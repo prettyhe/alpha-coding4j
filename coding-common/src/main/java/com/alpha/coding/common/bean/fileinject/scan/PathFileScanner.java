@@ -63,10 +63,10 @@ public class PathFileScanner {
             doScan(new File(realPath), list);
         }
         return list.stream()
-                .filter(file -> excludeFilters.size() == 0
-                        || !excludeFilters.stream().filter(f -> f.getF().match(file, f.getS())).findAny().isPresent())
-                .filter(file -> includeFilters.size() == 0
-                        || !includeFilters.stream().filter(f -> !f.getF().match(file, f.getS())).findAny().isPresent())
+                .filter(file -> excludeFilters.isEmpty() || excludeFilters.stream()
+                        .noneMatch(f -> f.getF().match(file, f.getS())))
+                .filter(file -> includeFilters.isEmpty() || includeFilters.stream()
+                        .allMatch(f -> f.getF().match(file, f.getS())))
                 .collect(Collectors.toList());
     }
 
@@ -76,7 +76,11 @@ public class PathFileScanner {
             return;
         }
         if (file.isDirectory()) {
-            for (File f : file.listFiles()) {
+            final File[] files = file.listFiles();
+            if (files == null || files.length == 0) {
+                return;
+            }
+            for (File f : files) {
                 doScan(f, list);
             }
         } else {

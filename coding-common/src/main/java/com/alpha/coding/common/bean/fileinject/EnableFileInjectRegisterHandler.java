@@ -37,7 +37,7 @@ import lombok.extern.slf4j.Slf4j;
 public class EnableFileInjectRegisterHandler implements ConfigurationRegisterHandler {
 
     private static final String TMP_PATH_DIR = IOUtils.joinPath(System.getProperty("java.io.tmpdir"),
-            UUID.randomUUID().toString().replaceAll("-", ""));
+            "tmp_path_" + UUID.randomUUID().toString().replaceAll("-", ""));
 
     @Override
     public void registerBeanDefinitions(RegisterBeanDefinitionContext context) {
@@ -50,14 +50,13 @@ public class EnableFileInjectRegisterHandler implements ConfigurationRegisterHan
             final String[] basePaths = extFileInject.getStringArray("basePath");
             PathFileScanner scanner = new PathFileScanner(basePaths);
             for (AnnotationAttributes filter : extFileInject.getAnnotationArray("includeFilters")) {
-                parseFilters(filter).forEach(x -> scanner.addIncludeScanFilter(x));
+                parseFilters(filter).forEach(scanner::addIncludeScanFilter);
             }
             for (AnnotationAttributes filter : extFileInject.getAnnotationArray("excludeFilters")) {
-                parseFilters(filter).forEach(x -> scanner.addExcludeScanFilter(x));
+                parseFilters(filter).forEach(scanner::addExcludeScanFilter);
             }
             try {
                 final List<File> files = scanner.scan();
-
                 if (log.isDebugEnabled()) {
                     log.debug("Scan files: {}",
                             files.stream().map(this::getFilePath).reduce((x, y) -> x + "," + y).orElse(""));
@@ -94,7 +93,7 @@ public class EnableFileInjectRegisterHandler implements ConfigurationRegisterHan
             }
         }
         for (File f : files) {
-            File destFile = new File(TMP_PATH_DIR + File.separator + f.getName());
+            File destFile = new File(IOUtils.joinPath(TMP_PATH_DIR, f.getName()));
             if (destFile.exists()) {
                 destFile.delete();
             }

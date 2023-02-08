@@ -13,7 +13,7 @@ import java.util.regex.Pattern;
  */
 public class RegexPatternScanFilter extends AbstractStringTestingScanFilter {
 
-    private static ConcurrentMap<String, Pattern> patternMap = new ConcurrentHashMap<>();
+    private static final ConcurrentMap<String, Pattern> patternMap = new ConcurrentHashMap<>();
 
     public RegexPatternScanFilter(Function<Object, String> targetStringFunc,
                                   Function<Object, String> benchmarkStringFunc) {
@@ -22,6 +22,6 @@ public class RegexPatternScanFilter extends AbstractStringTestingScanFilter {
 
     @Override
     protected boolean doMatch(String target, String benchmark) {
-        return patternMap.computeIfAbsent(benchmark, k -> Pattern.compile(k)).matcher(target).matches();
+        return patternMap.computeIfAbsent(benchmark, Pattern::compile).matcher(target).matches();
     }
 }

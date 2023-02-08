@@ -37,7 +37,7 @@ public class ListUtils {
             return ret;
         }
 
-        org.apache.commons.beanutils.Converter converter = BeanUtilsBean.getInstance().getConvertUtils().lookup(clazz);
+        Converter converter = BeanUtilsBean.getInstance().getConvertUtils().lookup(clazz);
         if (converter == null) {
             return null;
         }

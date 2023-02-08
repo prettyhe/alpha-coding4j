@@ -112,6 +112,10 @@ public class IpUtils {
         return localIP;
     }
 
+    private static boolean isInValidIp(String ip) {
+        return ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip) || LOCAL_IP.equalsIgnoreCase(ip);
+    }
+
     /**
      * 获取客户机的ip地址
      *
@@ -153,10 +157,6 @@ public class IpUtils {
             }
         }
         return ip;
-    }
-
-    private static boolean isInValidIp(String ip) {
-        return ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip) || LOCAL_IP.equalsIgnoreCase(ip);
     }
 
 }

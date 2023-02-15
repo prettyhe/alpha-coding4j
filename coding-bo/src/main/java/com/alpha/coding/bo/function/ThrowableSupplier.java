@@ -8,6 +8,11 @@ package com.alpha.coding.bo.function;
  */
 public interface ThrowableSupplier<T> {
 
+    /**
+     * Gets a result.
+     *
+     * @return a result
+     */
     T get() throws Throwable;
 
 }

@@ -1,6 +1,7 @@
 package com.alpha.coding.common.executor;
 
 import java.util.Map;
+import java.util.function.Consumer;
 
 import org.slf4j.MDC;
 
@@ -22,7 +23,7 @@ import lombok.experimental.Accessors;
  * Date: 2020-02-21
  */
 @Accessors(chain = true)
-public class MDCRunnableWrapper extends RunnableWrapper implements Runnable {
+public class MDCRunnableWrapper extends RunnableWrapper {
 
     private Map<String, String> superMDCContext;
     private Map<String, Object> superMapThreadLocalAdaptorContext;
@@ -31,12 +32,33 @@ public class MDCRunnableWrapper extends RunnableWrapper implements Runnable {
     @Setter(AccessLevel.PRIVATE)
     private Map<String, Object> existMapThreadLocalAdaptorContext;
 
+    public static MDCRunnableWrapper of(Runnable runnable, Map<String, String> superMDCContext) {
+        return new MDCRunnableWrapper(runnable, superMDCContext);
+    }
+
+    public static MDCRunnableWrapper of(Runnable runnable, Map<String, String> superMDCContext,
+                                        Map<String, Object> superMapThreadLocalAdaptorContext) {
+        return new MDCRunnableWrapper(runnable, superMDCContext, superMapThreadLocalAdaptorContext);
+    }
+
+    public static MDCRunnableWrapper of(Runnable runnable, Map<String, String> superMDCContext,
+                                        Map<String, Object> superMapThreadLocalAdaptorContext,
+                                        Consumer<Exception> whenException) {
+        return new MDCRunnableWrapper(runnable, superMDCContext, superMapThreadLocalAdaptorContext, whenException);
+    }
+
     public MDCRunnableWrapper(Runnable runnable, Map<String, String> superMDCContext) {
-        this(runnable, superMDCContext, null);
+        this(runnable, superMDCContext, null, null);
     }
 
     public MDCRunnableWrapper(Runnable runnable, Map<String, String> superMDCContext,
                               Map<String, Object> superMapThreadLocalAdaptorContext) {
+        this(runnable, superMDCContext, superMapThreadLocalAdaptorContext, null);
+    }
+
+    public MDCRunnableWrapper(Runnable runnable, Map<String, String> superMDCContext,
+                              Map<String, Object> superMapThreadLocalAdaptorContext,
+                              Consumer<Exception> whenException) {
         super(runnable);
         this.superMDCContext = superMDCContext;
         this.superMapThreadLocalAdaptorContext = superMapThreadLocalAdaptorContext;
@@ -61,6 +83,7 @@ public class MDCRunnableWrapper extends RunnableWrapper implements Runnable {
             MapThreadLocalAdaptorCopyConsumer.getInstance()
                     .accept(MDCRunnableWrapper.this.existMapThreadLocalAdaptorContext);
         });
+        this.setWhenException(whenException);
     }
 
 }

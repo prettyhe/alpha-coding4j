@@ -9,10 +9,13 @@ import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
@@ -28,6 +31,7 @@ import org.springframework.util.StringUtils;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.alpha.coding.bo.function.common.Predicates;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -108,7 +112,7 @@ public class HttpUtils {
         } catch (Exception e) {
             log.warn("parseParams fail from body, msg is {}", e.getMessage());
             final MultiValueMap<String, String> valueMap = readBodyFormParams(request);
-            if (valueMap != null && !valueMap.isEmpty()) {
+            if (Predicates.isNotEmptyMap.test(valueMap)) {
                 jsonObject = JSON.parseObject(JSON.toJSONString(valueMap.toSingleValueMap()));
             }
         } finally {
@@ -157,7 +161,7 @@ public class HttpUtils {
                         type.getTypeName(), Arrays.toString(names), e.getMessage());
             }
             final MultiValueMap<String, String> valueMap = readBodyFormParams(request);
-            if (valueMap != null && !valueMap.isEmpty()) {
+            if (Predicates.isNotEmptyMap.test(valueMap)) {
                 obj = JSON.parseObject(JSON.toJSONString(valueMap.toSingleValueMap()), type);
             }
         } finally {
@@ -186,7 +190,7 @@ public class HttpUtils {
                 || Date.class.equals(type)
                 || BigInteger.class.equals(type)) {
             final JSONObject jsonObject = JSON.parseObject(new String(bytes, StandardCharsets.UTF_8));
-            Function<Function<String, Object>, Object> function = f -> Arrays.stream(names)
+            final Function<Function<String, Object>, Object> function = f -> Arrays.stream(names)
                     .map(x -> {
                         try {
                             return f.apply(x);
@@ -284,7 +288,8 @@ public class HttpUtils {
     public static MultiValueMap<String, String> readBodyFormParams(HttpServletRequest request) throws IOException {
         ServletServerHttpRequest httpRequest = new ServletServerHttpRequest(request);
         MediaType contentType = httpRequest.getHeaders().getContentType();
-        Charset charset = (contentType.getCharset() != null ? contentType.getCharset() : StandardCharsets.UTF_8);
+        Charset charset = (contentType != null && contentType.getCharset() != null ? contentType.getCharset()
+                                   : StandardCharsets.UTF_8);
         ServletInputStream inputStream = request.getInputStream();
         if (inputStream.markSupported()) {
             inputStream.mark(request.getContentLength());
@@ -318,6 +323,37 @@ public class HttpUtils {
             }
         }
         return result;
+    }
+
+    /**
+     * 获取所有header
+     */
+    public static Map<String, List<String>> getAllHeaders(HttpServletRequest request) {
+        final Map<String, List<String>> map = new HashMap<>();
+        final Enumeration<String> headerNames = request.getHeaderNames();
+        while (headerNames.hasMoreElements()) {
+            final String headerName = headerNames.nextElement();
+            final Enumeration<String> headers = request.getHeaders(headerName);
+            final List<String> headerValues = new ArrayList<>();
+            while (headers.hasMoreElements()) {
+                headerValues.add(headers.nextElement());
+            }
+            map.put(headerName, Collections.unmodifiableList(headerValues));
+        }
+        return map;
+    }
+
+    /**
+     * 获取所有header
+     */
+    public static Map<String, String> getAllHeaderValues(HttpServletRequest request) {
+        final Map<String, String> map = new HashMap<>();
+        final Enumeration<String> headerNames = request.getHeaderNames();
+        while (headerNames.hasMoreElements()) {
+            final String headerName = headerNames.nextElement();
+            map.put(headerName, request.getHeader(headerName));
+        }
+        return map;
     }
 
 }

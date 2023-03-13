@@ -110,6 +110,15 @@ public class DateUtils {
     }
 
     /**
+     * 格式化日期，yyyy-MM-dd
+     *
+     * @param date 时间
+     */
+    public static String formatDate(Date date) {
+        return format(date, DATE_FORMAT);
+    }
+
+    /**
      * 转换到日期格式，yyyy-MM-dd
      *
      * @param str 时间
@@ -323,6 +332,23 @@ public class DateUtils {
     }
 
     /**
+     * 获取N月后的那天(零点)
+     *
+     * @param dt 时间
+     * @param n  间隔
+     */
+    public static Date getNextNMonth(Date dt, int n) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(dt);
+        calendar.add(Calendar.MONTH, n);
+        calendar.set(Calendar.HOUR_OF_DAY, 0);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
+        return calendar.getTime();
+    }
+
+    /**
      * 获取N天后的那天(零点)
      *
      * @param dt 时间
@@ -340,25 +366,90 @@ public class DateUtils {
     }
 
     /**
+     * 获取N年后的那个时刻
+     *
+     * @param dt 时间
+     * @param n  间隔
+     */
+    public static Date getNextNYearTime(Date dt, int n) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(dt);
+        calendar.add(Calendar.YEAR, n);
+        return calendar.getTime();
+    }
+
+    /**
+     * 获取N月后的那个时刻
+     *
+     * @param dt 时间
+     * @param n  间隔
+     */
+    public static Date getNextNMonthTime(Date dt, int n) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(dt);
+        calendar.add(Calendar.MONTH, n);
+        return calendar.getTime();
+    }
+
+    /**
+     * 获取N天后的那个时刻
+     *
+     * @param dt 时间
+     * @param n  间隔
+     */
+    public static Date getNextNDayTime(Date dt, int n) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(dt);
+        calendar.add(Calendar.DAY_OF_MONTH, n);
+        return calendar.getTime();
+    }
+
+    /**
+     * 获取N小时后的那个时刻
+     *
+     * @param dt 时间
+     * @param n  间隔
+     */
+    public static Date getNextNHourTime(Date dt, int n) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(dt);
+        calendar.add(Calendar.HOUR_OF_DAY, n);
+        return calendar.getTime();
+    }
+
+    /**
+     * 获取N分钟后的那个时刻
+     *
+     * @param dt 时间
+     * @param n  间隔
+     */
+    public static Date getNextNMinuteTime(Date dt, int n) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(dt);
+        calendar.add(Calendar.MINUTE, n);
+        return calendar.getTime();
+    }
+
+    /**
+     * 获取N秒后的那个时刻
+     *
+     * @param dt 时间
+     * @param n  间隔
+     */
+    public static Date getNextNSecondTime(Date dt, int n) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(dt);
+        calendar.add(Calendar.SECOND, n);
+        return calendar.getTime();
+    }
+
+    /**
      * 获取下一天(零点)
      *
      * @param dt 时间
      */
     public static Date getNextDay(Date dt) {
         return getNextNDay(dt, 1);
-    }
-
-    /**
-     * 获取N分钟后的时间
-     *
-     * @param dt 时间
-     * @param n  间隔
-     */
-    public static Date getTimeNextNMinute(Date dt, int n) {
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTime(dt);
-        calendar.add(Calendar.MINUTE, n);
-        return calendar.getTime();
     }
 
     /**
@@ -371,6 +462,19 @@ public class DateUtils {
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(dt);
         calendar.add(Calendar.HOUR_OF_DAY, n);
+        return calendar.getTime();
+    }
+
+    /**
+     * 获取N分钟后的时间
+     *
+     * @param dt 时间
+     * @param n  间隔
+     */
+    public static Date getTimeNextNMinute(Date dt, int n) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(dt);
+        calendar.add(Calendar.MINUTE, n);
         return calendar.getTime();
     }
 
@@ -418,6 +522,7 @@ public class DateUtils {
     /**
      * 固定时间: 1971-01-01 00:59:59
      */
+    @Deprecated
     public static Date getDefaultStartDate() {
         return getDate(1971, 1, 1, 0, 59, 59);
     }
@@ -425,6 +530,7 @@ public class DateUtils {
     /**
      * 固定时间: 1971-01-01 00:59:59
      */
+    @Deprecated
     public static String getDefaultStartDateStr() {
         return "1971-01-01 00:59:59";
     }
@@ -432,6 +538,7 @@ public class DateUtils {
     /**
      * 固定时间: 2037-01-01 00:59:59
      */
+    @Deprecated
     public static Date getDefaultEndDate() {
         return getDate(2037, 1, 1, 0, 59, 59);
     }
@@ -439,6 +546,7 @@ public class DateUtils {
     /**
      * 固定时间: 2037-01-01 00:59:59
      */
+    @Deprecated
     public static String getDefaultEndDateStr() {
         return "2037-01-01 00:59:59";
     }
@@ -458,6 +566,7 @@ public class DateUtils {
      *
      * @param specificDate 时间
      * @param days         间隔
+     * @see DateUtils#getNextNDayTime(Date, int)
      */
     public static Date getTimeBeforeByDayInterval(Date specificDate, int days) {
         Calendar calendar = Calendar.getInstance();
@@ -471,6 +580,7 @@ public class DateUtils {
      *
      * @param specificDate 时间
      * @param hours        间隔
+     * @see DateUtils#getNextNHourTime(Date, int)
      */
     public static Date getTimeBeforeByHourInterval(Date specificDate, int hours) {
         Calendar calendar = Calendar.getInstance();
@@ -508,7 +618,7 @@ public class DateUtils {
      * @param days 间隔
      */
     public static Date getDayBefore(int days) {
-        return getDayStart(getTimeBeforeByDayInterval(new Date(), days));
+        return getNextNDay(new Date(), -days);
     }
 
     /**
@@ -755,16 +865,14 @@ public class DateUtils {
      * 昨天(零点)
      */
     public static Date yesterday() {
-        return getTimeBeforeByDayInterval(getDayStart(new Date()), 1);
+        return getNextNDay(new Date(), -1);
     }
 
     /**
      * 昨天此刻
      */
     public static Date yesterdayTime() {
-        Calendar calendar = Calendar.getInstance();
-        calendar.add(Calendar.DAY_OF_MONTH, -1);
-        return calendar.getTime();
+        return getNextNDayTime(new Date(), -1);
     }
 
     /**
@@ -947,6 +1055,36 @@ public class DateUtils {
      */
     public static LocalDateTime toLocalDateTime(LocalDate localDate) {
         return localDate == null ? null : localDate.atStartOfDay();
+    }
+
+    /**
+     * 获取指定日期当前天数在N月之后那天的前一天
+     * <li>(2022-12-01, 1) => 2022-12-31</li>
+     * <li>(2022-12-02, 1) => 2023-01-01</li>
+     * <li>(2023-03-31, 1) => 2023-04-30</li>
+     * <li>(2023-03-30, 1) => 2023-04-29</li>
+     * <li>(2023-01-30, 1) => 2023-02-28</li>
+     * <li>(2023-01-30, 13) => 2024-02-29</li>
+     * <li>(2023-01-28, 1) => 2023-02-27</li>
+     * <li>(2023-01-29, 1) => 2023-02-28</li>
+     * <li>(2023-01-29, 13) => 2024-02-28</li>
+     */
+    public static Date getDayBeforeTheDayOfNextNMonth(Date start, int n) {
+        final int dayOfMonth = getDay(start);
+        if (dayOfMonth <= 28) {
+            return getNextNDay(getNextNMonth(start, n), -1);
+        } else {
+            Date dateTime = getNextNMonth(start, n);
+            int day = getDay(dateTime);
+            if (day == dayOfMonth) {
+                return getNextNDay(dateTime, -1);
+            } else {
+                while (getDay(dateTime) < 4) {
+                    dateTime = getNextNDay(dateTime, -1);
+                }
+                return dateTime;
+            }
+        }
     }
 
 }

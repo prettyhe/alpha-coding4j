@@ -323,11 +323,13 @@ public class ImageUtils {
     /**
      * 将宽度相同的图片，竖向追加在一起，默认输出为jpeg格式
      * <p>注意：宽度必须相同</p>
+     * <p>图片较多时容易占用较多内存导致溢出</p>
      *
      * @param imageList    文件流数组
      * @param outputStream 输出流
      * @param formatName   输出图片格式，默认为jpeg
      */
+    @Deprecated
     public static void spliceImages(List<BufferedImage> imageList, OutputStream outputStream, String formatName)
             throws IOException {
         if (imageList == null || imageList.size() <= 0) {

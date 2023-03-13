@@ -371,7 +371,7 @@ public class DateUtils {
      * @param dt 时间
      * @param n  间隔
      */
-    public static Date getNextNYearTime(Date dt, int n) {
+    public static Date getTimeNextNYear(Date dt, int n) {
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(dt);
         calendar.add(Calendar.YEAR, n);
@@ -384,7 +384,7 @@ public class DateUtils {
      * @param dt 时间
      * @param n  间隔
      */
-    public static Date getNextNMonthTime(Date dt, int n) {
+    public static Date getTimeNextNMonth(Date dt, int n) {
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(dt);
         calendar.add(Calendar.MONTH, n);
@@ -397,7 +397,7 @@ public class DateUtils {
      * @param dt 时间
      * @param n  间隔
      */
-    public static Date getNextNDayTime(Date dt, int n) {
+    public static Date getTimeNextNDay(Date dt, int n) {
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(dt);
         calendar.add(Calendar.DAY_OF_MONTH, n);
@@ -410,7 +410,7 @@ public class DateUtils {
      * @param dt 时间
      * @param n  间隔
      */
-    public static Date getNextNHourTime(Date dt, int n) {
+    public static Date getTimeNextNHour(Date dt, int n) {
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(dt);
         calendar.add(Calendar.HOUR_OF_DAY, n);
@@ -423,7 +423,7 @@ public class DateUtils {
      * @param dt 时间
      * @param n  间隔
      */
-    public static Date getNextNMinuteTime(Date dt, int n) {
+    public static Date getTimeNextNMinute(Date dt, int n) {
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(dt);
         calendar.add(Calendar.MINUTE, n);
@@ -436,7 +436,7 @@ public class DateUtils {
      * @param dt 时间
      * @param n  间隔
      */
-    public static Date getNextNSecondTime(Date dt, int n) {
+    public static Date getTimeNextNSecond(Date dt, int n) {
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(dt);
         calendar.add(Calendar.SECOND, n);
@@ -450,32 +450,6 @@ public class DateUtils {
      */
     public static Date getNextDay(Date dt) {
         return getNextNDay(dt, 1);
-    }
-
-    /**
-     * 获取N小时后的时间
-     *
-     * @param dt 时间
-     * @param n  间隔
-     */
-    public static Date getTimeNextNHour(Date dt, int n) {
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTime(dt);
-        calendar.add(Calendar.HOUR_OF_DAY, n);
-        return calendar.getTime();
-    }
-
-    /**
-     * 获取N分钟后的时间
-     *
-     * @param dt 时间
-     * @param n  间隔
-     */
-    public static Date getTimeNextNMinute(Date dt, int n) {
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTime(dt);
-        calendar.add(Calendar.MINUTE, n);
-        return calendar.getTime();
     }
 
     /**
@@ -566,7 +540,7 @@ public class DateUtils {
      *
      * @param specificDate 时间
      * @param days         间隔
-     * @see DateUtils#getNextNDayTime(Date, int)
+     * @see DateUtils#getTimeNextNDay(Date, int)
      */
     public static Date getTimeBeforeByDayInterval(Date specificDate, int days) {
         Calendar calendar = Calendar.getInstance();
@@ -580,7 +554,7 @@ public class DateUtils {
      *
      * @param specificDate 时间
      * @param hours        间隔
-     * @see DateUtils#getNextNHourTime(Date, int)
+     * @see DateUtils#getTimeNextNHour(Date, int)
      */
     public static Date getTimeBeforeByHourInterval(Date specificDate, int hours) {
         Calendar calendar = Calendar.getInstance();
@@ -872,7 +846,7 @@ public class DateUtils {
      * 昨天此刻
      */
     public static Date yesterdayTime() {
-        return getNextNDayTime(new Date(), -1);
+        return getTimeNextNDay(new Date(), -1);
     }
 
     /**

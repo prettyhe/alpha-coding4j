@@ -1,6 +1,7 @@
 package com.alpha.coding.common.http.filter;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.servlet.Filter;
@@ -10,11 +11,8 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 
-import org.apache.commons.collections4.CollectionUtils;
-
 import com.alpha.coding.bo.base.Tuple;
-import com.alpha.coding.common.utils.StringUtils;
-import com.google.common.collect.Lists;
+import com.alpha.coding.bo.function.common.Predicates;
 
 import lombok.Setter;
 
@@ -32,8 +30,8 @@ public abstract class AbstractEnhancerFilter implements Filter, FilterModifierEn
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
         final String filterEnhancers = filterConfig.getInitParameter("filterEnhancers");
-        if (StringUtils.isNotBlank(filterEnhancers)) {
-            this.filterEnhancers = Lists.newArrayList();
+        if (Predicates.isNotBlankStr.test(filterEnhancers)) {
+            this.filterEnhancers = new ArrayList<>();
             for (String name : filterEnhancers.split(",")) {
                 try {
                     this.filterEnhancers.add((FilterEnhancer) loadClass(name).newInstance());
@@ -49,20 +47,20 @@ public abstract class AbstractEnhancerFilter implements Filter, FilterModifierEn
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
         final Tuple<ServletRequest, ServletResponse> tuple = beforeFilter(request, response);
-        if (CollectionUtils.isNotEmpty(this.filterEnhancers)) {
+        if (this.filterEnhancers != null && !this.filterEnhancers.isEmpty()) {
             this.filterEnhancers.forEach(p -> p.before(tuple.getF(), tuple.getS()));
         }
         try {
             chain.doFilter(tuple.getF(), tuple.getS());
         } finally {
-            if (CollectionUtils.isNotEmpty(this.filterEnhancers)) {
+            if (this.filterEnhancers != null && !this.filterEnhancers.isEmpty()) {
                 this.filterEnhancers.forEach(p -> p.after(tuple.getF(), tuple.getS()));
             }
             afterFilter(tuple.getF(), tuple.getS());
         }
     }
 
-    protected Class loadClass(String className) throws ServletException {
+    protected Class<?> loadClass(String className) throws ServletException {
         try {
             return Class.forName(className);
         } catch (ClassNotFoundException e) {

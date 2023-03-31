@@ -13,10 +13,10 @@ import com.alibaba.fastjson.JSON;
 import com.alpha.coding.bo.base.MapThreadLocalAdaptor;
 import com.alpha.coding.bo.base.Tuple;
 import com.alpha.coding.bo.constant.Keys;
+import com.alpha.coding.bo.function.common.Predicates;
 import com.alpha.coding.common.http.CookieUtils;
 import com.alpha.coding.common.http.HttpParameterUtils;
 import com.alpha.coding.common.utils.IpUtils;
-import com.alpha.coding.common.utils.StringUtils;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -40,7 +40,7 @@ public class InitLocalFilter extends AbstractEnhancerFilter {
     @Override
     public void postInit(FilterConfig filterConfig) throws ServletException {
         final String className = filterConfig.getInitParameter("envContextClass");
-        if (StringUtils.isNotBlank(className)) {
+        if (Predicates.isNotBlankStr.test(className)) {
             this.envContextClass = loadClass(className);
         }
     }
@@ -58,7 +58,7 @@ public class InitLocalFilter extends AbstractEnhancerFilter {
             MapThreadLocalAdaptor.put(Keys.TOKEN, request.getHeader("Authorization"));
             MapThreadLocalAdaptor.put(Keys.ENV_CONTEXT, parseEnvContext(request));
         } catch (Exception e) {
-            log.warn("Init MapThreadLocalAdaptor fail for {}", request.getRequestURI());
+            log.warn("Init MapThreadLocalAdaptor fail for {}", request.getRequestURI(), e);
         }
         if (log.isDebugEnabled()) {
             log.debug("CURRENT_ENV:: uri:{},clientId:{},clientIp:{},context:{}",
@@ -67,7 +67,7 @@ public class InitLocalFilter extends AbstractEnhancerFilter {
                     MapThreadLocalAdaptor.get(Keys.CLIENT_IP),
                     JSON.toJSONString(MapThreadLocalAdaptor.get(Keys.ENV_CONTEXT)));
         }
-        return new Tuple<>(request, response);
+        return Tuple.of(request, response);
     }
 
     private String parseClientId(HttpServletRequest request) {

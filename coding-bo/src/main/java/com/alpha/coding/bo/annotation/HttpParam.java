@@ -25,4 +25,14 @@ public @interface HttpParam {
      */
     String[] name() default {};
 
+    /**
+     * 是否必须
+     */
+    boolean required() default true;
+
+    /**
+     * 日期类格式候选
+     */
+    String[] dateFormatCandidate() default {};
+
 }

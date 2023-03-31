@@ -10,6 +10,7 @@ import javax.servlet.http.HttpServletResponse;
 import com.alpha.coding.bo.base.MapThreadLocalAdaptor;
 import com.alpha.coding.bo.base.Tuple;
 import com.alpha.coding.bo.function.common.Functions;
+import com.alpha.coding.common.http.HttpUtils;
 
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
@@ -49,12 +50,10 @@ public class TimeElapseFilter extends AbstractEnhancerFilter {
         final Long stNanos = (Long) MapThreadLocalAdaptor.get(ELAPSED_TIME_ST_NANOS_KEY);
         long et = System.currentTimeMillis();
         if (st == null || stNanos == null) {
-            log.info("invoke {},st=,et={},costTime=",
-                    request.getRequestURI().substring(request.getContextPath().length()), getTimeStr(et));
+            log.info("invoke {},st=,et={},costTime=", HttpUtils.getPath(request), getTimeStr(et));
         } else {
             log.info("invoke {},st={},et={},costTime={}",
-                    request.getRequestURI().substring(request.getContextPath().length()),
-                    getTimeStr(st), getTimeStr(et),
+                    HttpUtils.getPath(request), getTimeStr(st), getTimeStr(et),
                     Functions.formatNanos.apply(System.nanoTime() - stNanos));
         }
         MapThreadLocalAdaptor.remove(ELAPSED_TIME_ST_KEY);

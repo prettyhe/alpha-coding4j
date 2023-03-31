@@ -12,13 +12,14 @@ import org.slf4j.MDC;
 import com.alpha.coding.bo.base.MapThreadLocalAdaptor;
 import com.alpha.coding.bo.base.Tuple;
 import com.alpha.coding.bo.constant.Keys;
+import com.alpha.coding.bo.function.common.Predicates;
 import com.alpha.coding.bo.trace.HalfTraceIdGenerator;
-import com.alpha.coding.bo.trace.TimestampUUIDTraceIdGenerator;
+import com.alpha.coding.bo.trace.TimestampBase62UUIDTraceIdGenerator;
 import com.alpha.coding.bo.trace.TraceIdGenerator;
 import com.alpha.coding.bo.trace.UUIDTraceIdGenerator;
-import com.alpha.coding.common.utils.StringUtils;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 
@@ -31,17 +32,17 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Data
 @Accessors(chain = true)
+@EqualsAndHashCode(callSuper = false)
 public class TraceAgentFilter extends AbstractEnhancerFilter {
 
-    private TraceIdGenerator traceIdGenerator = TimestampUUIDTraceIdGenerator.getInstance();
-
+    private TraceIdGenerator traceIdGenerator = TimestampBase62UUIDTraceIdGenerator.getInstance();
     private TraceIdGenerator tailTraceIdGenerator = UUIDTraceIdGenerator.getInstance();
 
     @Override
     public void postInit(FilterConfig filterConfig) throws ServletException {
         try {
             final String traceIdGenerator = filterConfig.getInitParameter("traceIdGenerator");
-            if (StringUtils.isNotBlank(traceIdGenerator)) {
+            if (Predicates.isNotBlankStr.test(traceIdGenerator)) {
                 this.traceIdGenerator = (TraceIdGenerator) loadClass(traceIdGenerator).newInstance();
             }
         } catch (Exception e) {
@@ -70,7 +71,7 @@ public class TraceAgentFilter extends AbstractEnhancerFilter {
             MDC.put(Keys.TRACE_ID, newTraceId);
         }
         MapThreadLocalAdaptor.put(Keys.TRACE_ID, newTraceId);
-        return new Tuple<>(request, response);
+        return Tuple.of(request, response);
     }
 
     @Override

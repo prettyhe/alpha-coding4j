@@ -4,8 +4,10 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
@@ -24,9 +26,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.annotation.JSONField;
 import com.alpha.coding.bo.annotation.HttpRequestParam;
 import com.alpha.coding.bo.enums.HttpParamFrom;
-import com.alpha.coding.common.utils.ReflectionUtils;
-import com.alpha.coding.common.utils.StringUtils;
-import com.google.common.collect.Sets;
+import com.alpha.coding.bo.function.common.Predicates;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -43,10 +43,10 @@ public class HttpParameterUtils {
         if (t == null) {
             return;
         }
-        final List<Field> fields = ReflectionUtils.getAllFields(t.getClass()).stream()
+        final List<Field> fields = getAllFields(t.getClass()).stream()
                 .filter(p -> !Modifier.isStatic(p.getModifiers()) && !Modifier.isFinal(p.getModifiers()))
                 .filter(p -> {
-                    ReflectionUtils.makeAccessible(p);
+                    makeAccessible(p);
                     return p.isAccessible();
                 }).collect(Collectors.toList());
         if (fields.size() == 0) {
@@ -141,12 +141,12 @@ public class HttpParameterUtils {
 
     private static void setField(Object obj, Field field, Function<String, String> function)
             throws IllegalAccessException {
-        ReflectionUtils.makeAccessible(field);
+        makeAccessible(field);
         final HttpRequestParam an = field.getAnnotation(HttpRequestParam.class);
         final Set<String> names = new LinkedHashSet<>();
         names.add(field.getName());
         if (an != null) {
-            Arrays.stream(an.name()).filter(p -> !isBlank(p)).forEach(names::add);
+            Arrays.stream(an.name()).filter(Predicates.isNotBlankStr).forEach(names::add);
         }
         String value = null;
         for (String name : names) {
@@ -160,12 +160,12 @@ public class HttpParameterUtils {
         }
         if (field.getType() == Date.class) {
             StringBuilder sb = new StringBuilder("{");
-            Set<String> alternateNames = Sets.newHashSet();
+            Set<String> alternateNames = new HashSet<>();
             alternateNames.add(field.getName());
             try {
                 if (field.isAnnotationPresent(JSONField.class)) {
                     final JSONField jsonField = field.getAnnotation(JSONField.class);
-                    if (StringUtils.isNotBlank(jsonField.name())) {
+                    if (Predicates.isNotBlankStr.test(jsonField.name())) {
                         alternateNames.add(jsonField.name());
                     }
                     if (jsonField.alternateNames().length > 0) {
@@ -198,26 +198,12 @@ public class HttpParameterUtils {
         return JSON.parseObject(value, clz);
     }
 
-    private static boolean isBlank(CharSequence cs) {
-        int strLen;
-        if (cs != null && (strLen = cs.length()) != 0) {
-            for (int i = 0; i < strLen; ++i) {
-                if (!Character.isWhitespace(cs.charAt(i))) {
-                    return false;
-                }
-            }
-            return true;
-        } else {
-            return true;
-        }
-    }
-
     private static boolean testInclude(HttpRequestParam an, HttpParamFrom from) {
         return an == null || an.excludeFrom().length == 0
                 || Arrays.stream(an.excludeFrom()).noneMatch(p -> p.equals(from));
     }
 
-    private static boolean isFormContentType(HttpServletRequest request) {
+    public static boolean isFormContentType(HttpServletRequest request) {
         String contentType = request.getContentType();
         if (contentType != null) {
             try {
@@ -231,8 +217,39 @@ public class HttpParameterUtils {
         }
     }
 
+    /**
+     * 获取所有Field
+     */
+    private static List<Field> getAllFields(Class<?> clz) {
+        List<Field> fields = new ArrayList<>();
+        Class<?> tmp = clz;
+        while (tmp != null && !tmp.equals(Object.class)) {
+            fields.addAll(Arrays.asList(tmp.getDeclaredFields()));
+            tmp = tmp.getSuperclass();
+        }
+        return fields;
+    }
+
+    /**
+     * Make the given field accessible, explicitly setting it accessible if
+     * necessary. The {@code setAccessible(true)} method is only called
+     * when actually necessary, to avoid unnecessary conflicts with a JVM
+     * SecurityManager (if active).
+     *
+     * @param field the field to make accessible
+     * @see java.lang.reflect.Field#setAccessible
+     */
+    private static void makeAccessible(Field field) {
+        if ((!Modifier.isPublic(field.getModifiers())
+                     || !Modifier.isPublic(field.getDeclaringClass().getModifiers())
+                     || Modifier.isFinal(field.getModifiers()))
+                && !field.isAccessible()) {
+            field.setAccessible(true);
+        }
+    }
+
     public static String appendQueryParam(String url, String key, String value) {
-        if (url == null || org.apache.commons.lang3.StringUtils.isBlank(key)) {
+        if (url == null || Predicates.isBlankStr.test(key)) {
             return url;
         }
         if (url.contains("?")) {

@@ -58,12 +58,16 @@ public class BufferedServletInputStream extends ServletInputStreamWrapper {
 
     @Override
     public void mark(int readLimit) {
-        bufferedInputStream.mark(readLimit);
+        synchronized(this) {
+            bufferedInputStream.mark(readLimit);
+        }
     }
 
     @Override
     public synchronized void reset() throws IOException {
-        bufferedInputStream.reset();
+        synchronized(this) {
+            bufferedInputStream.reset();
+        }
     }
 
     public boolean markSupported() {

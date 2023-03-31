@@ -2,12 +2,8 @@ package com.alpha.coding.common.http.filter;
 
 import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
@@ -61,18 +57,27 @@ public class MapThreadLocalMirrorFilter extends AbstractEnhancerFilter {
         HttpServletResponse response = (HttpServletResponse) servletResponse;
         mirrorAspect.doBefore();
         final Enumeration<String> headerNames = request.getHeaderNames();
-        while (headerNames.hasMoreElements()) {
+        while (headerNames != null && headerNames.hasMoreElements()) {
             final String headerName = headerNames.nextElement();
-            final List<String> headerValues = Stream.of(headerName, headerName.toLowerCase(), headerName.toUpperCase())
-                    .map(request::getHeader).filter(Objects::nonNull).collect(Collectors.toList());
-            if (headerValues.size() > 0) {
-                MapThreadLocalAdaptor.put(transformKey(headerName), headerValues.get(0));
-                for (String value : headerValues) {
-                    if (!value.isEmpty()) {
-                        MapThreadLocalAdaptor.put(transformKey(headerName), value);
-                        break;
-                    }
+            final String transformHeaderName = transformKey(headerName);
+            final Enumeration<String> headerValues = request.getHeaders(headerName);
+            boolean first = false;
+            while (headerValues != null && headerValues.hasMoreElements()) {
+                final String headerValue = headerValues.nextElement();
+                if (headerValue == null) {
+                    continue;
                 }
+                if (!first) {
+                    MapThreadLocalAdaptor.put(transformHeaderName, headerValue);
+                    first = true;
+                }
+                if (!headerValue.isEmpty()) {
+                    MapThreadLocalAdaptor.put(transformHeaderName, headerValue);
+                    break;
+                }
+            }
+            if (!MapThreadLocalAdaptor.containsKey(transformHeaderName)) {
+                MapThreadLocalAdaptor.put(transformHeaderName, null);
             }
         }
         return Tuple.of(request, response);

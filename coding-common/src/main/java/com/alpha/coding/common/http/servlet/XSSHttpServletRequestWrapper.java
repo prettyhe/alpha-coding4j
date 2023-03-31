@@ -15,8 +15,7 @@ public class XSSHttpServletRequestWrapper extends HttpServletRequestWrapper {
     /**
      * Constructs a request object wrapping the given request.
      *
-     * @param request
-     *
+     * @param request 请求
      * @throws IllegalArgumentException if the request is null
      */
     public XSSHttpServletRequestWrapper(HttpServletRequest request) {

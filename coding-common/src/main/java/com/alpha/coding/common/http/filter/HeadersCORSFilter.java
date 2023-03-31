@@ -15,6 +15,7 @@ import com.alpha.coding.bo.base.Tuple;
 import com.alpha.coding.common.http.HttpUtils;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 
@@ -27,6 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Data
 @Accessors(chain = true)
+@EqualsAndHashCode(callSuper = false)
 public class HeadersCORSFilter extends AbstractEnhancerFilter {
 
     private Integer maxAge = 3600;

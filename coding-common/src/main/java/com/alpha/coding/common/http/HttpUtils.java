@@ -275,7 +275,7 @@ public class HttpUtils {
                 }
             }
         }
-        if (httpParamControl.isRequired()) {
+        if (!httpParamControl.isRequired()) {
             if (char.class == parameterType) {
                 return (char) 0;
             } else if (byte.class == parameterType) {

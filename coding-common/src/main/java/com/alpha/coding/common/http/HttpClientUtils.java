@@ -194,9 +194,9 @@ public class HttpClientUtils {
         } finally {
             close(httpClient, response);
             final long endTime = System.nanoTime();
-            log.debug("http-get: connTo={},soTo={},retry={},url={},res={},cost={}",
-                    connTimeout, soTimeout, retry, url,
-                    ret, Functions.formatNanos.apply(endTime - startTime));
+            log.debug("http-get: connTo={},soTo={},retry={},url={},res={},elapsed={}",
+                    connTimeout, soTimeout, retry, url, ret,
+                    Functions.formatNanos.apply(endTime - startTime));
         }
         return ret;
     }
@@ -208,7 +208,7 @@ public class HttpClientUtils {
                     closeable.close();
                 }
             } catch (Exception e) {
-                // nothing todo
+                // nothing
             }
         }
     }
@@ -284,10 +284,9 @@ public class HttpClientUtils {
                     }
                 },
                 (logger, httpExecRes) -> logger
-                        .debug("http-postParams: charset={},retry={},url={},req={},res={},cost={}",
-                                charset, retry, url,
-                                ignoreReq() ? "" : params,
-                                httpExecRes.getRes(), httpExecRes.getCostTime()));
+                        .debug("http-postParams: charset={},retry={},url={},req={},res={},elapsed={}ms",
+                                charset, retry, url, ignoreReq() ? "" : params, httpExecRes.getRes(),
+                                httpExecRes.getElapsedMillis()));
     }
 
     /**
@@ -372,10 +371,9 @@ public class HttpClientUtils {
                     }
                 },
                 (logger, httpExecRes) -> logger
-                        .debug("http-postBody: charset={},retry={},url={},req={},res={},cost={}",
-                                charset, retry, url,
-                                ignoreReq() ? "" : reqJson,
-                                httpExecRes.getRes(), httpExecRes.getCostTime()));
+                        .debug("http-postBody: charset={},retry={},url={},req={},res={},elapsed={}ms",
+                                charset, retry, url, ignoreReq() ? "" : reqJson, httpExecRes.getRes(),
+                                httpExecRes.getElapsedMillis()));
     }
 
     /**
@@ -422,7 +420,7 @@ public class HttpClientUtils {
             final long endTime = System.nanoTime();
             if (finalLogConsumer != null) {
                 finalLogConsumer.accept(log,
-                        new HttpExecRes(TimeUnit.NANOSECONDS.convert(endTime - startTime, TimeUnit.MILLISECONDS), ret));
+                        new HttpExecRes(TimeUnit.NANOSECONDS.toMillis(endTime - startTime), ret));
             }
         }
         return ret;
@@ -431,11 +429,11 @@ public class HttpClientUtils {
     @Data
     @Accessors(chain = true)
     public static class HttpExecRes implements Serializable {
-        private long costTime; // 耗时(ms)
+        private long elapsedMillis; // 耗时(ms)
         private String res; // 响应结果
 
-        public HttpExecRes(long costTime, String res) {
-            this.costTime = costTime;
+        public HttpExecRes(long elapsedMillis, String res) {
+            this.elapsedMillis = elapsedMillis;
             this.res = res;
         }
     }

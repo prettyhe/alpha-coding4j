@@ -3,18 +3,14 @@ package com.alpha.coding.common.redis;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 
+import org.slf4j.MDC;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.core.RedisCallback;
@@ -25,9 +21,13 @@ import org.springframework.data.redis.serializer.RedisSerializer;
 import org.springframework.data.redis.serializer.SerializationException;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
+import com.alpha.coding.bo.base.MapThreadLocalAdaptor;
 import com.alpha.coding.bo.base.Tuple;
-import com.alpha.coding.bo.executor.SelfRefTimerTask;
+import com.alpha.coding.bo.executor.NamedExecutorPool;
+import com.alpha.coding.bo.executor.schedule.ScheduleDelegator;
+import com.alpha.coding.bo.executor.schedule.ScheduledTask;
 import com.alpha.coding.bo.function.common.Converter;
+import com.alpha.coding.common.executor.MDCRunnableWrapper;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -42,11 +42,12 @@ public class RedisTemplateUtils {
 
     private static final String LOCK_SUCCESS = "OK";
     private static final String UNLOCK_SUCCESS = "1";
-    private static final Timer LOCK_RENEWAL_TIMER = new Timer("RedisLockRenewalTimer", true);
-    private static final Timer RENEWAL_CLEAR_TIMER = new Timer("RedisLockRenewalClearTimer", true);
-    private static final AtomicLong TASK_CNT = new AtomicLong(0L);
-    private static final Map<Long, TimerTask> CANCEL_TASK_MAP = new ConcurrentHashMap<>();
-    private static final String CLIENT_ID = UUID.randomUUID().toString().replaceAll("-", "").toUpperCase();
+    private static final ScheduledExecutorService LOCK_RENEWAL_SCHEDULER =
+            NamedExecutorPool.newScheduledThreadPool("RedisLockRenewalScheduler",
+                    Math.max(Runtime.getRuntime().availableProcessors() * 2, 8));
+    private static final ScheduleDelegator LOCK_RENEWAL_SCHEDULER_DELEGATOR =
+            ScheduleDelegator.build(LOCK_RENEWAL_SCHEDULER);
+    private static final String CLIENT_ID = UUID.randomUUID().toString().replace("-", "").toUpperCase();
     private static transient Method REDIS_TEMPLATE_SET_EX = null;
     private static final StringRedisSerializer STRING_REDIS_SERIALIZER =
             new StringRedisSerializer(StandardCharsets.UTF_8);
@@ -55,29 +56,7 @@ public class RedisTemplateUtils {
     private static final LongRedisSerializer LONG_REDIS_SERIALIZER = new LongRedisSerializer();
 
     static {
-        RENEWAL_CLEAR_TIMER.scheduleAtFixedRate(new SelfRefTimerTask((TimerTask timerTask) -> {
-            List<Long> taskIds = new ArrayList<>(CANCEL_TASK_MAP.keySet());
-            if (taskIds.size() > 0) {
-                for (Long taskId : taskIds) {
-                    try {
-                        final TimerTask task = CANCEL_TASK_MAP.get(taskId);
-                        if (task != null) {
-                            task.cancel();
-                        }
-                        CANCEL_TASK_MAP.remove(taskId);
-                    } catch (Exception e) {
-                        if (log.isDebugEnabled()) {
-                            log.warn("cancel TimerTask fail", e);
-                        }
-                    }
-                }
-            }
-            LOCK_RENEWAL_TIMER.purge();
-        }), 10, 60000); // 每分钟清理一次
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            LOCK_RENEWAL_TIMER.cancel();
-            RENEWAL_CLEAR_TIMER.cancel();
-        }));
+        Runtime.getRuntime().addShutdownHook(new Thread(LOCK_RENEWAL_SCHEDULER::shutdown));
     }
 
     private static class LongRedisSerializer implements RedisSerializer<Long> {
@@ -330,37 +309,37 @@ public class RedisTemplateUtils {
                                     final long expireSeconds, final AtomicBoolean run) {
         final long delay = (expireSeconds * 1000) * 2 / 3;
         if (delay > 0) {
-            TimerTask renewalTask = new SelfRefTimerTask((final TimerTask rt) -> {
-                try {
-                    if (run != null && run.get()) {
-                        if (log.isDebugEnabled()) {
-                            log.debug("(seq:{}) RENEWAL for key={},expireSeconds={}",
-                                    ((SelfRefTimerTask) rt).getSeq(), key, expireSeconds);
-                        }
-                        redisTemplate.expire(key, expireSeconds, TimeUnit.SECONDS);
-                    } else {
-                        TimerTask cancelTask = new SelfRefTimerTask((TimerTask ct) -> {
-                            try {
+            final ScheduledTask renewalTask = new ScheduledTask()
+                    .setInitialDelay(delay).setPeriod(delay)
+                    .setScheduledMode(ScheduledTask.ScheduledMode.FixedRate)
+                    .setTimeUnit(TimeUnit.MILLISECONDS)
+                    .setCommand(t -> {
+                        try {
+                            if (run != null && run.get()) {
+                                // 锁未释放，执行续期
                                 if (log.isDebugEnabled()) {
-                                    log.debug("(seq:{}) cancel RENEWAL task(seq:{}) for key={},expireSeconds={}",
-                                            ((SelfRefTimerTask) ct).getSeq(), ((SelfRefTimerTask) rt).getSeq(),
-                                            key, expireSeconds);
+                                    log.debug("(seq:{},cnt:{}) RENEWAL for key={},expireSeconds={}",
+                                            t.getTaskId(), t.runCount(), key, expireSeconds);
                                 }
-                                rt.cancel(); // 取消续期任务
-                                CANCEL_TASK_MAP.put(TASK_CNT.getAndIncrement(), ct);
-                            } catch (Throwable e) {
-                                log.error("cancel RENEWAL run fail for key={},expireSeconds={},msg={}",
-                                        key, expireSeconds, e.getMessage());
+                                redisTemplate.expire(key, expireSeconds, TimeUnit.SECONDS);
+                            } else {
+                                // 锁已释放，修改任务模式
+                                t.setPeriod(10);
+                                t.setScheduledMode(ScheduledTask.ScheduledMode.Once);
+                                t.setCommand(ct -> {
+                                    if (log.isDebugEnabled()) {
+                                        log.debug("(seq:{},cnt:{}) cancel RENEWAL for key={},expireSeconds={}",
+                                                t.getTaskId(), t.runCount(), key, expireSeconds);
+                                    }
+                                });
                             }
-                        });
-                        LOCK_RENEWAL_TIMER.schedule(cancelTask, 50);
-                    }
-                } catch (Throwable e) {
-                    log.error("RENEWAL run fail for key={},expireSeconds={},msg={}",
-                            key, expireSeconds, e.getMessage());
-                }
-            });
-            LOCK_RENEWAL_TIMER.scheduleAtFixedRate(renewalTask, delay, delay); // 定时续期
+                        } catch (Throwable e) {
+                            log.error("(seq:{},cnt:{}) RENEWAL fail for key={},expireSeconds={}",
+                                    t.getTaskId(), t.runCount(), key, expireSeconds, e);
+                        }
+                    });
+            LOCK_RENEWAL_SCHEDULER_DELEGATOR.schedule(renewalTask, MDCRunnableWrapper.of(null,
+                    MDC.getCopyOfContextMap(), MapThreadLocalAdaptor.getCopyOfContextMap()));
         }
     }
 

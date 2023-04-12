@@ -41,7 +41,7 @@ public class ScheduledTask implements Runnable {
     /**
      * 调度模式
      */
-    public static enum ScheduledMode {
+    public enum ScheduledMode {
         /**
          * 执行一次
          */

@@ -18,7 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ScheduleDelegator {
 
-    private ScheduledExecutorService executorService;
+    private final ScheduledExecutorService executorService;
 
     public ScheduleDelegator(ScheduledExecutorService executorService) {
         this.executorService = executorService;
@@ -47,52 +47,52 @@ public class ScheduleDelegator {
         final AtomicLong runCount = task.getRunCount();
         final AtomicLong scheduleNanos = task.getLatestScheduleNanos();
         final RunnableWrapper wrapper = runnableWrapper == null ? RunnableWrapper.none() : runnableWrapper;
-        final SelfRefRunnable selfRefRunnable = new SelfRefRunnable((SelfRefRunnable runnable) ->
-                wrapper.dynamicRun(() -> {
-                    final long nanos = System.nanoTime();
-                    scheduleNanos.set(nanos);
-                    ScheduledTask before = new ScheduledTask()
-                            .setScheduledMode(task.getScheduledMode())
-                            .setInitialDelay(task.getInitialDelay())
-                            .setPeriod(task.getPeriod())
-                            .setTimeUnit(task.getTimeUnit());
-                    try {
-                        if (log.isDebugEnabled()) {
-                            log.debug("ScheduledTask-{}-run-{} start", task.getTaskId(), runCount.get() + 1);
-                        }
-                        task.run();
-                    } catch (Throwable throwable) {
-                        log.error("ScheduledTask-{}-run-{} fail", task.getTaskId(), runCount.get() + 1, throwable);
-                        throw throwable;
-                    } finally {
-                        runCount.incrementAndGet();
-                        if (log.isDebugEnabled()) {
-                            log.debug("ScheduledTask-{}-run-{} finished, elapse {}ms",
-                                    task.getTaskId(), runCount.get(),
-                                    TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - nanos));
-                        }
-                        switch (task.getScheduledMode()) {
-                            case Once:
-                                if (before.getScheduledMode() == ScheduledTask.ScheduledMode.Once) {
-                                    break;
-                                } else {
-                                    executorService.schedule(runnable, task.getPeriod(), task.getTimeUnit());
-                                }
-                                break;
-                            case FixedRate:
-                                long delay = scheduleNanos.get() + task.getTimeUnit().toNanos(task.getPeriod())
-                                        - System.nanoTime();
-                                executorService.schedule(runnable, delay <= 0 ? 0 : delay, TimeUnit.NANOSECONDS);
-                                break;
-                            case FixedDelay:
-                                executorService.schedule(runnable, task.getPeriod(), task.getTimeUnit());
-                                break;
-                            default:
-                                log.warn("unknown ScheduledMode");
-                                break;
-                        }
+        final SelfRefRunnable selfRefRunnable = new SelfRefRunnable((SelfRefRunnable runnable) -> {
+            wrapper.dynamicRun(() -> {
+                final long startTime = System.nanoTime();
+                scheduleNanos.set(startTime);
+                final long currentRunCount = runCount.incrementAndGet();
+                final ScheduledTask.ScheduledMode currentScheduledMode = task.getScheduledMode();
+                try {
+                    if (log.isDebugEnabled()) {
+                        log.debug("ScheduledTask:{} run:{} start", task.getTaskId(), currentRunCount);
                     }
-                }));
+                    task.run();
+                } catch (Throwable throwable) {
+                    log.warn("ScheduledTask:{} run:{} Runnable execute fail",
+                            task.getTaskId(), currentRunCount, throwable);
+                    throw throwable;
+                } finally {
+                    if (log.isDebugEnabled()) {
+                        final long endTime = System.nanoTime();
+                        log.debug("ScheduledTask:{} run:{} finished, elapsed:{}ms, nextMode:{}",
+                                task.getTaskId(), currentRunCount,
+                                TimeUnit.NANOSECONDS.toMillis(endTime - startTime),
+                                task.getScheduledMode());
+                    }
+                    switch (task.getScheduledMode()) {
+                        case Once:
+                            if (currentScheduledMode == ScheduledTask.ScheduledMode.Once) {
+                                break;
+                            } else {
+                                executorService.schedule(runnable, task.getPeriod(), task.getTimeUnit());
+                            }
+                            break;
+                        case FixedRate:
+                            long delay = scheduleNanos.get() + task.getTimeUnit().toNanos(task.getPeriod())
+                                    - System.nanoTime();
+                            executorService.schedule(runnable, delay <= 0 ? 0 : delay, TimeUnit.NANOSECONDS);
+                            break;
+                        case FixedDelay:
+                            executorService.schedule(runnable, task.getPeriod(), task.getTimeUnit());
+                            break;
+                        default:
+                            log.warn("unknown ScheduledMode:" + task.getScheduledMode());
+                            break;
+                    }
+                }
+            });
+        });
         executorService.schedule(selfRefRunnable, task.getInitialDelay(), task.getTimeUnit());
     }
 

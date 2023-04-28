@@ -2,6 +2,7 @@ package com.alpha.coding.common.bean.register;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.springframework.beans.TypeConverter;
@@ -34,6 +35,18 @@ public class BeanDefineUtils {
         final Object val = fetchProperty(environment, keys, clz, defaultVal);
         if (val != null) {
             builder.addPropertyValue(property, val);
+        }
+        propertyMap.put(property, val);
+        return builder;
+    }
+
+    public static <T> BeanDefinitionBuilder setIfAbsent(BeanDefinitionBuilder builder, Environment environment,
+                                                        String property, List<String> keys, Class<T> clz,
+                                                        T defaultVal, Function<Object, Object> postMapper,
+                                                        Map<String, Object> propertyMap) {
+        final Object val = fetchProperty(environment, keys, clz, defaultVal);
+        if (val != null) {
+            builder.addPropertyValue(property, postMapper == null ? val : postMapper.apply(val));
         }
         propertyMap.put(property, val);
         return builder;

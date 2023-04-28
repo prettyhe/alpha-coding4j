@@ -18,4 +18,8 @@ public class PatternMatchTool {
         return PATTERN_MAP.computeIfAbsent(pattern, Pattern::compile).matcher(target).matches();
     }
 
+    public static Pattern pattern(String pattern) {
+        return PATTERN_MAP.computeIfAbsent(pattern, Pattern::compile);
+    }
+
 }

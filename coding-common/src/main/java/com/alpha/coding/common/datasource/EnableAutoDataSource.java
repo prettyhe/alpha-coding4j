@@ -31,4 +31,10 @@ public @interface EnableAutoDataSource {
      * 类型，如mysql、db2，支持外部化配置，默认mysql
      */
     String type() default "${datasource.type:mysql}";
+
+    /**
+     * 数据源连接池类型
+     */
+    DataSourceConnectionPoolType connectionPoolType() default DataSourceConnectionPoolType.Auto;
+
 }

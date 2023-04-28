@@ -61,28 +61,55 @@ public class SyncInvokeAspect implements ApplicationContextAware {
         final RedisSync redisSync = syncInvoke.redisSync();
         if (redisSync.enable()) {
             RedisTemplate redisTemplate = (RedisTemplate) applicationContext.getBean(redisSync.redisTemplateBean());
-            Throwable[] throwables = new Throwable[1];
-            Tuple<Boolean, Object> tuple = redisSync.failFast() ? RedisTemplateUtils
-                    .doInLockAutoRenewalReturnOnLockFail(redisTemplate, invokeKey,
-                            redisSync.expireSeconds(), () -> {
-                                try {
-                                    return joinPoint.proceed();
-                                } catch (Throwable throwable) {
-                                    throwables[0] = throwable;
-                                    return null;
-                                }
-                            }) : Tuple.of(true, RedisTemplateUtils
-                    .doInLockAutoRenewal(redisTemplate, invokeKey,
-                            redisSync.expireSeconds(), null, () -> {
-                                try {
-                                    return joinPoint.proceed();
-                                } catch (Throwable throwable) {
-                                    throwables[0] = throwable;
-                                    return null;
-                                }
-                            }));
-            if (throwables[0] != null) {
-                throw throwables[0];
+            final int rateLimit = BeanDefineUtils.resolveValue(applicationContext, redisSync.rateLimit(), int.class);
+            final Throwable[] throwableArray = new Throwable[1];
+            Tuple<Boolean, Object> tuple = null;
+            // 令牌阈值为1，使用分布式锁；令牌阈值大于1，使用限流
+            if (rateLimit == 1 && redisSync.failFast()) {
+                tuple = RedisTemplateUtils.doInLockAutoRenewalReturnOnLockFail(redisTemplate, invokeKey,
+                        redisSync.expireSeconds(), () -> {
+                            try {
+                                return joinPoint.proceed();
+                            } catch (Throwable throwable) {
+                                throwableArray[0] = throwable;
+                                return null;
+                            }
+                        });
+            } else if (rateLimit == 1) {
+                tuple = Tuple.of(true, RedisTemplateUtils.doInLockAutoRenewal(redisTemplate, invokeKey,
+                        redisSync.expireSeconds(), null, () -> {
+                            try {
+                                return joinPoint.proceed();
+                            } catch (Throwable throwable) {
+                                throwableArray[0] = throwable;
+                                return null;
+                            }
+                        }));
+            } else if (rateLimit > 1 && redisSync.failFast()) {
+                tuple = RedisTemplateUtils.doWithRateLimitAutoRenewalReturnOnLockFail(redisTemplate, invokeKey,
+                        redisSync.expireSeconds(), rateLimit, () -> {
+                            try {
+                                return joinPoint.proceed();
+                            } catch (Throwable throwable) {
+                                throwableArray[0] = throwable;
+                                return null;
+                            }
+                        });
+            } else if (rateLimit > 1) {
+                tuple = Tuple.of(true, RedisTemplateUtils.doWithRateLimitAutoRenewal(redisTemplate, invokeKey,
+                        redisSync.expireSeconds(), rateLimit, null, () -> {
+                            try {
+                                return joinPoint.proceed();
+                            } catch (Throwable throwable) {
+                                throwableArray[0] = throwable;
+                                return null;
+                            }
+                        }));
+            } else {
+                throw new IllegalArgumentException("rateLimit must positive number!");
+            }
+            if (throwableArray[0] != null) {
+                throw throwableArray[0];
             } else {
                 if (!tuple.getF() && !redisSync.failCallback().equals(FailCallback.class)) {
                     return FailCallbackFactory.instance(redisSync.failCallback())

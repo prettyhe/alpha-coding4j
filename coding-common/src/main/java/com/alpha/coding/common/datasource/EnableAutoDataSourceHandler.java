@@ -39,7 +39,8 @@ public class EnableAutoDataSourceHandler implements ConfigurationRegisterHandler
         for (AnnotationAttributes attributes : annotationAttributes) {
             DataSourceRegisterUtils.register(context, new CreateDataSourceEnv()
                     .setPrefix(attributes.getString("prefix"))
-                    .setType(BeanDefineUtils.resolveValue(context, attributes.getString("type"), String.class)));
+                    .setType(BeanDefineUtils.resolveValue(context, attributes.getString("type"), String.class))
+                    .setConnectionPoolType(attributes.getEnum("connectionPoolType")));
         }
     }
 

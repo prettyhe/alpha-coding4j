@@ -15,5 +15,6 @@ public class CreateDataSourceEnv {
 
     private String prefix;
     private String type;
+    private DataSourceConnectionPoolType connectionPoolType;
 
 }

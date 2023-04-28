@@ -78,7 +78,8 @@ public class EnableMybatisAutoConfigHandler implements ConfigurationRegisterHand
             final String prefix = dataSource.getString("prefix");
             // 注册 读 & 写 DataSource
             DataSourceRegisterUtils.register(context, new CreateDataSourceEnv().setPrefix(prefix)
-                    .setType(BeanDefineUtils.resolveValue(context, dataSource.getString("type"), String.class)));
+                    .setType(BeanDefineUtils.resolveValue(context, dataSource.getString("type"), String.class))
+                    .setConnectionPoolType(dataSource.getEnum("connectionPoolType")));
             // 注册 DynamicDataSource
             BeanDefinitionBuilder dataSourceBeanDefinitionBuilder =
                     BeanDefinitionBuilder.genericBeanDefinition(DynamicDataSource.class);

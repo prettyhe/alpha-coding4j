@@ -304,9 +304,17 @@ public class RedisTemplateUtils {
         }
     }
 
+    /**
+     * 自动续期，通过定时任务
+     *
+     * @param redisTemplate RedisTemplate
+     * @param key           续期的key
+     * @param expireSeconds 有效期(秒)
+     * @param run           释放标识
+     */
     @SuppressWarnings({"unchecked", "rawtypes"})
-    private static void autoRenewal(final RedisTemplate redisTemplate, final String key,
-                                    final long expireSeconds, final AtomicBoolean run) {
+    public static void autoRenewal(final RedisTemplate redisTemplate, final String key,
+                                   final long expireSeconds, final AtomicBoolean run) {
         final long delay = (expireSeconds * 1000) * 2 / 3;
         if (delay > 0) {
             final ScheduledTask renewalTask = new ScheduledTask()
@@ -427,6 +435,173 @@ public class RedisTemplateUtils {
     public static byte[] getRaw(RedisTemplate redisTemplate, String key) {
         final byte[] rawKey = redisTemplate.getKeySerializer().serialize(key);
         return (byte[]) redisTemplate.execute((RedisConnection connection) -> connection.get(rawKey));
+    }
+
+    /**
+     * 限流令牌获取
+     *
+     * @param redisTemplate redisTemplate
+     * @param key           令牌key
+     * @param expireSeconds 令牌持有时长
+     * @param rateLimit     令牌数阈值
+     * @return 是否获取到令牌
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public static boolean acquireRateLimit(final RedisTemplate redisTemplate, final String key,
+                                           final long expireSeconds, int rateLimit) {
+        if (rateLimit <= 0) {
+            throw new IllegalArgumentException("rateLimit must positive number!");
+        }
+        final String clientIdentity = getClientIdentity();
+        DefaultRedisScript<Long> script = RedisScriptGenerator.generator("rate-limit-acquire.lua", Long.class);
+        final Object ret = redisTemplate.execute(script, STRING_REDIS_SERIALIZER, LONG_REDIS_SERIALIZER,
+                Collections.singletonList(key), clientIdentity, String.valueOf(expireSeconds * 1000),
+                String.valueOf(rateLimit));
+        if (log.isDebugEnabled()) {
+            log.debug("acquireRateLimit result:{} for key:{}, client:{}", ret, key, clientIdentity);
+        }
+        // null=获取到令牌，其它表示当前令牌的剩余时间
+        return ret == null;
+    }
+
+    /**
+     * 限流令牌释放
+     *
+     * @param redisTemplate redisTemplate
+     * @param key           令牌key
+     * @return 是否释放令牌
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public static boolean releaseRateLimit(RedisTemplate redisTemplate, String key) {
+        final String clientIdentity = getClientIdentity();
+        DefaultRedisScript<Long> script = RedisScriptGenerator.generator("rate-limit-release.lua", Long.class);
+        final Object ret = redisTemplate.execute(script, STRING_REDIS_SERIALIZER, LONG_REDIS_SERIALIZER,
+                Collections.singletonList(key), clientIdentity);
+        if (log.isDebugEnabled()) {
+            log.debug("releaseRateLimit result:{} for key:{}, client:{}", ret, key, clientIdentity);
+        }
+        // null=限流不存在，0=重入释放，1=彻底释放
+        return "1".equals(String.valueOf(ret));
+    }
+
+    /**
+     * 获取到限流令牌后执行，获取不到限流令牌时立即返回
+     *
+     * @param redisTemplate RedisTemplate
+     * @param key           令牌key
+     * @param expireSeconds 令牌持有时间
+     * @param rateLimit     令牌数阈值
+     * @param callback      令牌持有期间回调
+     * @return 执行结果元组(是否成功获取到限流令牌, 回调执行结果)
+     */
+    @SuppressWarnings({"rawtypes"})
+    public static <T> Tuple<Boolean, T> doWithRateLimitReturnOnLockFail(RedisTemplate redisTemplate, String key,
+                                                                        long expireSeconds, int rateLimit,
+                                                                        RedisLockCallback<T> callback) {
+        if (!acquireRateLimit(redisTemplate, key, expireSeconds, rateLimit)) {
+            return new Tuple<>(false, null);
+        }
+        try {
+            return new Tuple<>(true, callback.execute());
+        } finally {
+            releaseRateLimit(redisTemplate, key);
+        }
+    }
+
+    /**
+     * 获取到限流令牌执行(自动续期)，获取不到限流令牌时立即返回
+     *
+     * @param redisTemplate RedisTemplate
+     * @param key           令牌key
+     * @param expireSeconds 令牌持有时间
+     * @param rateLimit     令牌数阈值
+     * @param callback      令牌持有期间回调
+     * @return 执行结果元组(是否成功获取到限流令牌, 回调执行结果)
+     */
+    @SuppressWarnings({"rawtypes"})
+    public static <T> Tuple<Boolean, T> doWithRateLimitAutoRenewalReturnOnLockFail(RedisTemplate redisTemplate,
+                                                                                   String key, long expireSeconds,
+                                                                                   int rateLimit,
+                                                                                   RedisLockCallback<T> callback) {
+        if (!acquireRateLimit(redisTemplate, key, expireSeconds, rateLimit)) {
+            return new Tuple<>(false, null);
+        }
+        final AtomicBoolean run = new AtomicBoolean(true);
+        try {
+            autoRenewal(redisTemplate, key, expireSeconds, run);
+            return new Tuple<>(true, callback.execute());
+        } finally {
+            run.set(false);
+            releaseRateLimit(redisTemplate, key);
+        }
+    }
+
+    /**
+     * 获取到限流令牌执行，获取不到限流令牌时定时尝试
+     *
+     * @param redisTemplate   RedisTemplate
+     * @param key             令牌key
+     * @param expireSeconds   令牌持有时间
+     * @param rateLimit       令牌数阈值
+     * @param tryLockInterval 尝试获取令牌的时间间隔，默认100ms
+     * @param callback        令牌持有期间回调
+     * @return 回调执行结果
+     */
+    @SuppressWarnings({"rawtypes"})
+    public static <T> T doWithRateLimit(RedisTemplate redisTemplate, String key, long expireSeconds,
+                                        int rateLimit, Integer tryLockInterval, RedisLockCallback<T> callback) {
+        int interval = tryLockInterval == null ? 100 : tryLockInterval;
+        while (true) {
+            if (!acquireRateLimit(redisTemplate, key, expireSeconds, rateLimit)) {
+                try {
+                    Thread.sleep(interval);
+                    continue;
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            try {
+                return callback.execute();
+            } finally {
+                releaseRateLimit(redisTemplate, key);
+            }
+        }
+    }
+
+    /**
+     * 获取到限流令牌后执行（自动续期），获取不到限流令牌时定时尝试
+     *
+     * @param redisTemplate   RedisTemplate
+     * @param key             令牌key
+     * @param expireSeconds   令牌持有时间
+     * @param rateLimit       令牌数阈值
+     * @param tryLockInterval 尝试获取限流令牌的时间间隔，默认100ms
+     * @param callback        获取到限流令牌后回调
+     * @return 回调执行结果
+     */
+    @SuppressWarnings({"rawtypes"})
+    public static <T> T doWithRateLimitAutoRenewal(RedisTemplate redisTemplate, String key, long expireSeconds,
+                                                   int rateLimit, Integer tryLockInterval,
+                                                   RedisLockCallback<T> callback) {
+        int interval = tryLockInterval == null ? 100 : tryLockInterval;
+        while (true) {
+            if (!acquireRateLimit(redisTemplate, key, expireSeconds, rateLimit)) {
+                try {
+                    Thread.sleep(interval);
+                    continue;
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            final AtomicBoolean run = new AtomicBoolean(true);
+            try {
+                autoRenewal(redisTemplate, key, expireSeconds, run);
+                return callback.execute();
+            } finally {
+                run.set(false);
+                releaseRateLimit(redisTemplate, key);
+            }
+        }
     }
 
 }

@@ -20,7 +20,9 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.util.concurrent.ListenableFuture;
 
 import com.alpha.coding.bo.base.MapThreadLocalAdaptor;
+import com.alpha.coding.bo.executor.CallableWrapper;
 import com.alpha.coding.bo.executor.NamedThreadFactory;
+import com.alpha.coding.bo.executor.RunnableWrapper;
 import com.alpha.coding.bo.function.SelfChainConsumer;
 
 import lombok.Getter;
@@ -43,6 +45,18 @@ public class MDCThreadPoolTaskExecutor extends ThreadPoolTaskExecutor
     @Setter
     @Getter
     private Consumer<Map<String, String>> mdcContextConsumer;
+
+    @Getter
+    @Setter
+    private Runnable beforeRun;
+
+    @Getter
+    @Setter
+    private Runnable afterRun;
+
+    @Getter
+    @Setter
+    private Consumer<Exception> whenRunException;
 
     /**
      * 需要手动执行initialize()
@@ -149,6 +163,21 @@ public class MDCThreadPoolTaskExecutor extends ThreadPoolTaskExecutor
             return this;
         }
 
+        public MDCThreadPoolTaskExecutorBuilder beforeRun(Runnable beforeRun) {
+            this.executor.setBeforeRun(beforeRun);
+            return this;
+        }
+
+        public MDCThreadPoolTaskExecutorBuilder afterRun(Runnable afterRun) {
+            this.executor.setAfterRun(afterRun);
+            return this;
+        }
+
+        public MDCThreadPoolTaskExecutorBuilder whenRunException(Consumer<Exception> whenRunException) {
+            this.executor.setWhenRunException(whenRunException);
+            return this;
+        }
+
         public MDCThreadPoolTaskExecutor build() {
             if (!this.executor.initializeFlag.get()) {
                 this.executor.initialize();
@@ -173,20 +202,20 @@ public class MDCThreadPoolTaskExecutor extends ThreadPoolTaskExecutor
 
     @Override
     public void execute(Runnable task) {
-        super.execute(new MDCRunnableWrapper(task, doMDCContextConsume(),
-                MapThreadLocalAdaptor.getCopyOfContextMap()));
+        super.execute(new MDCRunnableWrapper(RunnableWrapper.of(task, beforeRun, afterRun, whenRunException),
+                doMDCContextConsume(), MapThreadLocalAdaptor.getCopyOfContextMap()));
     }
 
     @Override
     public void execute(Runnable task, long startTimeout) {
-        super.execute(new MDCRunnableWrapper(task, doMDCContextConsume(),
-                MapThreadLocalAdaptor.getCopyOfContextMap()), startTimeout);
+        super.execute(new MDCRunnableWrapper(RunnableWrapper.of(task, beforeRun, afterRun, whenRunException),
+                doMDCContextConsume(), MapThreadLocalAdaptor.getCopyOfContextMap()), startTimeout);
     }
 
     @Override
     public Future<?> submit(Runnable task) {
-        return super.submit(new MDCRunnableWrapper(task, doMDCContextConsume(),
-                MapThreadLocalAdaptor.getCopyOfContextMap()));
+        return super.submit(new MDCRunnableWrapper(RunnableWrapper.of(task, beforeRun, afterRun, whenRunException),
+                doMDCContextConsume(), MapThreadLocalAdaptor.getCopyOfContextMap()));
     }
 
     @Override
@@ -233,26 +262,28 @@ public class MDCThreadPoolTaskExecutor extends ThreadPoolTaskExecutor
 
     @Override
     public <T> Future<T> submit(Callable<T> task) {
-        return super.submit(new MDCCallableWrapper<T>(task, doMDCContextConsume(),
-                MapThreadLocalAdaptor.getCopyOfContextMap()));
+        return super.submit(new MDCCallableWrapper<>(CallableWrapper.of(task, beforeRun, afterRun),
+                doMDCContextConsume(), MapThreadLocalAdaptor.getCopyOfContextMap()));
     }
 
     @Override
     public <T> Future<T> submit(Runnable task, T result) {
-        return super.getThreadPoolExecutor().submit(new MDCRunnableWrapper(task, doMDCContextConsume(),
-                MapThreadLocalAdaptor.getCopyOfContextMap()), result);
+        return super.getThreadPoolExecutor()
+                .submit(new MDCRunnableWrapper(RunnableWrapper.of(task, beforeRun, afterRun, whenRunException),
+                        doMDCContextConsume(), MapThreadLocalAdaptor.getCopyOfContextMap()), result);
     }
 
     @Override
     public ListenableFuture<?> submitListenable(Runnable task) {
-        return super.submitListenable(new MDCRunnableWrapper(task, doMDCContextConsume(),
-                MapThreadLocalAdaptor.getCopyOfContextMap()));
+        return super.submitListenable(
+                new MDCRunnableWrapper(RunnableWrapper.of(task, beforeRun, afterRun, whenRunException),
+                        doMDCContextConsume(), MapThreadLocalAdaptor.getCopyOfContextMap()));
     }
 
     @Override
     public <T> ListenableFuture<T> submitListenable(Callable<T> task) {
-        return super.submitListenable(new MDCCallableWrapper<T>(task, doMDCContextConsume(),
-                MapThreadLocalAdaptor.getCopyOfContextMap()));
+        return super.submitListenable(new MDCCallableWrapper<>(CallableWrapper.of(task, beforeRun, afterRun),
+                doMDCContextConsume(), MapThreadLocalAdaptor.getCopyOfContextMap()));
     }
 
     private Map<String, String> doMDCContextConsume() {
@@ -270,8 +301,8 @@ public class MDCThreadPoolTaskExecutor extends ThreadPoolTaskExecutor
         List<MDCCallableWrapper<T>> callableWrappers = new ArrayList<>(tasks.size());
         final Map<String, String> superMDCContext = doMDCContextConsume();
         for (Callable<T> task : tasks) {
-            callableWrappers.add(new MDCCallableWrapper<T>(task, superMDCContext,
-                    MapThreadLocalAdaptor.getCopyOfContextMap()));
+            callableWrappers.add(new MDCCallableWrapper<>(CallableWrapper.of(task, beforeRun, afterRun),
+                    superMDCContext, MapThreadLocalAdaptor.getCopyOfContextMap()));
         }
         return callableWrappers;
     }

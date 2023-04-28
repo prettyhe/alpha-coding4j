@@ -35,6 +35,11 @@ public @interface RedisSync {
     boolean failFast() default true;
 
     /**
+     * 限流令牌阈值，支持外部化配置，如"${invoke.sync.rateLimit:1}"
+     */
+    String rateLimit() default "1";
+
+    /**
      * RedisTemplate的beanName
      */
     String redisTemplateBean() default "stringRedisTemplate";

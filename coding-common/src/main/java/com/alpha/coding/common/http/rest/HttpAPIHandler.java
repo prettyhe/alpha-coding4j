@@ -31,6 +31,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.alpha.coding.common.http.HttpUtils;
 import com.alpha.coding.common.utils.ReflectionUtils;
 
@@ -193,7 +194,8 @@ public class HttpAPIHandler implements InvocationHandler, InitializingBean {
                     String paramName = !annotation.name().isEmpty() ? annotation.name() : parameter.getName();
                     if (parameter.getType().isArray()
                             || Collection.class.isAssignableFrom(parameter.getType())) {
-                        urlParams.put(paramName.endsWith("[]") ? paramName : paramName + "[]", JSON.toJSONString(arg));
+                        urlParams.put(paramName.endsWith("[]") ? paramName : paramName + "[]",
+                                JSON.toJSONString(arg, SerializerFeature.DisableCircularReferenceDetect));
                     } else {
                         urlParams.put(paramName, arg);
                     }

@@ -10,6 +10,7 @@ import com.alibaba.dubbo.rpc.Invoker;
 import com.alibaba.dubbo.rpc.Result;
 import com.alibaba.dubbo.rpc.RpcException;
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.serializer.SerializerFeature;
 
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -147,7 +148,8 @@ public class LogMonitorFilter implements Filter {
                 } else if (argument.getClass().isPrimitive()) {
                     sb.append(argument.toString()).append("|");
                 } else {
-                    sb.append(JSON.toJSONString(argument)).append("|");
+                    sb.append(JSON.toJSONString(argument, SerializerFeature.DisableCircularReferenceDetect))
+                            .append("|");
                 }
             }
             if (sb.lastIndexOf("|") != -1) {
@@ -169,7 +171,7 @@ public class LogMonitorFilter implements Filter {
             return String.valueOf(value);
         }
         try {
-            return JSON.toJSONString(value);
+            return JSON.toJSONString(value, SerializerFeature.DisableCircularReferenceDetect);
         } catch (Exception e) {
             if (log.isTraceEnabled()) {
                 log.warn("build res to String fail");

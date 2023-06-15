@@ -13,6 +13,7 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.BasicCookieStore;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.serializer.SerializerFeature;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -46,7 +47,7 @@ public class HttpFluentUtils {
     }
 
     public static String get(String uri, Map<String, String> params, Charset charset, int connectTimeout,
-            int socketTimeout) throws IOException {
+                             int socketTimeout) throws IOException {
         return param(Request.Get(uri), params, charset).connectTimeout(connectTimeout).socketTimeout(socketTimeout)
                 .execute().returnContent().asString();
     }
@@ -56,7 +57,7 @@ public class HttpFluentUtils {
     }
 
     public static String post(String uri, Map<String, String> params, Charset charset, int connectTimeout,
-            int socketTimeout) throws IOException {
+                              int socketTimeout) throws IOException {
         return param(Request.Post(uri), params, charset).connectTimeout(connectTimeout).socketTimeout(socketTimeout)
                 .execute().returnContent().asString();
     }
@@ -66,10 +67,10 @@ public class HttpFluentUtils {
     }
 
     public static String postObjectAsJson(String url, Object obj) throws IOException {
-        return postJson(url, JSON.toJSONString(obj));
+        return postJson(url, JSON.toJSONString(obj, SerializerFeature.DisableCircularReferenceDetect));
     }
 
-    public static String postJsonWithCookie(String url, String jsonStr, Cookie...cookies) throws IOException {
+    public static String postJsonWithCookie(String url, String jsonStr, Cookie... cookies) throws IOException {
         CookieStore cookieStore = new BasicCookieStore();
         for (Cookie cookie : cookies) {
             cookieStore.addCookie(cookie);
@@ -80,8 +81,9 @@ public class HttpFluentUtils {
                 .asString();
     }
 
-    public static String postObjectAsJsonWithCookie(String url, Object obj, Cookie...cookies) throws IOException {
-        return postJsonWithCookie(url, JSON.toJSONString(obj), cookies);
+    public static String postObjectAsJsonWithCookie(String url, Object obj, Cookie... cookies) throws IOException {
+        return postJsonWithCookie(url, JSON.toJSONString(obj, SerializerFeature.DisableCircularReferenceDetect),
+                cookies);
     }
 
 }

@@ -7,6 +7,7 @@ import java.util.Map;
 import org.slf4j.MDC;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.alpha.coding.bo.base.MapThreadLocalAdaptor;
 import com.alpha.coding.bo.enums.util.EnumWithCodeSupplier;
 import com.google.common.base.Objects;
@@ -75,7 +76,8 @@ public class AbstractEvent<K, E extends EnumWithCodeSupplier> {
         }
         this.eventID = genEventID();
         if (log.isDebugEnabled()) {
-            log.debug("event-generate: eventID={}, event={}", eventID, JSON.toJSONString(this));
+            log.debug("event-generate: eventID={}, event={}", eventID,
+                    JSON.toJSONString(this, SerializerFeature.DisableCircularReferenceDetect));
         }
     }
 
@@ -86,7 +88,7 @@ public class AbstractEvent<K, E extends EnumWithCodeSupplier> {
                 .append(type)
                 .append(UNDER_LINE);
         if (keys != null && !keys.isEmpty()) {
-            sb.append(Objects.hashCode(JSON.toJSONString(keys)));
+            sb.append(Objects.hashCode(JSON.toJSONString(keys, SerializerFeature.DisableCircularReferenceDetect)));
         } else {
             sb.append("0");
         }

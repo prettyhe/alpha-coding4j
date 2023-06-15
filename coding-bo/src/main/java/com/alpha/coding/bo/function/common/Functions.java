@@ -11,6 +11,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -24,6 +25,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.alibaba.fastjson.JSON;
+import com.alpha.coding.bo.base.Tuple;
 
 /**
  * Functions
@@ -161,6 +163,16 @@ public interface Functions {
             (t, u) -> strSplitToLongSet.apply(t, u).orElse(new LinkedHashSet<>(0));
 
     /**
+     * 切分字符串到Map: ("3=部门,1=机构"),Tuple(",","=") => {3=部门, 1=机构}
+     */
+    BiFunction<String, Tuple<String, String>, LinkedHashMap<String, String>> strSplitToMapDefaultEmpty =
+            (s, t) -> stringSplitToLinkedSetDefaultEmpty.apply(s, t.getF()).stream()
+                    .collect(Collectors.toMap(x -> x.split(t.getS())[0],
+                            x -> x.substring((x.split(t.getS())[0]).length()
+                                    + (x.contains(t.getS()) ? t.getS().length() : 0)),
+                            (a, b) -> a, LinkedHashMap::new));
+
+    /**
      * 时间单位
      */
     Function<TimeUnit, String> abbreviateTimeUnit = unit -> {
@@ -228,4 +240,12 @@ public interface Functions {
      */
     BiFunction<String, Integer, String> safeSubstring =
             (s, l) -> s == null ? null : (s.substring(0, Math.min(s.length(), l)));
+
+    /**
+     * 字符串安全截取
+     */
+    BiFunction<String, int[], String> safeSubstringFromTo =
+            (s, l) -> s == null ? null : (l[0] > l[1] ? "" : s.substring(Math.min(Math.max(0, l[0]), s.length()),
+                    Math.min(s.length(), Math.max(0, l[1]))));
+
 }

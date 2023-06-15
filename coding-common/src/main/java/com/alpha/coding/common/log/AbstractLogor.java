@@ -16,6 +16,7 @@ import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.alpha.coding.common.utils.StringUtils;
 import com.alpha.coding.common.utils.json.FastjsonJsonProvider;
 import com.alpha.coding.common.utils.json.FastjsonMappingProvider;
@@ -295,7 +296,8 @@ public abstract class AbstractLogor implements Logor {
                                     final JsonPath jsonPath = JSON_PATH_MAP.computeIfAbsent(path, JsonPath::compile);
                                     if (context == null) {
                                         if (json == null) {
-                                            json = JSON.toJSONString(param);
+                                            json = JSON.toJSONString(param,
+                                                    SerializerFeature.DisableCircularReferenceDetect);
                                         }
                                         context = JsonPath.using(JSON_CONFIGURATION).parse(json);
                                     }
@@ -312,7 +314,7 @@ public abstract class AbstractLogor implements Logor {
                     continue;
                 }
                 if (json == null) {
-                    json = JSON.toJSONString(param);
+                    json = JSON.toJSONString(param, SerializerFeature.DisableCircularReferenceDetect);
                 }
                 // 配置中的保留path
                 if (retainJsonPathMap != null) {

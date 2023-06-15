@@ -10,6 +10,7 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Component;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.alpha.coding.bo.enums.util.EnumWithCodeSupplier;
 import com.alpha.coding.common.event.AbstractEvent;
 import com.alpha.coding.common.event.handler.EventHandleCallback;
@@ -71,7 +72,8 @@ public class EventBusFactory implements ApplicationContextAware, InitializingBea
             eventToHandleCnt.incrementAndGet();
             incrementAndGet(event.getType());
         } catch (Exception e) {
-            log.error("post event fail: event={}", JSON.toJSONString(event), e);
+            log.error("post event fail: event={}",
+                    JSON.toJSONString(event, SerializerFeature.DisableCircularReferenceDetect), e);
         }
     }
 

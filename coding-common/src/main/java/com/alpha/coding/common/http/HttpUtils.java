@@ -39,6 +39,7 @@ import org.springframework.util.StringUtils;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.alpha.coding.bo.function.common.Predicates;
 import com.alpha.coding.common.http.model.HttpParamControl;
 
@@ -170,7 +171,8 @@ public class HttpUtils {
         } finally {
             if (log.isDebugEnabled()) {
                 log.debug("parseParams: {}, content-length: {}",
-                        JSON.toJSONString(jsonObject), request.getContentLength());
+                        JSON.toJSONString(jsonObject, SerializerFeature.DisableCircularReferenceDetect),
+                        request.getContentLength());
             }
         }
         return jsonObject;

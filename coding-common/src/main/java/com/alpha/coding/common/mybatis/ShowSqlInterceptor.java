@@ -287,23 +287,25 @@ public class ShowSqlInterceptor implements Interceptor {
             } else {
                 Object[] objects = new Object[parameterMappings.size()];
                 MetaObject metaObject = configuration.newMetaObject(parameterObject);
-                int i = 0;
-                for (ParameterMapping parameterMapping : parameterMappings) {
-                    String propertyName = parameterMapping.getProperty();
+                for (int i = 0; i < parameterMappings.size(); i++) {
+                    String propertyName = parameterMappings.get(i).getProperty();
                     try {
                         if (metaObject.hasGetter(propertyName)) {
                             Object obj = metaObject.getValue(propertyName);
-                            objects[i++] = getParameterValue(obj);
+                            objects[i] = getParameterValue(obj);
                             continue;
                         }
+                        if (boundSql.hasAdditionalParameter(propertyName)) {
+                            Object obj = boundSql.getAdditionalParameter(propertyName);
+                            objects[i] = getParameterValue(obj);
+                            continue;
+                        }
+                        Object obj = metaObject.getValue(propertyName);
+                        objects[i] = getParameterValue(obj);
                     } catch (Exception e) {
                         if (log.isDebugEnabled()) {
                             log.debug("getParameterValue for {}", propertyName, e);
                         }
-                    }
-                    if (boundSql.hasAdditionalParameter(propertyName)) {
-                        Object obj = boundSql.getAdditionalParameter(propertyName);
-                        objects[i++] = getParameterValue(obj);
                     }
                 }
                 // assemble final sql

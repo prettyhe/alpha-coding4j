@@ -24,6 +24,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.annotation.JSONField;
+import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.alpha.coding.bo.annotation.HttpRequestParam;
 import com.alpha.coding.bo.enums.HttpParamFrom;
 import com.alpha.coding.bo.function.common.Predicates;
@@ -59,7 +60,8 @@ public class HttpParameterUtils {
             try {
                 formParametersRef.set(HttpUtils.readBodyFormParams(request));
                 if (log.isDebugEnabled()) {
-                    log.debug("formParameters:{}", JSON.toJSONString(formParametersRef.get()));
+                    log.debug("formParameters:{}", JSON.toJSONString(formParametersRef.get(),
+                            SerializerFeature.DisableCircularReferenceDetect));
                 }
             } catch (Exception e) {
                 log.warn("parse formParameters fail for url={},msg={}",
@@ -72,7 +74,8 @@ public class HttpParameterUtils {
                     StandardCharsets.UTF_8));
             if (log.isDebugEnabled()) {
                 log.debug("contentType:{}, queryStringParameters:{}",
-                        request.getContentType(), JSON.toJSONString(queryStringParametersRef.get()));
+                        request.getContentType(), JSON.toJSONString(queryStringParametersRef.get(),
+                                SerializerFeature.DisableCircularReferenceDetect));
             }
         } catch (Exception e) {
             log.warn("parse queryStringParameters fail for url={},msg={}",

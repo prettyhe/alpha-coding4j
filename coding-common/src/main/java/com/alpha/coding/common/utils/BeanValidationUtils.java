@@ -1,5 +1,6 @@
 package com.alpha.coding.common.utils;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.ResourceBundle;
@@ -12,9 +13,6 @@ import javax.validation.ValidatorFactory;
 
 import org.hibernate.validator.HibernateValidator;
 import org.hibernate.validator.messageinterpolation.ResourceBundleMessageInterpolator;
-import org.hibernate.validator.spi.resourceloading.ResourceBundleLocator;
-
-import com.google.common.collect.Lists;
 
 /**
  * BeanValidationUtils
@@ -29,14 +27,9 @@ public class BeanValidationUtils {
     static {
         try {
             vf = Validation.byProvider(HibernateValidator.class).configure()
-                    .messageInterpolator(new ResourceBundleMessageInterpolator(new ResourceBundleLocator() {
-                        @Override
-                        public ResourceBundle getResourceBundle(Locale arg0) {
-                            ResourceBundle bundle =
-                                    ResourceBundle.getBundle("ValidationMessages", Locale.SIMPLIFIED_CHINESE);
-                            return bundle;
-                        }
-                    })).buildValidatorFactory();
+                    .messageInterpolator(new ResourceBundleMessageInterpolator(
+                            locale -> ResourceBundle.getBundle("ValidationMessages", Locale.SIMPLIFIED_CHINESE)))
+                    .buildValidatorFactory();
         } catch (Exception e) {
             vf = Validation.buildDefaultValidatorFactory();
         }
@@ -49,7 +42,7 @@ public class BeanValidationUtils {
     public static <T> List<String> validate(T request, boolean withPropertyPath) {
         Validator validator = vf.getValidator();
         Set<ConstraintViolation<T>> set = validator.validate(request);
-        List<String> errMsgs = Lists.newArrayList();
+        List<String> errMsgs = new ArrayList<>(set.size());
         for (ConstraintViolation<T> cv : set) {
             StringBuilder sb = new StringBuilder(cv.getMessage());
             if (withPropertyPath) {

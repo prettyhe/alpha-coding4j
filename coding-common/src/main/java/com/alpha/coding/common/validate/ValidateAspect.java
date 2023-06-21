@@ -20,6 +20,9 @@ import org.aspectj.lang.reflect.MethodSignature;
 import org.hibernate.validator.HibernateValidator;
 import org.hibernate.validator.HibernateValidatorConfiguration;
 
+import com.alpha.coding.bo.annotation.IgnoreValidate;
+import com.alpha.coding.common.aop.assist.AopHelper;
+
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -64,6 +67,7 @@ public abstract class ValidateAspect {
             validateReturnValueMethod = executableValidatorClass
                     .getMethod("validateReturnValue", Object.class, Method.class, Object.class, Class[].class);
         } catch (Exception e) {
+            log.warn("init forExecutables Method fail", e);
         }
     }
 
@@ -80,7 +84,9 @@ public abstract class ValidateAspect {
     }
 
     private Object validate(ProceedingJoinPoint joinPoint) throws Throwable {
-        MethodSignature signature = (MethodSignature) joinPoint.getSignature();
+        final MethodSignature signature = (MethodSignature) joinPoint.getSignature();
+        final Class<?> targetClass = AopHelper.getTargetClass(joinPoint.getTarget());
+        final Method methodToValidate = AopHelper.getTargetMethod(targetClass, signature.getMethod());
         Class<?>[] groups = new Class[0];
 
         if (forExecutablesMethod != null) {
@@ -88,31 +94,36 @@ public abstract class ValidateAspect {
             try {
                 execVal = forExecutablesMethod.invoke(this.validator);
             } catch (AbstractMethodError e) {
-                Validator nativeValidator = (Validator) this.validator.unwrap(Validator.class);
+                Validator nativeValidator = this.validator.unwrap(Validator.class);
                 execVal = forExecutablesMethod.invoke(nativeValidator);
                 this.validator = nativeValidator;
             }
 
-            Method methodToValidate = signature.getMethod();
-
+            // 对所有参数校验
             Set result = (Set) validateParametersMethod.invoke(execVal,
                     new Object[] {joinPoint.getTarget(), methodToValidate, joinPoint.getArgs(), groups});
 
             if (!result.isEmpty()) {
                 throw new ConstraintViolationException(result);
             } else {
-                Set set = new HashSet();
-                set.addAll(result);
+                // 对参数逐个校验
+                Set set = new HashSet(result);
                 result = set;
                 final Object[] args = joinPoint.getArgs();
-                final Class[] parameterTypes = signature.getParameterTypes();
-                final Annotation[][] parameterAnnotations = signature.getMethod().getParameterAnnotations();
+                final Class[] parameterTypes = methodToValidate.getParameterTypes();
+                final Annotation[][] parameterAnnotations = methodToValidate.getParameterAnnotations();
                 for (int i = 0; i < args.length; i++) {
                     if (args[i] == null || parameterTypes[i].isPrimitive()) {
                         continue;
                     }
+                    // 参数标记为@Valid，在所有参数校验时已经处理过，此处无需再次校验
                     if (parameterAnnotations[i] != null && Arrays.stream(parameterAnnotations[i])
-                            .filter(p -> p.getClass().equals(Valid.class)).findAny().isPresent()) {
+                            .anyMatch(p -> p.annotationType().equals(Valid.class))) {
+                        continue;
+                    }
+                    // 对象参数标记为无需校验，忽略
+                    if (parameterAnnotations[i] != null && Arrays.stream(parameterAnnotations[i])
+                            .anyMatch(p -> p.annotationType().equals(IgnoreValidate.class))) {
                         continue;
                     }
                     result.addAll(this.validator.validate(args[i], groups));
@@ -132,10 +143,9 @@ public abstract class ValidateAspect {
                 }
             }
         } else {
-            return ValidateAspect.HibernateValidatorDelegate
-                    .invokeWithinValidation(joinPoint, this.validator, groups);
+            // Hibernate Validator 4.3's native API
+            return ValidateAspect.HibernateValidatorDelegate.invokeWithinValidation(joinPoint, this.validator, groups);
         }
-
     }
 
     private static class HibernateValidatorDelegate {
@@ -149,26 +159,32 @@ public abstract class ValidateAspect {
 
         public static Object invokeWithinValidation(ProceedingJoinPoint joinPoint, Validator validator,
                                                     Class<?>[] groups) throws Throwable {
-            ExecutableValidator executableValidator = validator.unwrap(ExecutableValidator.class);
+            final ExecutableValidator executableValidator = validator.unwrap(ExecutableValidator.class);
+            final MethodSignature signature = (MethodSignature) joinPoint.getSignature();
             final Object target = joinPoint.getTarget();
-            MethodSignature signature = (MethodSignature) joinPoint.getSignature();
-            Set result = executableValidator
-                    .validateParameters(target, signature.getMethod(), joinPoint.getArgs(), groups);
+            final Class<?> targetClass = AopHelper.getTargetClass(joinPoint.getTarget());
+            final Method method = AopHelper.getTargetMethod(targetClass, signature.getMethod());
+            Set result = executableValidator.validateParameters(target, method, joinPoint.getArgs(), groups);
             if (!result.isEmpty()) {
                 throw new ConstraintViolationException(result);
             } else {
-                Set set = new HashSet();
-                set.addAll(result);
+                Set set = new HashSet(result);
                 result = set;
                 final Object[] args = joinPoint.getArgs();
-                final Class[] parameterTypes = signature.getParameterTypes();
-                final Annotation[][] parameterAnnotations = signature.getMethod().getParameterAnnotations();
+                final Class[] parameterTypes = method.getParameterTypes();
+                final Annotation[][] parameterAnnotations = method.getParameterAnnotations();
                 for (int i = 0; i < args.length; i++) {
                     if (args[i] == null || parameterTypes[i].isPrimitive()) {
                         continue;
                     }
+                    // 参数标记为@Valid，在所有参数校验时已经处理过，此处无需再次校验
                     if (parameterAnnotations[i] != null && Arrays.stream(parameterAnnotations[i])
-                            .filter(p -> p.getClass().equals(Valid.class)).findAny().isPresent()) {
+                            .anyMatch(p -> p.annotationType().equals(Valid.class))) {
+                        continue;
+                    }
+                    // 对象参数标记为无需校验，忽略
+                    if (parameterAnnotations[i] != null && Arrays.stream(parameterAnnotations[i])
+                            .anyMatch(p -> p.annotationType().equals(IgnoreValidate.class))) {
                         continue;
                     }
                     result.addAll(validator.validate(args[i], groups));
@@ -179,8 +195,7 @@ public abstract class ValidateAspect {
 
                 // validate returnValue
                 Object returnValue = joinPoint.proceed();
-                result = executableValidator
-                        .validateReturnValue(target, signature.getMethod(), returnValue, groups);
+                result = executableValidator.validateReturnValue(target, method, returnValue, groups);
                 if (!result.isEmpty()) {
                     throw new ConstraintViolationException(result);
                 } else {

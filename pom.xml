@@ -32,6 +32,7 @@
         <maven.resources.overwrite>true</maven.resources.overwrite>
         <maven.source.version>1.8</maven.source.version>
         <maven.target.version>1.8</maven.target.version>
+        <!--dependencies version-->
         <coding4j.springframework.version>5.2.20.RELEASE</coding4j.springframework.version>
         <coding4j.springframework.data.version>2.2.3.RELEASE</coding4j.springframework.data.version>
         <coding4j.jedis.version>3.1.0</coding4j.jedis.version>
@@ -47,7 +48,6 @@
         <coding4j.commons-lang.version>2.6</coding4j.commons-lang.version>
         <coding4j.commons-io.version>2.11.0</coding4j.commons-io.version>
         <coding4j.commons-dbcp.version>1.4</coding4j.commons-dbcp.version>
-        <coding4j.commons-collections.version>3.2.2</coding4j.commons-collections.version>
         <coding4j.commons-text.version>1.10.0</coding4j.commons-text.version>
         <coding4j.commons-beanutils.version>1.9.4</coding4j.commons-beanutils.version>
         <coding4j.commons-codec.version>1.13</coding4j.commons-codec.version>
@@ -56,17 +56,20 @@
         <coding4j.commons-pool.version>1.6</coding4j.commons-pool.version>
         <coding4j.commons-pool2.version>2.8.0</coding4j.commons-pool2.version>
         <coding4j.commons-lang3.version>3.12.0</coding4j.commons-lang3.version>
+        <coding4j.commons-collections4.version>4.4</coding4j.commons-collections4.version>
+        <coding4j.commons-compress.version>1.21</coding4j.commons-compress.version>
         <coding4j.javax.servlet-api.version>3.1.0</coding4j.javax.servlet-api.version>
         <coding4j.httpclient.version>4.5.13</coding4j.httpclient.version>
         <coding4j.mybatis.version>3.5.6</coding4j.mybatis.version>
         <coding4j.mybatis.spring.version>2.0.6</coding4j.mybatis.spring.version>
+        <coding4j.mybatis.dynamic.sql.version>1.1.4</coding4j.mybatis.dynamic.sql.version>
         <coding4j.mybatis-paginator.version>1.2.17</coding4j.mybatis-paginator.version>
-        <coding4j.dubbo.version>2.6.12</coding4j.dubbo.version>
-        <coding4j.jboss.netty.version>3.2.9.Final</coding4j.jboss.netty.version>
-        <coding4j.zkclient.version>0.3</coding4j.zkclient.version>
-        <coding4j.zookeeper.version>3.4.14</coding4j.zookeeper.version>
-        <coding4j.netty.version>4.1.54.Final</coding4j.netty.version>
-        <coding4j.junit.version>4.13.1</coding4j.junit.version>
+        <coding4j.alibaba.dubbo.version>2.6.12</coding4j.alibaba.dubbo.version>
+        <coding4j.apache.dubbo.version>2.7.23</coding4j.apache.dubbo.version>
+        <!--<coding4j.jboss.netty.version>3.2.9.Final</coding4j.jboss.netty.version>-->
+        <!--<coding4j.zkclient.version>0.3</coding4j.zkclient.version>-->
+        <!--<coding4j.zookeeper.version>3.4.14</coding4j.zookeeper.version>-->
+        <!--<coding4j.netty.version>4.1.54.Final</coding4j.netty.version>-->
         <coding4j.druid.version>1.2.8</coding4j.druid.version>
         <coding4j.hystrix.version>1.5.12</coding4j.hystrix.version>
         <coding4j.jsoup.version>1.14.2</coding4j.jsoup.version>
@@ -78,13 +81,26 @@
         <coding4j.validation-api.version>2.0.1.Final</coding4j.validation-api.version>
         <coding4j.persistence-api.version>1.0.2</coding4j.persistence-api.version>
         <coding4j.poi-ooxml.version>3.15</coding4j.poi-ooxml.version>
-        <coding4j.hibernate.validator.version>6.0.20.Final</coding4j.hibernate.validator.version>
-        <coding4j.groovy.version>3.0.7</coding4j.groovy.version>
+        <coding4j.hibernate-validator.version>6.0.20.Final</coding4j.hibernate-validator.version>
+        <coding4j.groovy.version>2.5.22</coding4j.groovy.version>
         <coding4j.ehcache.version>2.10.6</coding4j.ehcache.version>
-        <coding4j.snakeyaml.version>1.26</coding4j.snakeyaml.version>
+        <coding4j.caffeine.version>2.8.0</coding4j.caffeine.version>
+        <coding4j.batik-transcoder.version>1.12</coding4j.batik-transcoder.version>
+        <coding4j.snakeyaml.version>1.33</coding4j.snakeyaml.version>
         <coding4j.asm.version>3.1</coding4j.asm.version>
         <coding4j.ant.version>1.10.11</coding4j.ant.version>
         <coding4j.findbugs.version>3.0.2</coding4j.findbugs.version>
+        <coding4j.redisson.version>3.14.0</coding4j.redisson.version>
+        <coding4j.c3p0.version>0.9.5.5</coding4j.c3p0.version>
+        <coding4j.HikariCP.version>4.0.3</coding4j.HikariCP.version>
+        <coding4j.jsonpath.version>2.6.0</coding4j.jsonpath.version>
+        <coding4j.rocketmq.version>4.7.0</coding4j.rocketmq.version>
+        <coding4j.activemq.version>5.15.10</coding4j.activemq.version>
+        <!--test dependencies version-->
+        <coding4j.junit.version>4.13.1</coding4j.junit.version>
+        <coding4j.jmock-junit4.version>2.12.0</coding4j.jmock-junit4.version>
+        <coding4j.mockito.version>1.10.19</coding4j.mockito.version>
+        <coding4j.spring.test.dbunit.version>1.3.0</coding4j.spring.test.dbunit.version>
     </properties>
 
     <dependencyManagement>
@@ -271,7 +287,7 @@
             <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-collections4</artifactId>
-                <version>4.4</version>
+                <version>${coding4j.commons-collections4.version}</version>
             </dependency>
             <dependency>
                 <groupId>commons-pool</groupId>
@@ -306,12 +322,12 @@
             <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-compress</artifactId>
-                <version>1.21</version>
+                <version>${coding4j.commons-compress.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.alibaba</groupId>
                 <artifactId>dubbo</artifactId>
-                <version>${coding4j.dubbo.version}</version>
+                <version>${coding4j.alibaba.dubbo.version}</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.springframework</groupId>
@@ -322,7 +338,7 @@
             <dependency>
                 <groupId>org.apache.dubbo</groupId>
                 <artifactId>dubbo</artifactId>
-                <version>2.7.18</version>
+                <version>${coding4j.apache.dubbo.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.ant</groupId>
@@ -343,12 +359,6 @@
                 <groupId>javax.servlet</groupId>
                 <artifactId>javax.servlet-api</artifactId>
                 <version>${coding4j.javax.servlet-api.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>javax.servlet</groupId>
-                <artifactId>servlet-api</artifactId>
-                <version>2.5</version>
-                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>org.apache.httpcomponents</groupId>
@@ -424,7 +434,7 @@
             <dependency>
                 <groupId>org.mybatis.dynamic-sql</groupId>
                 <artifactId>mybatis-dynamic-sql</artifactId>
-                <version>1.1.4</version>
+                <version>${coding4j.mybatis.dynamic.sql.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.github.miemiedev</groupId>
@@ -454,7 +464,7 @@
             <dependency>
                 <groupId>org.hibernate.validator</groupId>
                 <artifactId>hibernate-validator</artifactId>
-                <version>6.0.20.Final</version>
+                <version>${coding4j.hibernate-validator.version}</version>
             </dependency>
             <!-- springframework web -->
             <dependency>
@@ -491,33 +501,33 @@
             <dependency>
                 <groupId>com.github.ben-manes.caffeine</groupId>
                 <artifactId>caffeine</artifactId>
-                <version>2.8.0</version>
+                <version>${coding4j.caffeine.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.xmlgraphics</groupId>
                 <artifactId>batik-transcoder</artifactId>
-                <version>1.12</version>
+                <version>${coding4j.batik-transcoder.version}</version>
             </dependency>
             <!-- activemq -->
             <dependency>
                 <groupId>org.apache.activemq</groupId>
                 <artifactId>activemq-client</artifactId>
-                <version>5.15.10</version>
+                <version>${coding4j.activemq.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.activemq</groupId>
                 <artifactId>activemq-pool</artifactId>
-                <version>5.15.10</version>
+                <version>${coding4j.activemq.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.activemq</groupId>
                 <artifactId>activemq-broker</artifactId>
-                <version>5.15.10</version>
+                <version>${coding4j.activemq.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.activemq</groupId>
                 <artifactId>activemq-spring</artifactId>
-                <version>5.15.10</version>
+                <version>${coding4j.activemq.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.springframework</groupId>
@@ -528,13 +538,31 @@
             <dependency>
                 <groupId>com.jayway.jsonpath</groupId>
                 <artifactId>json-path</artifactId>
-                <version>2.5.0</version>
+                <version>${coding4j.jsonpath.version}</version>
             </dependency>
             <!--rocketmq-->
             <dependency>
                 <groupId>org.apache.rocketmq</groupId>
                 <artifactId>rocketmq-client</artifactId>
-                <version>4.7.0</version>
+                <version>${coding4j.rocketmq.version}</version>
+            </dependency>
+            <!--redisson-->
+            <dependency>
+                <groupId>org.redisson</groupId>
+                <artifactId>redisson</artifactId>
+                <version>${coding4j.redisson.version}</version>
+            </dependency>
+            <!--c3p0-->
+            <dependency>
+                <groupId>com.mchange</groupId>
+                <artifactId>c3p0</artifactId>
+                <version>${coding4j.c3p0.version}</version>
+            </dependency>
+            <!--HikariCP-->
+            <dependency>
+                <groupId>com.zaxxer</groupId>
+                <artifactId>HikariCP</artifactId>
+                <version>${coding4j.HikariCP.version}</version>
             </dependency>
             <!-- dependency for test -->
             <dependency>
@@ -552,25 +580,25 @@
             <dependency>
                 <groupId>org.jmock</groupId>
                 <artifactId>jmock-junit4</artifactId>
-                <version>2.8.2</version>
+                <version>${coding4j.jmock-junit4.version}</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>org.mockito</groupId>
                 <artifactId>mockito-all</artifactId>
-                <version>1.10.19</version>
+                <version>${coding4j.mockito.version}</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>com.github.springtestdbunit</groupId>
                 <artifactId>spring-test-dbunit</artifactId>
-                <version>1.3.0</version>
+                <version>${coding4j.spring.test.dbunit.version}</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>com.jayway.jsonpath</groupId>
                 <artifactId>json-path-assert</artifactId>
-                <version>2.4.0</version>
+                <version>${coding4j.jsonpath.version}</version>
                 <scope>test</scope>
             </dependency>
         </dependencies>

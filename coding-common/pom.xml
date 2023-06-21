@@ -121,10 +121,12 @@
         <dependency>
             <groupId>javax.servlet</groupId>
             <artifactId>javax.servlet-api</artifactId>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-pool2</artifactId>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>redis.clients</groupId>
@@ -281,21 +283,18 @@
         <dependency>
             <groupId>org.redisson</groupId>
             <artifactId>redisson</artifactId>
-            <version>3.14.0</version>
             <optional>true</optional>
         </dependency>
         <!--c3p0-->
         <dependency>
             <groupId>com.mchange</groupId>
             <artifactId>c3p0</artifactId>
-            <version>0.9.5.5</version>
             <optional>true</optional>
         </dependency>
         <!--HikariCP-->
         <dependency>
             <groupId>com.zaxxer</groupId>
             <artifactId>HikariCP</artifactId>
-            <version>4.0.3</version>
             <optional>true</optional>
         </dependency>
     </dependencies>

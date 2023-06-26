@@ -4,7 +4,6 @@ import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.apache.commons.lang.StringUtils;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.context.ApplicationContext;
@@ -24,6 +23,7 @@ import com.alpha.coding.common.redis.RedisTemplateUtils;
 import com.alpha.coding.common.spring.spel.GlobalExpressionCache;
 import com.alpha.coding.common.utils.InvokeUtils;
 import com.alpha.coding.common.utils.MD5Utils;
+import com.alpha.coding.common.utils.StringUtils;
 
 import lombok.Data;
 

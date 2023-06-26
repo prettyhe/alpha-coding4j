@@ -2,7 +2,6 @@ package com.alpha.coding.common.activemq;
 
 import java.util.Set;
 
-import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
@@ -32,7 +31,7 @@ public class EnableActiveMQAutoConfigHandler implements ConfigurationRegisterHan
     public void registerBeanDefinitions(RegisterBeanDefinitionContext context) {
         Set<AnnotationAttributes> annotationAttributes = SpringAnnotationConfigUtils.attributesForRepeatable(
                 context.getImportingClassMetadata(), EnableActiveMQAutoConfigs.class, EnableActiveMQAutoConfig.class);
-        if (CollectionUtils.isEmpty(annotationAttributes)) {
+        if (annotationAttributes.isEmpty()) {
             return;
         }
         final Environment env = context.getEnvironment();
@@ -55,7 +54,7 @@ public class EnableActiveMQAutoConfigHandler implements ConfigurationRegisterHan
                 activeMQConnectionFactory.addConstructorArgValue(brokerUrl);
                 BeanDefinitionRegistryUtils.overideBeanDefinition(registry,
                         prefix + "ActiveMQConnectionFactory",
-                        activeMQConnectionFactory.getBeanDefinition());
+                        activeMQConnectionFactory.getBeanDefinition(), true);
                 // registerBeanDefinition: PooledConnectionFactoryBean
                 BeanDefinitionBuilder pooledConnectionFactoryBean = BeanDefinitionBuilder
                         .genericBeanDefinition("org.apache.activemq.pool.PooledConnectionFactoryBean");
@@ -66,7 +65,7 @@ public class EnableActiveMQAutoConfigHandler implements ConfigurationRegisterHan
                         env.getProperty(prefix + ".pool.max-connections", Integer.class, 1));
                 BeanDefinitionRegistryUtils.overideBeanDefinition(registry,
                         prefix + "PooledConnectionFactoryBean",
-                        pooledConnectionFactoryBean.getBeanDefinition());
+                        pooledConnectionFactoryBean.getBeanDefinition(), true);
                 // registerBeanDefinition: topic
                 final String enableTopics = env.getProperty(prefix + ".topic.enables");
                 if (StringUtils.isNotBlank(enableTopics)) {
@@ -79,7 +78,7 @@ public class EnableActiveMQAutoConfigHandler implements ConfigurationRegisterHan
                             producerActiveMQTopic.addConstructorArgValue(producer);
                             BeanDefinitionRegistryUtils.overideBeanDefinition(registry,
                                     prefix + "_" + topic + "ProducerActiveMQTopic",
-                                    producerActiveMQTopic.getBeanDefinition());
+                                    producerActiveMQTopic.getBeanDefinition(), true);
                             // registerBeanDefinition: JmsTemplate
                             BeanDefinitionBuilder jmsTemplate = BeanDefinitionBuilder
                                     .genericBeanDefinition("org.springframework.jms.core.JmsTemplate");
@@ -91,10 +90,11 @@ public class EnableActiveMQAutoConfigHandler implements ConfigurationRegisterHan
                             String jmsTemplateBeanName =
                                     env.getProperty(prefix + ".topic." + topic + ".JmsTemplateName",
                                             prefix + "_" + topic + "JmsTemplate");
-                            BeanDefinitionRegistryUtils.overideBeanDefinition(registry,
-                                    jmsTemplateBeanName, jmsTemplate.getBeanDefinition());
-                            log.info("registerBeanDefinition: prefix: {}, topic: {}, class: {}, beanName: {}",
-                                    prefix, topic, "org.springframework.jms.core.JmsTemplate", jmsTemplateBeanName);
+                            if (BeanDefinitionRegistryUtils.overideBeanDefinition(registry,
+                                    jmsTemplateBeanName, jmsTemplate.getBeanDefinition(), true)) {
+                                log.info("registerBeanDefinition: prefix: {}, topic: {}, class: {}, beanName: {}",
+                                        prefix, topic, "org.springframework.jms.core.JmsTemplate", jmsTemplateBeanName);
+                            }
                         }
                         final String consumer = env.getProperty(prefix + ".topic." + topic + ".consumer");
                         if (StringUtils.isNotBlank(consumer)) {
@@ -104,7 +104,7 @@ public class EnableActiveMQAutoConfigHandler implements ConfigurationRegisterHan
                             consumerActiveMQTopic.addConstructorArgValue(consumer);
                             BeanDefinitionRegistryUtils.overideBeanDefinition(registry,
                                     prefix + "_" + topic + "ConsumerActiveMQTopic",
-                                    consumerActiveMQTopic.getBeanDefinition());
+                                    consumerActiveMQTopic.getBeanDefinition(), true);
                             // registerBeanDefinition: DefaultMessageListenerContainer
                             BeanDefinitionBuilder defaultMessageListenerContainer = BeanDefinitionBuilder
                                     .genericBeanDefinition(
@@ -122,7 +122,7 @@ public class EnableActiveMQAutoConfigHandler implements ConfigurationRegisterHan
                             }
                             BeanDefinitionRegistryUtils.overideBeanDefinition(registry,
                                     prefix + "_" + topic + "DefaultMessageListenerContainer",
-                                    defaultMessageListenerContainer.getBeanDefinition());
+                                    defaultMessageListenerContainer.getBeanDefinition(), true);
                         }
                     }
                 }
@@ -138,7 +138,7 @@ public class EnableActiveMQAutoConfigHandler implements ConfigurationRegisterHan
                             producerActiveMQQueue.addConstructorArgValue(producer);
                             BeanDefinitionRegistryUtils.overideBeanDefinition(registry,
                                     prefix + "_" + queue + "ProducerActiveMQQueue",
-                                    producerActiveMQQueue.getBeanDefinition());
+                                    producerActiveMQQueue.getBeanDefinition(), true);
                             // registerBeanDefinition: JmsTemplate
                             BeanDefinitionBuilder jmsTemplate = BeanDefinitionBuilder
                                     .genericBeanDefinition("org.springframework.jms.core.JmsTemplate");
@@ -149,10 +149,11 @@ public class EnableActiveMQAutoConfigHandler implements ConfigurationRegisterHan
                             String jmsTemplateBeanName =
                                     env.getProperty(prefix + ".queue." + queue + ".JmsTemplateName",
                                             prefix + "_" + queue + "JmsTemplate");
-                            BeanDefinitionRegistryUtils.overideBeanDefinition(registry,
-                                    jmsTemplateBeanName, jmsTemplate.getBeanDefinition());
-                            log.info("registerBeanDefinition: prefix: {}, queue: {}, class: {}, beanName: {}",
-                                    prefix, queue, "org.springframework.jms.core.JmsTemplate", jmsTemplateBeanName);
+                            if (BeanDefinitionRegistryUtils.overideBeanDefinition(registry,
+                                    jmsTemplateBeanName, jmsTemplate.getBeanDefinition(), true)) {
+                                log.info("registerBeanDefinition: prefix: {}, queue: {}, class: {}, beanName: {}",
+                                        prefix, queue, "org.springframework.jms.core.JmsTemplate", jmsTemplateBeanName);
+                            }
                         }
                         final String consumer = env.getProperty(prefix + ".queue." + queue + ".consumer");
                         if (StringUtils.isNotBlank(consumer)) {
@@ -162,7 +163,7 @@ public class EnableActiveMQAutoConfigHandler implements ConfigurationRegisterHan
                             consumerActiveMQQueue.addConstructorArgValue(consumer);
                             BeanDefinitionRegistryUtils.overideBeanDefinition(registry,
                                     prefix + "_" + queue + "ConsumerActiveMQQueue",
-                                    consumerActiveMQQueue.getBeanDefinition());
+                                    consumerActiveMQQueue.getBeanDefinition(), true);
                             // registerBeanDefinition: DefaultMessageListenerContainer
                             BeanDefinitionBuilder defaultMessageListenerContainer = BeanDefinitionBuilder
                                     .genericBeanDefinition(
@@ -180,7 +181,7 @@ public class EnableActiveMQAutoConfigHandler implements ConfigurationRegisterHan
                             }
                             BeanDefinitionRegistryUtils.overideBeanDefinition(registry,
                                     prefix + "_" + queue + "DefaultMessageListenerContainer",
-                                    defaultMessageListenerContainer.getBeanDefinition());
+                                    defaultMessageListenerContainer.getBeanDefinition(), true);
                         }
                     }
                 }

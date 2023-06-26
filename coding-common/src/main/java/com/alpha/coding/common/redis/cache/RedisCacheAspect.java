@@ -10,7 +10,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import javax.validation.constraints.NotNull;
 
-import org.apache.commons.lang.StringUtils;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.beans.BeansException;
@@ -42,6 +41,7 @@ import com.alpha.coding.common.redis.cache.serializer.AutoJsonRedisSerializer;
 import com.alpha.coding.common.spring.spel.GlobalExpressionCache;
 import com.alpha.coding.common.utils.CompressUtils;
 import com.alpha.coding.common.utils.InvokeUtils;
+import com.alpha.coding.common.utils.StringUtils;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;

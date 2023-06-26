@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Set;
 
-import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.core.annotation.AnnotationAttributes;
 
 import com.alpha.coding.common.bean.spi.ConfigurationRegisterHandler;
@@ -27,7 +26,7 @@ public class AopDefinitionHandler implements ConfigurationRegisterHandler {
     public void registerBeanDefinitions(RegisterBeanDefinitionContext context) {
         Set<AnnotationAttributes> annotationAttributes = SpringAnnotationConfigUtils.attributesForRepeatable(
                 context.getImportingClassMetadata(), AopDefinitions.class, AopDefinition.class);
-        if (CollectionUtils.isEmpty(annotationAttributes)) {
+        if (annotationAttributes.isEmpty()) {
             return;
         }
         for (AnnotationAttributes attributes : annotationAttributes) {

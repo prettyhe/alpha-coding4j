@@ -3,9 +3,7 @@ package com.alpha.coding.common.rocketmq;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.rocketmq.client.producer.DefaultMQProducer;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
@@ -20,6 +18,8 @@ import com.alpha.coding.common.bean.register.EnvironmentChangeEvent;
 import com.alpha.coding.common.bean.register.EnvironmentChangeListener;
 import com.alpha.coding.common.bean.spi.ConfigurationRegisterHandler;
 import com.alpha.coding.common.bean.spi.RegisterBeanDefinitionContext;
+import com.alpha.coding.common.utils.CommUtils;
+import com.alpha.coding.common.utils.MD5Utils;
 import com.alpha.coding.common.utils.SpringAnnotationConfigUtils;
 import com.alpha.coding.common.utils.StringUtils;
 
@@ -40,24 +40,13 @@ public class EnableRocketMQAutoConfigHandler implements ConfigurationRegisterHan
         registerConsumer(context);
     }
 
-    @Override
-    public int getOrder() {
-        return 0;
-    }
-
-    @Override
-    public void onChange(EnvironmentChangeEvent event) {
-        final RegisterBeanDefinitionContext context = (RegisterBeanDefinitionContext) event.getSource();
-        registerBeanDefinitions(context);
-    }
-
     /**
      * 注册生产者
      */
     private void registerProducer(RegisterBeanDefinitionContext context) {
         Set<AnnotationAttributes> annotationAttributes = SpringAnnotationConfigUtils.attributesForRepeatable(
                 context.getImportingClassMetadata(), EnableRocketMQProducers.class, EnableRocketMQProducer.class);
-        if (CollectionUtils.isEmpty(annotationAttributes)) {
+        if (annotationAttributes.isEmpty()) {
             return;
         }
         final Environment env = context.getEnvironment();
@@ -75,19 +64,21 @@ public class EnableRocketMQAutoConfigHandler implements ConfigurationRegisterHan
             final String group = BeanDefineUtils.resolveValue(context, attributes.getString("group"), String.class);
             beanDefinitionBuilder.addPropertyValue("producerGroup", group);
             beanDefinitionBuilder.addPropertyValue("namesrvAddr", namesrvAddr);
-            beanDefinitionBuilder.addPropertyValue("instanceName", UUID.randomUUID().toString().replaceAll("-", ""));
+            beanDefinitionBuilder.addPropertyValue("instanceName",
+                    MD5Utils.md5(CommUtils.clientId(), namesrvAddr, group));
             if (env.containsProperty("rocketmq.producer.retryTimesWhenSendFailed")) {
                 beanDefinitionBuilder.addPropertyValue("retryTimesWhenSendFailed",
                         env.getProperty("rocketmq.producer.retryTimesWhenSendFailed", Integer.class));
             }
             beanDefinitionBuilder.setInitMethodName("start");
             beanDefinitionBuilder.setDestroyMethodName("shutdown");
-            BeanDefinitionRegistryUtils.overideBeanDefinition(registry,
-                    producerBeanName, beanDefinitionBuilder.getBeanDefinition());
-            if (registry.containsBeanDefinition(DefaultApplicationPostListener.BEAN_NAME)) {
-                context.getBeanFactory()
-                        .getBean(DefaultApplicationPostListener.BEAN_NAME, ApplicationPostListener.class)
-                        .registerPostCallback(() -> context.getBeanFactory().getBean(producerBeanName));
+            if (BeanDefinitionRegistryUtils.overideBeanDefinition(registry,
+                    producerBeanName, beanDefinitionBuilder.getBeanDefinition(), true)) {
+                if (registry.containsBeanDefinition(DefaultApplicationPostListener.BEAN_NAME)) {
+                    context.getBeanFactory()
+                            .getBean(DefaultApplicationPostListener.BEAN_NAME, ApplicationPostListener.class)
+                            .registerPostCallback(() -> context.getBeanFactory().getBean(producerBeanName));
+                }
             }
         }
     }
@@ -98,7 +89,7 @@ public class EnableRocketMQAutoConfigHandler implements ConfigurationRegisterHan
     private void registerConsumer(RegisterBeanDefinitionContext context) {
         Set<AnnotationAttributes> annotationAttributes = SpringAnnotationConfigUtils.attributesForRepeatable(
                 context.getImportingClassMetadata(), EnableRocketMQConsumers.class, EnableRocketMQConsumer.class);
-        if (CollectionUtils.isEmpty(annotationAttributes)) {
+        if (annotationAttributes.isEmpty()) {
             return;
         }
         final Environment env = context.getEnvironment();
@@ -152,14 +143,24 @@ public class EnableRocketMQAutoConfigHandler implements ConfigurationRegisterHan
             final String consumerBeanName = Optional.ofNullable(attributes.getString("consumerBeanName"))
                     .filter(StringUtils::isNotBlank)
                     .orElse(group + "#" + topic + "#" + tag + "#" + "rocketMQConsumer");
-            BeanDefinitionRegistryUtils.overideBeanDefinition(registry,
-                    consumerBeanName, beanDefinitionBuilder.getBeanDefinition());
-            if (registry.containsBeanDefinition(DefaultApplicationPostListener.BEAN_NAME)) {
+            if (BeanDefinitionRegistryUtils.overideBeanDefinition(registry,
+                    consumerBeanName, beanDefinitionBuilder.getBeanDefinition(), true)) {
                 context.getBeanFactory()
                         .getBean(DefaultApplicationPostListener.BEAN_NAME, ApplicationPostListener.class)
                         .registerPostCallback(() -> context.getBeanFactory().getBean(consumerBeanName));
             }
         }
+    }
+
+    @Override
+    public int getOrder() {
+        return 0;
+    }
+
+    @Override
+    public void onChange(EnvironmentChangeEvent event) {
+        final RegisterBeanDefinitionContext context = (RegisterBeanDefinitionContext) event.getSource();
+        registerBeanDefinitions(context);
     }
 
 }

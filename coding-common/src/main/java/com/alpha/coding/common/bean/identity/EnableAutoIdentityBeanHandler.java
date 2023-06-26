@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.FatalBeanException;
 import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.beans.factory.BeanDefinitionStoreException;
@@ -53,7 +52,7 @@ public class EnableAutoIdentityBeanHandler implements ConfigurationRegisterHandl
     public void registerBeanDefinitions(RegisterBeanDefinitionContext context) {
         Set<AnnotationAttributes> annotationAttributes = SpringAnnotationConfigUtils.attributesForRepeatable(
                 context.getImportingClassMetadata(), EnableAutoIdentityBeans.class, EnableAutoIdentityBean.class);
-        if (CollectionUtils.isEmpty(annotationAttributes)) {
+        if (annotationAttributes.isEmpty()) {
             return;
         }
         for (AnnotationAttributes attribute : annotationAttributes) {

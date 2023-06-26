@@ -10,12 +10,18 @@ import java.util.UUID;
  */
 public class CommUtils {
 
+    private static final String CLIENT_ID = uuidUpperCase();
+
     public static String uuid() {
         return UUID.randomUUID().toString().replaceAll("-", "").toLowerCase();
     }
 
     public static String uuidUpperCase() {
         return UUID.randomUUID().toString().replaceAll("-", "").toUpperCase();
+    }
+
+    public static String clientId() {
+        return CLIENT_ID;
     }
 
 }

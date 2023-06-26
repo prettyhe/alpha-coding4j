@@ -30,17 +30,17 @@ public class DataSourceRegisterUtils {
     public static void register(RegisterBeanDefinitionContext context, CreateDataSourceEnv createDataSourceEnv) {
         final DataSourceConnectionPoolType connectionPoolType = createDataSourceEnv.getConnectionPoolType();
         if (connectionPoolType == null || connectionPoolType == DataSourceConnectionPoolType.Auto) {
-            if (ClassUtils.isPresent("com.alibaba.druid.pool.DruidDataSource",
+            if (ClassUtils.isPresent(DataSourceConnectionPoolType.Druid.getDataSourceClass(),
                     ClassUtils.getDefaultClassLoader())) {
                 registerDruid(context, createDataSourceEnv);
-            } else if (ClassUtils.isPresent("com.mchange.v2.c3p0.ComboPooledDataSource",
+            } else if (ClassUtils.isPresent(DataSourceConnectionPoolType.C3P0.getDataSourceClass(),
                     ClassUtils.getDefaultClassLoader())) {
                 registerC3P0(context, createDataSourceEnv);
-            } else if (ClassUtils.isPresent("com.zaxxer.hikari.HikariDataSource",
+            } else if (ClassUtils.isPresent(DataSourceConnectionPoolType.HikariCP.getDataSourceClass(),
                     ClassUtils.getDefaultClassLoader())) {
                 registerHikariCP(context, createDataSourceEnv);
             } else {
-                throw new IllegalArgumentException("No DataSource library found!");
+                throw new IllegalArgumentException("None supported DataSource class!");
             }
         } else if (DataSourceConnectionPoolType.Druid == connectionPoolType) {
             registerDruid(context, createDataSourceEnv);
@@ -61,7 +61,7 @@ public class DataSourceRegisterUtils {
         final Environment env = context.getEnvironment();
         // 注册 读 DruidDataSource，beanName="#prefix + 'ReadDataSource'"
         BeanDefinitionBuilder readDefinitionBuilder =
-                BeanDefinitionBuilder.genericBeanDefinition("com.alibaba.druid.pool.DruidDataSource");
+                BeanDefinitionBuilder.genericBeanDefinition(DataSourceConnectionPoolType.Druid.getDataSourceClass());
         completeDruidDataSourceBeanDefinition(readDefinitionBuilder, env, createDataSourceEnv, "read");
         readDefinitionBuilder.addPropertyValue("url", BeanDefineUtils.fetchProperty(env,
                 Arrays.asList(prefix + "." + "read.jdbc.url", prefix + ".jdbc.url", "read.jdbc.url"),
@@ -72,12 +72,13 @@ public class DataSourceRegisterUtils {
         readDefinitionBuilder.addPropertyValue("password", BeanDefineUtils.fetchProperty(env, Arrays.asList(
                 prefix + "." + "read.jdbc.password", prefix + ".jdbc.password", "read.jdbc.password"),
                 StringUtils::isNotBlank, String.class, null));
-        BeanDefinitionRegistryUtils.overideBeanDefinition(context.getRegistry(),
-                prefix + "ReadDataSource", readDefinitionBuilder.getBeanDefinition());
-        log.info("register DruidDataSource: {}", prefix + "ReadDataSource");
+        if (BeanDefinitionRegistryUtils.overideBeanDefinition(context.getRegistry(),
+                prefix + "ReadDataSource", readDefinitionBuilder.getBeanDefinition(), true)) {
+            log.info("register DruidDataSource: {}", prefix + "ReadDataSource");
+        }
         // 注册 写 DruidDataSource，beanName="#prefix + 'WriteDataSource'"
         BeanDefinitionBuilder writeDefinitionBuilder =
-                BeanDefinitionBuilder.genericBeanDefinition("com.alibaba.druid.pool.DruidDataSource");
+                BeanDefinitionBuilder.genericBeanDefinition(DataSourceConnectionPoolType.Druid.getDataSourceClass());
         completeDruidDataSourceBeanDefinition(writeDefinitionBuilder, env, createDataSourceEnv, "write");
         writeDefinitionBuilder.addPropertyValue("url", BeanDefineUtils.fetchProperty(env,
                 Arrays.asList(prefix + "." + "write.jdbc.url", prefix + ".jdbc.url", "write.jdbc.url"),
@@ -88,9 +89,10 @@ public class DataSourceRegisterUtils {
         writeDefinitionBuilder.addPropertyValue("password", BeanDefineUtils.fetchProperty(env, Arrays.asList(
                 prefix + "." + "write.jdbc.password", prefix + ".jdbc.password", "write.jdbc.password"),
                 StringUtils::isNotBlank, String.class, null));
-        BeanDefinitionRegistryUtils.overideBeanDefinition(context.getRegistry(),
-                prefix + "WriteDataSource", writeDefinitionBuilder.getBeanDefinition());
-        log.info("register DruidDataSource: {}", prefix + "WriteDataSource");
+        if (BeanDefinitionRegistryUtils.overideBeanDefinition(context.getRegistry(),
+                prefix + "WriteDataSource", writeDefinitionBuilder.getBeanDefinition(), true)) {
+            log.info("register DruidDataSource: {}", prefix + "WriteDataSource");
+        }
     }
 
     /**
@@ -185,7 +187,7 @@ public class DataSourceRegisterUtils {
         final Environment env = context.getEnvironment();
         // 注册 读 DruidDataSource，beanName="#prefix + 'ReadDataSource'"
         BeanDefinitionBuilder readDefinitionBuilder =
-                BeanDefinitionBuilder.genericBeanDefinition("com.mchange.v2.c3p0.ComboPooledDataSource");
+                BeanDefinitionBuilder.genericBeanDefinition(DataSourceConnectionPoolType.C3P0.getDataSourceClass());
         completeC3P0DataSourceBeanDefinition(readDefinitionBuilder, env, createDataSourceEnv, "read");
         readDefinitionBuilder.addPropertyValue("jdbcUrl", BeanDefineUtils.fetchProperty(env,
                 Arrays.asList(prefix + "." + "read.jdbc.url", prefix + ".jdbc.url", "read.jdbc.url"),
@@ -196,12 +198,13 @@ public class DataSourceRegisterUtils {
         readDefinitionBuilder.addPropertyValue("password", BeanDefineUtils.fetchProperty(env, Arrays.asList(
                 prefix + "." + "read.jdbc.password", prefix + ".jdbc.password", "read.jdbc.password"),
                 StringUtils::isNotBlank, String.class, null));
-        BeanDefinitionRegistryUtils.overideBeanDefinition(context.getRegistry(),
-                prefix + "ReadDataSource", readDefinitionBuilder.getBeanDefinition());
-        log.info("register c3p0.ComboPooledDataSource: {}", prefix + "ReadDataSource");
+        if (BeanDefinitionRegistryUtils.overideBeanDefinition(context.getRegistry(),
+                prefix + "ReadDataSource", readDefinitionBuilder.getBeanDefinition(), true)) {
+            log.info("register c3p0.ComboPooledDataSource: {}", prefix + "ReadDataSource");
+        }
         // 注册 写 DruidDataSource，beanName="#prefix + 'WriteDataSource'"
         BeanDefinitionBuilder writeDefinitionBuilder =
-                BeanDefinitionBuilder.genericBeanDefinition("com.mchange.v2.c3p0.ComboPooledDataSource");
+                BeanDefinitionBuilder.genericBeanDefinition(DataSourceConnectionPoolType.C3P0.getDataSourceClass());
         completeC3P0DataSourceBeanDefinition(writeDefinitionBuilder, env, createDataSourceEnv, "write");
         writeDefinitionBuilder.addPropertyValue("jdbcUrl", BeanDefineUtils.fetchProperty(env,
                 Arrays.asList(prefix + "." + "write.jdbc.url", prefix + ".jdbc.url", "write.jdbc.url"),
@@ -212,9 +215,10 @@ public class DataSourceRegisterUtils {
         writeDefinitionBuilder.addPropertyValue("password", BeanDefineUtils.fetchProperty(env, Arrays.asList(
                 prefix + "." + "write.jdbc.password", prefix + ".jdbc.password", "write.jdbc.password"),
                 StringUtils::isNotBlank, String.class, null));
-        BeanDefinitionRegistryUtils.overideBeanDefinition(context.getRegistry(),
-                prefix + "WriteDataSource", writeDefinitionBuilder.getBeanDefinition());
-        log.info("register c3p0.ComboPooledDataSource: {}", prefix + "WriteDataSource");
+        if (BeanDefinitionRegistryUtils.overideBeanDefinition(context.getRegistry(),
+                prefix + "WriteDataSource", writeDefinitionBuilder.getBeanDefinition(), true)) {
+            log.info("register c3p0.ComboPooledDataSource: {}", prefix + "WriteDataSource");
+        }
     }
 
     /**
@@ -324,14 +328,15 @@ public class DataSourceRegisterUtils {
                 prefix + "." + "read.jdbc.password", prefix + ".jdbc.password", "read.jdbc.password"),
                 StringUtils::isNotBlank, String.class, null));
         BeanDefinitionRegistryUtils.overideBeanDefinition(context.getRegistry(),
-                prefix + "ReadDataSourceConfig", readConfigDefinitionBuilder.getBeanDefinition());
+                prefix + "ReadDataSourceConfig", readConfigDefinitionBuilder.getBeanDefinition(), true);
         // read DataSource bean
         BeanDefinitionBuilder readDefinitionBuilder =
-                BeanDefinitionBuilder.genericBeanDefinition("com.zaxxer.hikari.HikariDataSource");
+                BeanDefinitionBuilder.genericBeanDefinition(DataSourceConnectionPoolType.HikariCP.getDataSourceClass());
         readDefinitionBuilder.addConstructorArgReference(prefix + "ReadDataSourceConfig");
-        BeanDefinitionRegistryUtils.overideBeanDefinition(context.getRegistry(),
-                prefix + "ReadDataSource", readDefinitionBuilder.getBeanDefinition());
-        log.info("register HikariDataSource: {}", prefix + "ReadDataSource");
+        if (BeanDefinitionRegistryUtils.overideBeanDefinition(context.getRegistry(),
+                prefix + "ReadDataSource", readDefinitionBuilder.getBeanDefinition(), true)) {
+            log.info("register HikariDataSource: {}", prefix + "ReadDataSource");
+        }
         // 注册 写 DruidDataSource，beanName="#prefix + 'WriteDataSource'"
         // write bean 配置
         BeanDefinitionBuilder writeConfigDefinitionBuilder =
@@ -347,14 +352,15 @@ public class DataSourceRegisterUtils {
                 prefix + "." + "write.jdbc.password", prefix + ".jdbc.password", "write.jdbc.password"),
                 StringUtils::isNotBlank, String.class, null));
         BeanDefinitionRegistryUtils.overideBeanDefinition(context.getRegistry(),
-                prefix + "WriteDataSourceConfig", writeConfigDefinitionBuilder.getBeanDefinition());
+                prefix + "WriteDataSourceConfig", writeConfigDefinitionBuilder.getBeanDefinition(), true);
         // write DataSource bean
         BeanDefinitionBuilder writeDefinitionBuilder =
-                BeanDefinitionBuilder.genericBeanDefinition("com.zaxxer.hikari.HikariDataSource");
+                BeanDefinitionBuilder.genericBeanDefinition(DataSourceConnectionPoolType.HikariCP.getDataSourceClass());
         writeDefinitionBuilder.addConstructorArgReference(prefix + "WriteDataSourceConfig");
-        BeanDefinitionRegistryUtils.overideBeanDefinition(context.getRegistry(),
-                prefix + "WriteDataSource", writeDefinitionBuilder.getBeanDefinition());
-        log.info("register HikariDataSource: {}", prefix + "WriteDataSource");
+        if (BeanDefinitionRegistryUtils.overideBeanDefinition(context.getRegistry(),
+                prefix + "WriteDataSource", writeDefinitionBuilder.getBeanDefinition(), true)) {
+            log.info("register HikariDataSource: {}", prefix + "WriteDataSource");
+        }
     }
 
     /**

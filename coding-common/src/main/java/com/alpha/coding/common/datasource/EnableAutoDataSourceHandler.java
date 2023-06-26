@@ -1,8 +1,8 @@
 package com.alpha.coding.common.datasource;
 
+import java.util.Arrays;
 import java.util.Set;
 
-import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.core.annotation.AnnotationAttributes;
 import org.springframework.util.ClassUtils;
 
@@ -12,6 +12,7 @@ import com.alpha.coding.common.bean.register.EnvironmentChangeListener;
 import com.alpha.coding.common.bean.spi.ConfigurationRegisterHandler;
 import com.alpha.coding.common.bean.spi.RegisterBeanDefinitionContext;
 import com.alpha.coding.common.utils.SpringAnnotationConfigUtils;
+import com.alpha.coding.common.utils.StringUtils;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -26,14 +27,16 @@ public class EnableAutoDataSourceHandler implements ConfigurationRegisterHandler
 
     @Override
     public void registerBeanDefinitions(RegisterBeanDefinitionContext context) {
-        if (!ClassUtils.isPresent("com.alibaba.druid.pool.DruidDataSource",
-                Thread.currentThread().getContextClassLoader())) {
-            log.warn("DruidDataSource is not present in classpath");
+        if (Arrays.stream(DataSourceConnectionPoolType.values())
+                .allMatch(p -> StringUtils.isBlank(p.getDataSourceClass())
+                        || !ClassUtils.isPresent(p.getDataSourceClass(),
+                        Thread.currentThread().getContextClassLoader()))) {
+            log.warn("None supported DataSource class is present in classpath, consider Druid/C3P0/HikariCP");
             return;
         }
         Set<AnnotationAttributes> annotationAttributes = SpringAnnotationConfigUtils.attributesForRepeatable(
                 context.getImportingClassMetadata(), EnableAutoDataSources.class, EnableAutoDataSource.class);
-        if (CollectionUtils.isEmpty(annotationAttributes)) {
+        if (annotationAttributes.isEmpty()) {
             return;
         }
         for (AnnotationAttributes attributes : annotationAttributes) {

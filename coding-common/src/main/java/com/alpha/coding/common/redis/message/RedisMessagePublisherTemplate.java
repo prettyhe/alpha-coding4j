@@ -1,13 +1,10 @@
 package com.alpha.coding.common.redis.message;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
-import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.dao.DataAccessException;
-import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.RedisSerializer;
@@ -44,21 +41,21 @@ public abstract class RedisMessagePublisherTemplate implements RedisMessagePubli
         if (!initialized) {
             parseConfig();
         }
-        if (CollectionUtils.isEmpty(topics)) {
+        if (topics == null || topics.isEmpty()) {
             return;
         }
-        final List<byte[]> rawTopics = topics.stream()
-                .map(p -> getRedisTemplate().getKeySerializer().serialize(p))
-                .collect(Collectors.toList());
-        byte[] rawValue = redisSerializer == null ? getRedisTemplate().getValueSerializer().serialize(message) :
-                redisSerializer.serialize(message);
-        rawTopics.forEach(t -> getRedisTemplate().execute(new RedisCallback() {
-            @Override
-            public Object doInRedis(RedisConnection redisConnection) throws DataAccessException {
-                redisConnection.publish(t, rawValue);
-                return null;
+        final List<byte[]> rawTopics = new ArrayList<>(topics.size());
+        for (String topic : topics) {
+            rawTopics.add(getRedisTemplate().getKeySerializer().serialize(topic));
+        }
+        final byte[] rawValue = redisSerializer == null ? getRedisTemplate().getValueSerializer()
+                .serialize(message) : redisSerializer.serialize(message);
+        getRedisTemplate().executePipelined((RedisCallback<Object>) redisConnection -> {
+            for (byte[] topic : rawTopics) {
+                redisConnection.publish(topic, rawValue);
             }
-        }));
+            return null;
+        });
     }
 
     private void parseConfig() {
@@ -67,12 +64,10 @@ public abstract class RedisMessagePublisherTemplate implements RedisMessagePubli
                 return;
             }
             final RedisMessage redisMessage = this.getClass().getAnnotation(RedisMessage.class);
-            if (redisMessage.topic() != null) {
-                if (this.topics != null) {
-                    this.topics.addAll(Arrays.asList(redisMessage.topic()));
-                } else {
-                    this.topics = Arrays.asList(redisMessage.topic());
-                }
+            if (this.topics != null) {
+                this.topics.addAll(Arrays.asList(redisMessage.topic()));
+            } else {
+                this.topics = Arrays.asList(redisMessage.topic());
             }
             if (!redisMessage.redisSerializerSupplier().equals(NoneRedisSerializerProvider.class)) {
                 try {

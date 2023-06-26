@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.springframework.beans.FatalBeanException;
@@ -62,7 +61,7 @@ public class EnableAutoMyRestApiHandler implements ConfigurationRegisterHandler,
     public void registerBeanDefinitions(RegisterBeanDefinitionContext context) {
         Set<AnnotationAttributes> annotationAttributes = SpringAnnotationConfigUtils.attributesForRepeatable(
                 context.getImportingClassMetadata(), EnableAutoMyRestApis.class, EnableAutoMyRestApi.class);
-        if (CollectionUtils.isEmpty(annotationAttributes)) {
+        if (annotationAttributes.isEmpty()) {
             return;
         }
         final Environment environment = context.getEnvironment();
@@ -83,11 +82,12 @@ public class EnableAutoMyRestApiHandler implements ConfigurationRegisterHandler,
                                 "http.pool.conn.maxPerRoute"), Integer.class, 100));
                 managerDefinitionBuilder.addPropertyValue("type", PoolingHttpClientConnectionManager.class);
                 managerDefinitionBuilder.addPropertyValue("target", poolingConnectionManager);
-                BeanDefinitionRegistryUtils.overideBeanDefinition(registry,
+                if (BeanDefinitionRegistryUtils.overideBeanDefinition(registry,
                         prefix + "PoolingHttpClientConnectionManager",
-                        managerDefinitionBuilder.getBeanDefinition());
-                log.info("registerBeanDefinition {} for prefix {}",
-                        prefix + "PoolingHttpClientConnectionManager", prefix);
+                        managerDefinitionBuilder.getBeanDefinition(), true)) {
+                    log.info("registerBeanDefinition {} for prefix {}",
+                            prefix + "PoolingHttpClientConnectionManager", prefix);
+                }
                 // 注册 ClientHttpRequestFactory
                 final RequestConfig config = RequestConfig.custom()
                         .setConnectTimeout((Integer) BeanDefineUtils
@@ -108,11 +108,12 @@ public class EnableAutoMyRestApiHandler implements ConfigurationRegisterHandler,
                         BeanDefinitionBuilder.genericBeanDefinition(CustomFactoryBean.class);
                 clientHttpRequestFactoryDefinitionBuilder.addPropertyValue("type", ClientHttpRequestFactory.class);
                 clientHttpRequestFactoryDefinitionBuilder.addPropertyValue("target", clientHttpRequestFactory);
-                BeanDefinitionRegistryUtils.overideBeanDefinition(registry,
+                if (BeanDefinitionRegistryUtils.overideBeanDefinition(registry,
                         prefix + "ClientHttpRequestFactory",
-                        clientHttpRequestFactoryDefinitionBuilder.getBeanDefinition());
-                log.info("registerBeanDefinition {} for prefix {}",
-                        prefix + "ClientHttpRequestFactory", prefix);
+                        clientHttpRequestFactoryDefinitionBuilder.getBeanDefinition(), true)) {
+                    log.info("registerBeanDefinition {} for prefix {}",
+                            prefix + "ClientHttpRequestFactory", prefix);
+                }
                 // 注册 MyRestTemplate
                 MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter();
                 converter.setSupportedMediaTypes(Lists.newArrayList(MediaType.APPLICATION_JSON,
@@ -128,11 +129,12 @@ public class EnableAutoMyRestApiHandler implements ConfigurationRegisterHandler,
                         BeanDefinitionBuilder.genericBeanDefinition(CustomFactoryBean.class);
                 myRestTemplateDefinitionBuilder.addPropertyValue("type", MyRestTemplate.class);
                 myRestTemplateDefinitionBuilder.addPropertyValue("target", restTemplate);
-                BeanDefinitionRegistryUtils.overideBeanDefinition(registry,
+                if (BeanDefinitionRegistryUtils.overideBeanDefinition(registry,
                         prefix + "MyRestTemplate",
-                        myRestTemplateDefinitionBuilder.getBeanDefinition());
-                log.info("registerBeanDefinition {} for prefix {}",
-                        prefix + "MyRestTemplate", prefix);
+                        myRestTemplateDefinitionBuilder.getBeanDefinition(), true)) {
+                    log.info("registerBeanDefinition {} for prefix {}",
+                            prefix + "MyRestTemplate", prefix);
+                }
             }
             // 注册HttpAPIFactory
             final String httpAPIFactoryBeanName = attributes.getString("httpAPIFactoryBeanName");
@@ -191,9 +193,10 @@ public class EnableAutoMyRestApiHandler implements ConfigurationRegisterHandler,
             httpAPIFactoryDefinitionBuilder.addPropertyValue("apis", apis);
             httpAPIFactoryDefinitionBuilder.addPropertyValue("restTemplate",
                     context.getBeanFactory().getBean(restTemplateBeanName));
-            BeanDefinitionRegistryUtils.overideBeanDefinition(registry,
-                    httpAPIFactoryBeanName, httpAPIFactoryDefinitionBuilder.getBeanDefinition());
-            log.info("registerBeanDefinition {} for prefix {}", httpAPIFactoryBeanName, prefix);
+            if (BeanDefinitionRegistryUtils.overideBeanDefinition(registry,
+                    httpAPIFactoryBeanName, httpAPIFactoryDefinitionBuilder.getBeanDefinition(), true)) {
+                log.info("registerBeanDefinition {} for prefix {}", httpAPIFactoryBeanName, prefix);
+            }
         }
     }
 

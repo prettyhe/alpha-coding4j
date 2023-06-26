@@ -3,7 +3,6 @@ package com.alpha.coding.common.bean.define;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.core.annotation.AnnotationAttributes;
@@ -26,7 +25,7 @@ public class EnableAutoDefineBeanHandler implements ConfigurationRegisterHandler
     public void registerBeanDefinitions(RegisterBeanDefinitionContext context) {
         Set<AnnotationAttributes> annotationAttributes = SpringAnnotationConfigUtils.attributesForRepeatable(
                 context.getImportingClassMetadata(), EnableAutoDefineBeans.class, EnableAutoDefineBean.class);
-        if (CollectionUtils.isEmpty(annotationAttributes)) {
+        if (annotationAttributes.isEmpty()) {
             return;
         }
         for (AnnotationAttributes attribute : annotationAttributes) {

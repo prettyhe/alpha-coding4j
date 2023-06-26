@@ -9,9 +9,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.core.annotation.AnnotationAttributes;
 
 import com.alpha.coding.bo.base.Tuple;
@@ -41,12 +39,12 @@ public class EnableFileInjectRegisterHandler implements ConfigurationRegisterHan
 
     @Override
     public void registerBeanDefinitions(RegisterBeanDefinitionContext context) {
-        Set<AnnotationAttributes> enableExtFileInjects = SpringAnnotationConfigUtils.attributesForRepeatable(
+        Set<AnnotationAttributes> annotationAttributes = SpringAnnotationConfigUtils.attributesForRepeatable(
                 context.getImportingClassMetadata(), EnableFileInjects.class, EnableFileInject.class);
-        if (CollectionUtils.isEmpty(enableExtFileInjects)) {
+        if (annotationAttributes.isEmpty()) {
             return;
         }
-        for (AnnotationAttributes extFileInject : enableExtFileInjects) {
+        for (AnnotationAttributes extFileInject : annotationAttributes) {
             final String[] basePaths = extFileInject.getStringArray("basePath");
             PathFileScanner scanner = new PathFileScanner(basePaths);
             for (AnnotationAttributes filter : extFileInject.getAnnotationArray("includeFilters")) {
@@ -63,14 +61,9 @@ public class EnableFileInjectRegisterHandler implements ConfigurationRegisterHan
                 }
                 injectFilesToClasspath(files);
             } catch (IOException e) {
-                log.error("Scan file and inject fail for {}", StringUtils.join(basePaths, ","), e);
+                log.error("Scan file and inject fail for {}", String.join(",", basePaths), e);
             }
         }
-    }
-
-    @Override
-    public int getOrder() {
-        return 0;
     }
 
     private List<Tuple<ScanFilter, Object>> parseFilters(AnnotationAttributes filterAttributes) {
@@ -110,6 +103,11 @@ public class EnableFileInjectRegisterHandler implements ConfigurationRegisterHan
         } catch (IOException e) {
             return file.getAbsolutePath();
         }
+    }
+
+    @Override
+    public int getOrder() {
+        return 0;
     }
 
 }

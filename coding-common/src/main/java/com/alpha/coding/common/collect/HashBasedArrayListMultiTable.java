@@ -1,9 +1,8 @@
 package com.alpha.coding.common.collect;
 
-import org.apache.commons.collections4.map.HashedMap;
+import java.util.LinkedHashMap;
 
 import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Multimap;
 
 /**
  * HashBasedArrayListMultiTable
@@ -13,11 +12,13 @@ import com.google.common.collect.Multimap;
  */
 public class HashBasedArrayListMultiTable<R, C, V> extends HashBasedMultiTable<R, C, V> {
 
+    private static final long serialVersionUID = -4527209983018123630L;
+
     public HashBasedArrayListMultiTable() {
-        super(new HashedMap<R, Multimap<C, V>>(), () -> (Multimap<C, V>) ArrayListMultimap.create());
+        super(new LinkedHashMap<>(), ArrayListMultimap::create);
     }
 
     public static <R, C, V> HashBasedArrayListMultiTable<R, C, V> create() {
-        return new HashBasedArrayListMultiTable();
+        return new HashBasedArrayListMultiTable<>();
     }
 }

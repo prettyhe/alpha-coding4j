@@ -13,8 +13,6 @@ import java.util.Set;
 
 import javax.persistence.Column;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.BeanWrapper;
 import org.springframework.beans.NotWritablePropertyException;
@@ -31,18 +29,16 @@ import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.StringUtils;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * MyBeanPropertyRowMapper
  *
  * @version 1.0
  * Date: 2021/9/9
  */
+@Slf4j
 public class MyBeanPropertyRowMapper<T> implements RowMapper<T> {
-
-    /**
-     * Logger available to subclasses
-     */
-    protected final Log logger = LogFactory.getLog(getClass());
 
     /**
      * The class we are mapping to
@@ -192,8 +188,8 @@ public class MyBeanPropertyRowMapper<T> implements RowMapper<T> {
      */
     protected void initialize(Class<T> mappedClass) {
         this.mappedClass = mappedClass;
-        this.mappedFields = new HashMap<String, PropertyDescriptor>();
-        this.mappedProperties = new HashSet<String>();
+        this.mappedFields = new HashMap<>();
+        this.mappedProperties = new HashSet<>();
         PropertyDescriptor[] pds = BeanUtils.getPropertyDescriptors(mappedClass);
         for (PropertyDescriptor pd : pds) {
             if (pd.getWriteMethod() != null) {
@@ -223,7 +219,7 @@ public class MyBeanPropertyRowMapper<T> implements RowMapper<T> {
                     }
                 }
             } catch (Exception e) {
-                logger.error("", e);
+                log.error("", e);
             }
         }
     }
@@ -271,7 +267,7 @@ public class MyBeanPropertyRowMapper<T> implements RowMapper<T> {
      * Extract the values for all columns in the current row.
      * <p>Utilizes public setters and result set meta-data.
      *
-     * @see ResultSetMetaData
+     * @see java.sql.ResultSetMetaData
      */
     @Override
     public T mapRow(ResultSet rs, int rowNumber) throws SQLException {
@@ -291,20 +287,20 @@ public class MyBeanPropertyRowMapper<T> implements RowMapper<T> {
             if (pd != null) {
                 try {
                     Object value = getColumnValue(rs, index, pd);
-                    if (rowNumber == 0 && logger.isDebugEnabled()) {
-                        logger.debug("Mapping column '" + column + "' to property '" + pd.getName() +
+                    if (rowNumber == 0 && log.isDebugEnabled()) {
+                        log.debug("Mapping column '" + column + "' to property '" + pd.getName() +
                                 "' of type '" + ClassUtils.getQualifiedName(pd.getPropertyType()) + "'");
                     }
                     try {
                         bw.setPropertyValue(pd.getName(), value);
                     } catch (TypeMismatchException ex) {
                         if (value == null && this.primitivesDefaultedForNullValue) {
-                            if (logger.isDebugEnabled()) {
-                                logger.debug("Intercepted TypeMismatchException for row " + rowNumber +
-                                        " and column '" + column + "' with null value when setting property '" +
-                                        pd.getName() + "' of type '" +
-                                        ClassUtils.getQualifiedName(pd.getPropertyType()) +
-                                        "' on object: " + mappedObject, ex);
+                            if (log.isDebugEnabled()) {
+                                log.debug("Intercepted TypeMismatchException for row " + rowNumber
+                                        + " and column '" + column + "' with null value when setting property '"
+                                        + pd.getName() + "' of type '"
+                                        + ClassUtils.getQualifiedName(pd.getPropertyType())
+                                        + "' on object: " + mappedObject, ex);
                             }
                         } else {
                             throw ex;
@@ -319,8 +315,8 @@ public class MyBeanPropertyRowMapper<T> implements RowMapper<T> {
                 }
             } else {
                 // No PropertyDescriptor found
-                if (rowNumber == 0 && logger.isDebugEnabled()) {
-                    logger.debug("No property found for column '" + column + "' mapped to field '" + field + "'");
+                if (rowNumber == 0 && log.isDebugEnabled()) {
+                    log.debug("No property found for column '" + column + "' mapped to field '" + field + "'");
                 }
             }
         }
@@ -354,7 +350,7 @@ public class MyBeanPropertyRowMapper<T> implements RowMapper<T> {
     /**
      * Retrieve a JDBC object value for the specified column.
      * <p>The default implementation calls
-     * {@link JdbcUtils#getResultSetValue(ResultSet, int, Class)}.
+     * {@link JdbcUtils#getResultSetValue(java.sql.ResultSet, int, Class)}.
      * Subclasses may override this to check specific value types upfront,
      * or to post-process values return from {@code getResultSetValue}.
      *
@@ -363,7 +359,7 @@ public class MyBeanPropertyRowMapper<T> implements RowMapper<T> {
      * @param pd    the bean property that each result object is expected to match
      * @return the Object value
      * @throws SQLException in case of extraction failure
-     * @see JdbcUtils#getResultSetValue(ResultSet, int, Class)
+     * @see org.springframework.jdbc.support.JdbcUtils#getResultSetValue(java.sql.ResultSet, int, Class)
      */
     protected Object getColumnValue(ResultSet rs, int index, PropertyDescriptor pd) throws SQLException {
         return JdbcUtils.getResultSetValue(rs, index, pd.getPropertyType());
@@ -376,7 +372,7 @@ public class MyBeanPropertyRowMapper<T> implements RowMapper<T> {
      * @param mappedClass the class that each row should be mapped to
      */
     public static <T> BeanPropertyRowMapper<T> newInstance(Class<T> mappedClass) {
-        return new BeanPropertyRowMapper<T>(mappedClass);
+        return new BeanPropertyRowMapper<>(mappedClass);
     }
 
 }

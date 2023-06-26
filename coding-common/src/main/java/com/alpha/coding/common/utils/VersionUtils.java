@@ -1,11 +1,9 @@
 package com.alpha.coding.common.utils;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
-import org.apache.commons.lang.StringUtils;
-
-import com.google.common.collect.Lists;
+import java.util.function.Function;
 
 /**
  * VersionUtils
@@ -58,7 +56,7 @@ public class VersionUtils {
         for (int i = 0; i < sepMaxWidth; i++) {
             step *= 10;
         }
-        List<String> list = Lists.newArrayList();
+        List<String> list = new ArrayList<>();
         long remain = code;
         while (remain > 0) {
             list.add(String.valueOf(remain % step));
@@ -68,7 +66,37 @@ public class VersionUtils {
         if (sepCnt != null && list.size() > sepCnt) {
             list = list.subList(0, sepCnt);
         }
-        return StringUtils.join(list, ".");
+        return String.join(".", list);
+    }
+
+    /**
+     * 版本比较(x.y.z)
+     */
+    public static int compare(String v1, String v2) {
+        final String[] a1 = v1.split("\\.");
+        final String[] a2 = v2.split("\\.");
+        final int max = Math.max(a1.length, a2.length);
+        Function<String[], String[]> function = t -> {
+            if (t.length == max) {
+                return t;
+            } else {
+                final String[] ret = new String[max];
+                System.arraycopy(t, 0, ret, 0, t.length);
+                for (int i = t.length; i < max; i++) {
+                    ret[i] = "0";
+                }
+                return ret;
+            }
+        };
+        final String[] c1 = function.apply(a1);
+        final String[] c2 = function.apply(a2);
+        for (int i = 0; i < max; i++) {
+            final int compare = c1[i].compareTo(c2[i]);
+            if (compare != 0) {
+                return compare;
+            }
+        }
+        return 0;
     }
 
 }

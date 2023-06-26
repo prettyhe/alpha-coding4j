@@ -50,7 +50,7 @@ public class MathUtils {
         if (a == null || b == null) {
             return null;
         }
-        return toBigDecimal(a).add(NEGATIVE_ONE.multiply(toBigDecimal(b)));
+        return toBigDecimal(a).subtract(toBigDecimal(b));
     }
 
     public static BigDecimal toBigDecimal(Number number) {

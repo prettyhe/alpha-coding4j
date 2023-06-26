@@ -8,7 +8,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -109,7 +108,7 @@ public class MessagePublishCompensateTask implements AsyncWarmUpCallback, Dispos
                 final List<MessageMonitor> list =
                         messageMonitorDao.selectSinceNextSendTime(st, new Date(),
                                 MessageSendStatus.WAIT_SEND.getCode(), minId, 20);
-                if (CollectionUtils.isEmpty(list)) {
+                if (list == null || list.isEmpty()) {
                     break;
                 }
                 for (MessageMonitor messageMonitor : list) {

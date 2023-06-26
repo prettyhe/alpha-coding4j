@@ -3,7 +3,6 @@ package com.alpha.coding.common.event;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.core.annotation.AnnotationAttributes;
@@ -28,7 +27,7 @@ public class EnableAutoConfigEventBusHandler implements ConfigurationRegisterHan
     public void registerBeanDefinitions(RegisterBeanDefinitionContext context) {
         Set<AnnotationAttributes> annotationAttributes = SpringAnnotationConfigUtils.attributesForRepeatable(
                 context.getImportingClassMetadata(), EnableAutoConfigEventBuss.class, EnableAutoConfigEventBus.class);
-        if (CollectionUtils.isEmpty(annotationAttributes)) {
+        if (annotationAttributes.isEmpty()) {
             return;
         }
         final BeanDefinitionRegistry registry = context.getRegistry();

@@ -7,11 +7,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.lang.StringUtils;
-
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -42,7 +39,6 @@ public class JacksonUtils {
      *
      * @param json  json字符串
      * @param clazz Object类型
-     *
      * @return 反序列化的结果
      */
     public static <T> T fromJson(String json, Class<T> clazz) {
@@ -58,26 +54,12 @@ public class JacksonUtils {
     }
 
     /**
-     * 反序列化为Object
-     *
-     * @param json          json字符串
-     * @param typeReference 类型
-     *
-     * @return 反序列化的结果
-     */
-    public static <T> T fromJson(String json, TypeReference<T> typeReference) throws JsonProcessingException {
-        return json == null ? null : objectMapper.readValue(json, typeReference);
-    }
-
-    /**
      * 反序列化为object
      *
      * @param json json字符串
      * @param c    Object类型
      * @param t    Object泛型类型
-     *
      * @return 反序列化的结果
-     *
      * @throws JacksonException
      */
     public static <T> T fromJson(String json, Class<T> c, Class<?>... t) throws JacksonException {
@@ -96,7 +78,6 @@ public class JacksonUtils {
      *
      * @param json  json字符串
      * @param clazz Object类型
-     *
      * @return 反序列化的结果
      */
     public static <T> T fromJsonWithException(String json, Class<T> clazz)
@@ -110,9 +91,7 @@ public class JacksonUtils {
      * @param json json字符串
      * @param c    Object类型
      * @param t    Object泛型类型
-     *
      * @return 反序列化的结果
-     *
      * @throws JsonParseException,JsonMappingException,IOException
      */
     public static <T> T fromJsonWithException(String json, Class<T> c, Class<?>... t)
@@ -126,7 +105,6 @@ public class JacksonUtils {
      *
      * @param json json字符串
      * @param t    List泛型类型
-     *
      * @return 反序列化的list
      */
     public static <T> List<T> fromJsonList(String json, Class<T> t) {

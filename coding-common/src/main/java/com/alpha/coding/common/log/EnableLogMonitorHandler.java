@@ -5,7 +5,6 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.core.annotation.AnnotationAttributes;
 
@@ -33,7 +32,7 @@ public class EnableLogMonitorHandler implements ConfigurationRegisterHandler {
     public void registerBeanDefinitions(RegisterBeanDefinitionContext context) {
         Set<AnnotationAttributes> annotationAttributes = SpringAnnotationConfigUtils.attributesForRepeatable(
                 context.getImportingClassMetadata(), EnableLogMonitors.class, EnableLogMonitor.class);
-        if (CollectionUtils.isEmpty(annotationAttributes)) {
+        if (annotationAttributes.isEmpty()) {
             return;
         }
         for (AnnotationAttributes attributes : annotationAttributes) {
@@ -56,7 +55,7 @@ public class EnableLogMonitorHandler implements ConfigurationRegisterHandler {
                     logConfig.getBoolean("useItsLog"));
             beanDefinitionBuilder.addPropertyValue("excludeInfoKeys",
                     Arrays.stream(logConfig.getStringArray("excludeInfoKeys"))
-                            .reduce((x, y) -> x + "," + y).get());
+                            .reduce((x, y) -> x + "," + y).orElse(""));
             beanDefinitionBuilder.addPropertyValue("extraMsgSupplier",
                     ExtraMsgSupplierCache.getDefault(logConfig.getClass("extraMsgSupplier")));
             final AnnotationAttributes logDataPath = logConfig.getAnnotation("logDataPath");

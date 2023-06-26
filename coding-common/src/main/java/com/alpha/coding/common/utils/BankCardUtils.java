@@ -10,8 +10,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang.StringUtils;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
@@ -125,8 +123,9 @@ public class BankCardUtils {
                         bankMap.clear();
                         for (BankInfoItem item : bankInfoItems) {
                             bankMap.put(item.getBankCode(), item);
-                            if (CollectionUtils.isNotEmpty(item.getPatterns())) {
-                                for (CardPattern pattern : item.getPatterns()) {
+                            final List<CardPattern> patterns = item.getPatterns();
+                            if (patterns != null && !patterns.isEmpty()) {
+                                for (CardPattern pattern : patterns) {
                                     final String regexp = pattern.getRegexp();
                                     if (StringUtils.isBlank(regexp)) {
                                         continue;
@@ -203,10 +202,11 @@ public class BankCardUtils {
         int myCheckCode = sum % 10 == 0 ? 0 : 10 - (sum % 10);
         result.setValidate(checkCode == myCheckCode);
         for (BankInfoItem item : bankInfoItems) {
-            if (CollectionUtils.isEmpty(item.getPatterns())) {
+            final List<CardPattern> patterns = item.getPatterns();
+            if (patterns == null || patterns.isEmpty()) {
                 continue;
             }
-            for (CardPattern pattern : item.getPatterns()) {
+            for (CardPattern pattern : patterns) {
                 if (StringUtils.isBlank(pattern.getRegexp())) {
                     continue;
                 }

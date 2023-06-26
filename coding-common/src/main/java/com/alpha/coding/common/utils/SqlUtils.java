@@ -14,8 +14,6 @@ import javax.persistence.Column;
 import javax.persistence.Id;
 import javax.persistence.Table;
 
-import org.apache.commons.lang.StringUtils;
-
 import com.alpha.coding.bo.base.Tuple;
 
 /**

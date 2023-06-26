@@ -33,8 +33,8 @@ public class IpUtils {
 
     public static long ipV4ToLong(String ip) {
         String[] octets = ip.split("\\.");
-        return (Long.parseLong(octets[0]) << 24) + (Integer.parseInt(octets[1]) << 16)
-                + (Integer.parseInt(octets[2]) << 8) + Integer.parseInt(octets[3]);
+        return (Long.parseLong(octets[0]) << 24) + (Long.parseLong(octets[1]) << 16)
+                + (Long.parseLong(octets[2]) << 8) + Integer.parseInt(octets[3]);
     }
 
     public static boolean isIPv4Private(String ip) {
@@ -139,10 +139,10 @@ public class IpUtils {
         if (isInValidIp(ip)) {
             ip = request.getRemoteAddr();
         }
-        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
+        if (isInValidIp(ip)) {
             ip = request.getHeader("HTTP_CLIENT_IP");
         }
-        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
+        if (isInValidIp(ip)) {
             ip = request.getHeader("HTTP_X_FORWARDED_FOR");
         }
         // 如果是多级代理，那么取第一个ip为客户ip

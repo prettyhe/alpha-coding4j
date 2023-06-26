@@ -9,8 +9,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * ReflectionUtils
@@ -18,14 +17,13 @@ import org.apache.commons.logging.LogFactory;
  * @version 1.0
  * Date: 2020-02-21
  */
+@Slf4j
 public class ReflectionUtils {
-    private static Log logger = LogFactory.getLog(ReflectionUtils.class);
 
     /**
      * 获得泛型类型
      *
      * @param clazz class类型
-     *
      * @return 返回首个泛型类型
      */
     public static Class getSuperClassGenericType(final Class clazz) {
@@ -37,26 +35,25 @@ public class ReflectionUtils {
      *
      * @param clazz class类型
      * @param index 泛型参数位置
-     *
      * @return 返回指定位置的泛型类型
      */
     public static Class getSuperClassGenericType(final Class clazz, final int index) {
         Type genType = clazz.getGenericSuperclass();
 
         if (!(genType instanceof ParameterizedType)) {
-            logger.warn(clazz.getSimpleName() + "'s superclass not ParameterizedType");
+            log.warn(clazz.getSimpleName() + "'s superclass not ParameterizedType");
             return Object.class;
         }
 
         Type[] params = ((ParameterizedType) genType).getActualTypeArguments();
 
         if (index >= params.length || index < 0) {
-            logger.warn("Index: " + index + ", Size of " + clazz.getSimpleName() + "'s Parameterized Type: "
+            log.warn("Index: " + index + ", Size of " + clazz.getSimpleName() + "'s Parameterized Type: "
                     + params.length);
             return Object.class;
         }
         if (!(params[index] instanceof Class)) {
-            logger.warn(clazz.getSimpleName() + " not set the actual class on superclass generic parameter");
+            log.warn(clazz.getSimpleName() + " not set the actual class on superclass generic parameter");
             return Object.class;
         }
 
@@ -68,7 +65,6 @@ public class ReflectionUtils {
      *
      * @param c            class
      * @param propertyName 属性名
-     *
      * @return get Method
      */
     public static Method getGetterMethod(Class c, String propertyName) {
@@ -84,7 +80,6 @@ public class ReflectionUtils {
      * 首字母变大写
      *
      * @param string
-     *
      * @return result
      */
     private static String initStr(String string) {
@@ -111,7 +106,6 @@ public class ReflectionUtils {
      * SecurityManager (if active).
      *
      * @param field the field to make accessible
-     *
      * @see java.lang.reflect.Field#setAccessible
      */
     public static void makeAccessible(Field field) {
@@ -129,7 +123,6 @@ public class ReflectionUtils {
      * SecurityManager (if active).
      *
      * @param method the method to make accessible
-     *
      * @see java.lang.reflect.Method#setAccessible
      */
     public static void makeAccessible(Method method) {

@@ -19,12 +19,6 @@ import com.alpha.coding.common.message.task.MessagePublishCompensateTask;
 public class EnableMessageMonitorSendHandler implements ConfigurationRegisterHandler, EnvironmentChangeListener {
 
     @Override
-    public void onChange(EnvironmentChangeEvent event) {
-        final RegisterBeanDefinitionContext context = (RegisterBeanDefinitionContext) event.getSource();
-        registerBeanDefinitions(context);
-    }
-
-    @Override
     public void registerBeanDefinitions(RegisterBeanDefinitionContext context) {
         AnnotationAttributes attributes = AnnotationAttributes
                 .fromMap(context.getImportingClassMetadata()
@@ -44,19 +38,25 @@ public class EnableMessageMonitorSendHandler implements ConfigurationRegisterHan
         dependencyDefinitionBuilder.addPropertyReference("messagePublishAdaptor",
                 attributes.getString("messagePublishAdaptor"));
         BeanDefinitionRegistryUtils.overideBeanDefinition(context.getRegistry(),
-                "messageDependencyHolder", dependencyDefinitionBuilder.getBeanDefinition());
+                "messageDependencyHolder", dependencyDefinitionBuilder.getBeanDefinition(), true);
         if (attributes.getBoolean("enableCompensateTask")) {
             BeanDefinitionBuilder compensateTaskBeanDefinitionBuilder =
                     BeanDefinitionBuilder.genericBeanDefinition(MessagePublishCompensateTask.class);
             compensateTaskBeanDefinitionBuilder.addPropertyValue("synchronizedExecTask",
                     attributes.getBoolean("synchronizedCompensateTask"));
             BeanDefinitionRegistryUtils.overideBeanDefinition(context.getRegistry(),
-                    "messagePublishCompensateTask", compensateTaskBeanDefinitionBuilder.getBeanDefinition());
+                    "messagePublishCompensateTask", compensateTaskBeanDefinitionBuilder.getBeanDefinition(), true);
         }
     }
 
     @Override
     public int getOrder() {
         return 0;
+    }
+
+    @Override
+    public void onChange(EnvironmentChangeEvent event) {
+        final RegisterBeanDefinitionContext context = (RegisterBeanDefinitionContext) event.getSource();
+        registerBeanDefinitions(context);
     }
 }

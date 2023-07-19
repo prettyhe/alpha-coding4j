@@ -3,9 +3,11 @@ package com.alpha.coding.common.bean.register;
 import java.util.Objects;
 
 import org.springframework.beans.factory.BeanDefinitionStoreException;
+import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 
 /**
  * BeanDefinitionRegistryUtils
@@ -60,11 +62,73 @@ public class BeanDefinitionRegistryUtils {
      */
     public static boolean hasSameBeanDefinitionByProperties(BeanDefinitionRegistry beanDefinitionRegistry,
                                                             String beanName, BeanDefinition beanDefinition) {
-        if (!beanDefinitionRegistry.containsBeanDefinition(beanName)) {
+        if (!containsBeanDefinition(beanDefinitionRegistry, beanName)) {
             return false;
         }
-        return Objects.equals(beanDefinitionRegistry.getBeanDefinition(beanName).getPropertyValues(),
-                beanDefinition.getPropertyValues());
+        final BeanDefinition oldBeanDefinition = getBeanDefinition(beanDefinitionRegistry, beanName);
+        return oldBeanDefinition != null
+                && Objects.equals(oldBeanDefinition.getPropertyValues(), beanDefinition.getPropertyValues());
+    }
+
+    /**
+     * 检测是否包含指定beanName的BeanDefinition
+     */
+    public static boolean containsBeanDefinition(BeanDefinitionRegistry beanDefinitionRegistry, String beanName) {
+        if (beanDefinitionRegistry.containsBeanDefinition(beanName)) {
+            return true;
+        }
+        return getBeanDefinition(beanDefinitionRegistry, beanName) != null;
+    }
+
+    /**
+     * 获取指定beanName的BeanDefinition
+     */
+    public static BeanDefinition getBeanDefinition(BeanDefinitionRegistry beanDefinitionRegistry, String beanName) {
+        if (beanDefinitionRegistry.containsBeanDefinition(beanName)) {
+            return beanDefinitionRegistry.getBeanDefinition(beanName);
+        }
+        BeanDefinition beanDefinition = null;
+        if (beanDefinitionRegistry instanceof DefaultListableBeanFactory) {
+            final DefaultListableBeanFactory beanFactory = (DefaultListableBeanFactory) beanDefinitionRegistry;
+            if (beanFactory.containsBeanDefinition(beanName)) {
+                try {
+                    beanDefinition = beanFactory.getBeanDefinition(beanName);
+                } catch (NoSuchBeanDefinitionException e) {
+                    // nothing
+                }
+            }
+            if (beanDefinition != null) {
+                return beanDefinition;
+            }
+            final BeanFactory parentBeanFactory = beanFactory.getParentBeanFactory();
+            if (parentBeanFactory instanceof BeanDefinitionRegistry) {
+                beanDefinition = getBeanDefinition(((BeanDefinitionRegistry) parentBeanFactory), beanName);
+            }
+        }
+        return beanDefinition;
+    }
+
+    /**
+     * 移除指定beanName的BeanDefinition
+     */
+    public static void removeBeanDefinitionRecursive(BeanDefinitionRegistry beanDefinitionRegistry, String beanName) {
+        if (beanDefinitionRegistry.containsBeanDefinition(beanName)) {
+            beanDefinitionRegistry.removeBeanDefinition(beanName);
+        }
+        if (beanDefinitionRegistry instanceof DefaultListableBeanFactory) {
+            final DefaultListableBeanFactory beanFactory = (DefaultListableBeanFactory) beanDefinitionRegistry;
+            if (beanFactory.containsBeanDefinition(beanName)) {
+                try {
+                    beanFactory.removeBeanDefinition(beanName);
+                } catch (NoSuchBeanDefinitionException e) {
+                    // nothing
+                }
+            }
+            final BeanFactory parentBeanFactory = beanFactory.getParentBeanFactory();
+            if (parentBeanFactory instanceof BeanDefinitionRegistry) {
+                removeBeanDefinitionRecursive(((BeanDefinitionRegistry) parentBeanFactory), beanName);
+            }
+        }
     }
 
 }

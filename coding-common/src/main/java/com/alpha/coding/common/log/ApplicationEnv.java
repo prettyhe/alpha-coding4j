@@ -20,7 +20,9 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.util.ClassUtils;
 
+import com.alibaba.dubbo.common.URL;
 import com.alibaba.dubbo.config.ProtocolConfig;
+import com.alibaba.dubbo.config.ServiceConfig;
 import com.alpha.coding.common.bean.comm.ApplicationContextHolder;
 import com.alpha.coding.common.utils.NetUtils;
 
@@ -83,9 +85,9 @@ public class ApplicationEnv implements InitializingBean, ApplicationListener<Con
 
     private static String getLocalDubboPort(ApplicationContext applicationContext) {
         try {
+            Integer port = null;
             if (ClassUtils.isPresent("com.alibaba.dubbo.config.ProtocolConfig", null)) {
                 final Map<String, ProtocolConfig> beans = applicationContext.getBeansOfType(ProtocolConfig.class);
-                Integer port = null;
                 if (beans != null && !beans.isEmpty()) {
                     for (Map.Entry<String, ProtocolConfig> entry : beans.entrySet()) {
                         if (entry.getValue().getPort() != null) {
@@ -94,18 +96,35 @@ public class ApplicationEnv implements InitializingBean, ApplicationListener<Con
                         }
                     }
                 }
-                if (port != null) {
-                    return String.valueOf(port);
+            }
+            if (port != null && port > 0) {
+                return String.valueOf(port);
+            }
+            if (ClassUtils.isPresent("com.alibaba.dubbo.config.ServiceConfig", null)) {
+                final Map<String, ServiceConfig> beans = applicationContext.getBeansOfType(ServiceConfig.class);
+                if (beans != null && !beans.isEmpty()) {
+                    for (Map.Entry<String, ServiceConfig> entry : beans.entrySet()) {
+                        final List<URL> exportedUrls = entry.getValue().getExportedUrls();
+                        if (exportedUrls == null) {
+                            continue;
+                        }
+                        for (URL exportedUrl : exportedUrls) {
+                            port = exportedUrl.getPort();
+                            if (port > 0) {
+                                return String.valueOf(port);
+                            }
+                        }
+                    }
                 }
             }
         } catch (Throwable ex) {
             log.warn("find Alibaba Dubbo Port fail, {}", ex.getMessage());
         }
         try {
+            Integer port = null;
             if (ClassUtils.isPresent("org.apache.dubbo.config.ProtocolConfig", null)) {
                 final Map<String, org.apache.dubbo.config.ProtocolConfig> beans =
                         applicationContext.getBeansOfType(org.apache.dubbo.config.ProtocolConfig.class);
-                Integer port = null;
                 if (beans != null && !beans.isEmpty()) {
                     for (Map.Entry<String, org.apache.dubbo.config.ProtocolConfig> entry : beans.entrySet()) {
                         if (entry.getValue().getPort() != null) {
@@ -114,8 +133,26 @@ public class ApplicationEnv implements InitializingBean, ApplicationListener<Con
                         }
                     }
                 }
-                if (port != null) {
-                    return String.valueOf(port);
+            }
+            if (port != null) {
+                return String.valueOf(port);
+            }
+            if (ClassUtils.isPresent("org.apache.dubbo.config.ServiceConfig", null)) {
+                final Map<String, org.apache.dubbo.config.ServiceConfig> beans =
+                        applicationContext.getBeansOfType(org.apache.dubbo.config.ServiceConfig.class);
+                if (beans != null && !beans.isEmpty()) {
+                    for (Map.Entry<String, org.apache.dubbo.config.ServiceConfig> entry : beans.entrySet()) {
+                        final List<org.apache.dubbo.common.URL> exportedUrls = entry.getValue().getExportedUrls();
+                        if (exportedUrls == null) {
+                            continue;
+                        }
+                        for (org.apache.dubbo.common.URL exportedUrl : exportedUrls) {
+                            port = exportedUrl.getPort();
+                            if (port > 0) {
+                                return String.valueOf(port);
+                            }
+                        }
+                    }
                 }
             }
         } catch (Throwable ex) {
@@ -157,6 +194,8 @@ public class ApplicationEnv implements InitializingBean, ApplicationListener<Con
         this.port = this.portSupplier.get();
         if (this.port != null && !Objects.equals(this.port, System.getProperty("port"))) {
             System.setProperty("port", this.port);
+            log.info("ApplicationEnv is system={},appName={},host={},port={},module={},pid={},extraMap={}",
+                    system, appName, host, port, module, pid, extraMap);
         }
     }
 

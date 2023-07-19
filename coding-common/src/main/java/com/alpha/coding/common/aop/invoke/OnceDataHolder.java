@@ -128,4 +128,13 @@ public class OnceDataHolder {
         return (Supplier) getMap().get(key);
     }
 
+    public static boolean hasSupplier(String key) {
+        return getSupplier(key) != null;
+    }
+
+    public static boolean hasValue(String key) {
+        final Supplier<Object> supplier = getSupplier(key);
+        return supplier != null && supplier.get() != null;
+    }
+
 }

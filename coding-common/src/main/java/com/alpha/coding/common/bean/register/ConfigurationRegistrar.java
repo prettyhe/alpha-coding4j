@@ -25,6 +25,7 @@ import com.alpha.coding.common.bean.spi.RegisterBeanDefinitionContext;
 import com.alpha.coding.common.bean.spi.ServiceBootstrap;
 
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * ConfigurationRegistrar
@@ -32,6 +33,7 @@ import lombok.Setter;
  * @version 1.0
  * Date: 2020-03-18
  */
+@Slf4j
 public class ConfigurationRegistrar implements ImportBeanDefinitionRegistrar,
         ResourceLoaderAware, BeanFactoryAware, EnvironmentAware {
 
@@ -50,6 +52,7 @@ public class ConfigurationRegistrar implements ImportBeanDefinitionRegistrar,
 
     @Override
     public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
+        log.info("callback registerBeanDefinitions: [registry={}], [beanFactory={}]", registry, beanFactory);
         TOTAL_COUNT.incrementAndGet();
         if (!registry.containsBeanDefinition(DefaultApplicationPostListener.BEAN_NAME)) {
             registry.registerBeanDefinition(DefaultApplicationPostListener.BEAN_NAME,

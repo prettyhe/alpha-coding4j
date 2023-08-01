@@ -1,6 +1,5 @@
 package com.alpha.coding.common.mybatis.mapper;
 
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -47,7 +46,7 @@ public interface CommonMapMapper {
      *
      * @param updateStatement update sql statement, like: update table_a set column_a = #{record.a} where column_a =
      *                        #{params.a})
-     * @param record          set params for sql, like: (a=xxx)
+     * @param record          record for sql, like: (a=xxx)
      * @param params          condition params for sql, like: (a=xxx)
      * @return update result
      */
@@ -89,7 +88,7 @@ public interface CommonMapMapper {
      * execute insert selective
      *
      * @param tableName table name
-     * @param record    params for sql, like: (a=xxx)
+     * @param record    record for insert, like: (column_a=xxx,column_b=yyy)
      * @return insert result
      */
     @Insert({"<script>",
@@ -112,7 +111,7 @@ public interface CommonMapMapper {
      * execute insert or update selective
      *
      * @param tableName table name
-     * @param record    params for sql, like: (a=xxx)
+     * @param record    record for insert, like: (column_a=xxx,column_b=yyy)
      * @return insert result
      */
     @Insert({"<script>",
@@ -128,7 +127,7 @@ public interface CommonMapMapper {
             "      <if test='value != null'>#{value}</if>",
             "    </foreach>",
             "  </trim>",
-            "ON DUPLICATE KEY UPDATE ",
+            "ON DUPLICATE KEY UPDATE",
             "  <trim suffixOverrides=','>",
             "    <foreach collection='record' index='key' item='value' separator=','>",
             "      <if test='value != null'>${key} = #{value}</if>",
@@ -138,10 +137,10 @@ public interface CommonMapMapper {
     int insertOrUpdateSelective(@Param("tableName") String tableName, @Param("record") Map record);
 
     /**
-     * execute batch insert selective
+     * execute batch insert selective, insert columns base on the first record keys
      *
      * @param tableName table name
-     * @param records   records
+     * @param records   records for insert, like: [(column_a=xxx,column_b=yyy),(column_a=mmm,column_b=nnn)]
      * @return insert result
      */
     @Insert({"<script>",
@@ -163,10 +162,10 @@ public interface CommonMapMapper {
     int batchInsertSelective(@Param("tableName") String tableName, @Param("records") List<Map> records);
 
     /**
-     * execute batch insert or update selective
+     * execute batch insert or update selective, insert columns base on the first record keys
      *
      * @param tableName table name
-     * @param records   records
+     * @param records   records for insert, like: [(column_a=xxx,column_b=yyy),(column_a=mmm,column_b=nnn)]
      * @return insert result
      */
     @Insert({"<script>",
@@ -184,7 +183,7 @@ public interface CommonMapMapper {
             "      </foreach>",
             "    </foreach>",
             "  </foreach>",
-            "ON DUPLICATE KEY UPDATE ",
+            "ON DUPLICATE KEY UPDATE",
             "  <trim suffixOverrides=','>",
             "    <foreach collection='records[0]' index='colKey' item='value' separator=','>",
             "      <if test='value != null'>${colKey} = values(${colKey})</if>",
@@ -197,7 +196,7 @@ public interface CommonMapMapper {
      * execute delete
      *
      * @param tableName          table name
-     * @param conditionStatement condition statement, like: col_a = #{params.a}
+     * @param conditionStatement condition statement, like: column_a = #{params.a}
      * @param params             condition statement params for sql, like: (a=xxx)
      * @return delete result
      */
@@ -212,23 +211,23 @@ public interface CommonMapMapper {
      * execute delete
      *
      * @param tableName       table name
-     * @param primaryKeyName  primaryKeyName
-     * @param primaryKeyValue primaryKeyValue
+     * @param primaryKeyName  primaryKey name
+     * @param primaryKeyValue primaryKey value
      * @return delete result
-     * @see CommonMapMapper#deleteByCondition
      */
-    default int deleteByPrimaryKey(@Param("tableName") String tableName, String primaryKeyName,
-                                   Object primaryKeyValue) {
-        Map params = Collections.singletonMap(primaryKeyName, primaryKeyValue);
-        return deleteByCondition(tableName, primaryKeyName + " = " + "#{params." + primaryKeyName + "}", params);
-    }
+    @Delete({"<script>",
+            "DELETE FROM ${tableName}",
+            "WHERE ${primaryKeyName} = #{primaryKeyValue}",
+            "</script>"})
+    int deleteByPrimaryKey(@Param("tableName") String tableName, @Param("primaryKeyName") String primaryKeyName,
+                           @Param("primaryKeyValue") Object primaryKeyValue);
 
     /**
      * execute update
      *
      * @param tableName          table name
-     * @param record             set params for sql, like: (a=xxx)
-     * @param conditionStatement condition statement, like: col_a = #{params.a}
+     * @param record             record for update, like: (column_a=xxx)
+     * @param conditionStatement condition statement, like: column_a = #{params.a}
      * @param params             condition statement params for sql, like: (a=xxx)
      * @return update result
      */
@@ -241,7 +240,7 @@ public interface CommonMapMapper {
             "      <if test='value == null'>${key} = NULL</if>",
             "    </foreach>",
             "  </trim>",
-            "</set> ",
+            "</set>",
             "<if test='conditionStatement != null and conditionStatement.length() > 0'>",
             "  WHERE ${conditionStatement}",
             "</if>",
@@ -250,28 +249,52 @@ public interface CommonMapMapper {
                           @Param("conditionStatement") String conditionStatement, @Param("params") Map params);
 
     /**
+     * execute update selective by PrimaryKey
+     *
+     * @param tableName       table name
+     * @param record          record for update, like: (column_a=xxx)
+     * @param primaryKeyName  primaryKey name
+     * @param primaryKeyValue primaryKey value
+     * @return update result
+     */
+    @Update({"<script>",
+            "UPDATE ${tableName}",
+            "<set>",
+            "  <trim suffixOverrides=','>",
+            "    <foreach collection='record' index='key' item='value' separator=','>",
+            "      <if test='value != null'>${key} = #{value}</if>",
+            "      <if test='value == null'>${key} = NULL</if>",
+            "    </foreach>",
+            "  </trim>",
+            "</set>",
+            "WHERE ${primaryKeyName} = #{primaryKeyValue}",
+            "</script>"})
+    int updateByPrimaryKey(@Param("tableName") String tableName, @Param("record") Map record,
+                           @Param("primaryKeyName") String primaryKeyName,
+                           @Param("primaryKeyValue") Object primaryKeyValue);
+
+    /**
      * execute update selective by PrimaryKey, value of PrimaryKey must in record
      *
      * @param tableName      table name
-     * @param record         set params for sql, like: (a=xxx)
+     * @param record         record for update, like: (column_primary_key=1,column_a=xxx)
      * @param primaryKeyName primaryKey name
      * @return update result
-     * @see CommonMapMapper#updateByCondition
+     * @see CommonMapMapper#updateByPrimaryKey(String, Map, String, Object)
      */
     default int updateByPrimaryKey(String tableName, Map record, String primaryKeyName) {
-        Map params = Collections.singletonMap(primaryKeyName, record.get(primaryKeyName));
+        Object primaryKeyValue = record.get(primaryKeyName);
         Map dataRecord = new LinkedHashMap(record);
         dataRecord.remove(primaryKeyName);
-        return updateByCondition(tableName, dataRecord,
-                primaryKeyName + " = " + "#{params." + primaryKeyName + "}", params);
+        return updateByPrimaryKey(tableName, dataRecord, primaryKeyName, primaryKeyValue);
     }
 
     /**
      * execute update selective
      *
      * @param tableName          table name
-     * @param record             set params for sql, like: (a=xxx)
-     * @param conditionStatement condition statement, like: col_a = #{params.a}
+     * @param record             record for update, like: (column_a=xxx)
+     * @param conditionStatement condition statement, like: column_a = #{params.a}
      * @param params             condition statement params for sql, like: (a=xxx)
      * @return update result
      */
@@ -283,7 +306,7 @@ public interface CommonMapMapper {
             "      <if test='value != null'>${key} = #{value}</if>",
             "    </foreach>",
             "  </trim>",
-            "</set> ",
+            "</set>",
             "<if test='conditionStatement != null and conditionStatement.length() > 0'>",
             "  WHERE ${conditionStatement}",
             "</if>",
@@ -292,20 +315,43 @@ public interface CommonMapMapper {
                                    @Param("conditionStatement") String conditionStatement, @Param("params") Map params);
 
     /**
+     * execute update selective by PrimaryKey
+     *
+     * @param tableName       table name
+     * @param record          record for update, like: (column_a=xxx)
+     * @param primaryKeyName  primaryKey name
+     * @param primaryKeyValue primaryKey value
+     * @return update result
+     */
+    @Update({"<script>",
+            "UPDATE ${tableName}",
+            "<set>",
+            "  <trim suffixOverrides=','>",
+            "    <foreach collection='record' index='key' item='value' separator=','>",
+            "      <if test='value != null'>${key} = #{value}</if>",
+            "    </foreach>",
+            "  </trim>",
+            "</set>",
+            "WHERE ${primaryKeyName} = #{primaryKeyValue}",
+            "</script>"})
+    int updateSelectiveByPrimaryKey(@Param("tableName") String tableName, @Param("record") Map record,
+                                    @Param("primaryKeyName") String primaryKeyName,
+                                    @Param("primaryKeyValue") Object primaryKeyValue);
+
+    /**
      * execute update selective by PrimaryKey, value of PrimaryKey must in record
      *
      * @param tableName      table name
-     * @param record         set params for sql, like: (a=xxx)
+     * @param record         record for update, like: (column_primary_key=1,column_a=xxx)
      * @param primaryKeyName primaryKey name
      * @return update result
-     * @see CommonMapMapper#updateSelectiveByCondition
+     * @see CommonMapMapper#updateSelectiveByPrimaryKey(String, Map, String, Object)
      */
     default int updateSelectiveByPrimaryKey(String tableName, Map record, String primaryKeyName) {
-        Map params = Collections.singletonMap(primaryKeyName, record.get(primaryKeyName));
+        final Object primaryKeyValue = record.get(primaryKeyName);
         Map dataRecord = new LinkedHashMap(record);
         dataRecord.remove(primaryKeyName);
-        return updateSelectiveByCondition(tableName, dataRecord,
-                primaryKeyName + " = " + "#{params." + primaryKeyName + "}", params);
+        return updateSelectiveByPrimaryKey(tableName, dataRecord, primaryKeyName, primaryKeyValue);
     }
 
     /**
@@ -313,7 +359,7 @@ public interface CommonMapMapper {
      *
      * @param tableName          table name
      * @param columnName         column name
-     * @param conditionStatement condition statement, like: col_a = #{params.a}
+     * @param conditionStatement condition statement, like: column_a = #{params.a}
      * @param params             condition statement params for sql, like: (a=xxx)
      * @return count result
      */
@@ -331,7 +377,7 @@ public interface CommonMapMapper {
      *
      * @param tableName          table name
      * @param columnNames        column names
-     * @param conditionStatement condition statement, like: col_a = #{params.a}
+     * @param conditionStatement condition statement, like: column_a = #{params.a}
      * @param params             condition statement params for sql, like: (a=xxx)
      * @return select result
      */
@@ -353,23 +399,28 @@ public interface CommonMapMapper {
      *
      * @param tableName       table name
      * @param columnNames     column names
-     * @param primaryKeyName  primaryKeyName
-     * @param primaryKeyValue primaryKeyValue
+     * @param primaryKeyName  primaryKey name
+     * @param primaryKeyValue primaryKey value
      * @return select result
-     * @see CommonMapMapper#selectOne
      */
-    default Map selectByPrimaryKey(@Param("tableName") String tableName, @Param("columnNames") List<String> columnNames,
-                                   String primaryKeyName, Object primaryKeyValue) {
-        Map params = Collections.singletonMap(primaryKeyName, primaryKeyValue);
-        return selectOne(tableName, columnNames, primaryKeyName + " = " + "#{params." + primaryKeyName + "}", params);
-    }
+    @Select({"<script>",
+            "SELECT",
+            "<foreach collection='columnNames' index='index' item='item' separator=','>",
+            "  ${item}",
+            "</foreach>",
+            "FROM ${tableName}",
+            "WHERE ${primaryKeyName} = #{primaryKeyValue}",
+            "</script>"})
+    Map selectByPrimaryKey(@Param("tableName") String tableName, @Param("columnNames") List<String> columnNames,
+                           @Param("primaryKeyName") String primaryKeyName,
+                           @Param("primaryKeyValue") Object primaryKeyValue);
 
     /**
      * execute select many
      *
      * @param tableName          table name
      * @param columnNames        column names
-     * @param conditionStatement condition statement, like: col_a = #{params.a}
+     * @param conditionStatement condition statement, like: column_a = #{params.a}
      * @param params             condition statement params for sql, like: (a=xxx)
      * @return select result
      */

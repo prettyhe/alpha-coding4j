@@ -29,8 +29,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ContextWarmUpInitializer implements ApplicationListener<ContextRefreshedEvent>, DisposableBean {
 
-    private AtomicInteger initFlag = new AtomicInteger(0);
-    private List<ExecutorService> executorServiceList = new ArrayList<>();
+    private final AtomicInteger initFlag = new AtomicInteger(0);
+    private final List<ExecutorService> executorServiceList = new ArrayList<>();
     private Function<Runnable, RunnableWrapper> warmUpAopProvider = null; // 切面逻辑控制
 
     public ContextWarmUpInitializer() {
@@ -145,4 +145,5 @@ public class ContextWarmUpInitializer implements ApplicationListener<ContextRefr
             }
         }
     }
+
 }

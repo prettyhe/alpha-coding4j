@@ -1,6 +1,6 @@
 package com.alpha.coding.bo.base;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -25,6 +25,7 @@ public class MapThreadLocalMirrorAspect {
      * 静态内部类工具
      */
     private static final class MapThreadLocal {
+
         private static final InheritableThreadLocal<Map<String, Object>> THREAD_LOCAL =
                 new InheritableThreadLocal<Map<String, Object>>() {
                     @Override
@@ -32,7 +33,7 @@ public class MapThreadLocalMirrorAspect {
                         if (parentValue == null) {
                             return null;
                         }
-                        return new HashMap<>(parentValue);
+                        return new LinkedHashMap<>(parentValue);
                     }
                 };
 
@@ -45,7 +46,7 @@ public class MapThreadLocalMirrorAspect {
                 synchronized(MapThreadLocal.class) {
                     map = THREAD_LOCAL.get();
                     if (map == null) {
-                        map = new HashMap<>();
+                        map = new LinkedHashMap<>();
                         THREAD_LOCAL.set(map);
                     }
                 }
@@ -89,7 +90,7 @@ public class MapThreadLocalMirrorAspect {
         public static Map<String, Object> getCopyOfContextMap() {
             Map<String, Object> oldMap = THREAD_LOCAL.get();
             if (oldMap != null) {
-                return new HashMap<>(oldMap);
+                return new LinkedHashMap<>(oldMap);
             } else {
                 return null;
             }

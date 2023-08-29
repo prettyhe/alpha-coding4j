@@ -25,7 +25,7 @@ public @interface RedisSync {
     boolean enable() default true;
 
     /**
-     * 过期时间
+     * 过期时间(秒)
      */
     long expireSeconds() default 5;
 

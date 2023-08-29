@@ -1,6 +1,5 @@
 package com.alpha.coding.common.aop.invoke;
 
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -58,7 +57,7 @@ public class OnceDataHolder {
             synchronized(OnceDataHolder.class) {
                 map = inheritableThreadLocal.get();
                 if (map == null) {
-                    map = new HashMap<>();
+                    map = new LinkedHashMap<>();
                     inheritableThreadLocal.set(map);
                 }
             }
@@ -68,7 +67,7 @@ public class OnceDataHolder {
 
     public static <T> void put(String key, Supplier<T> supplier) {
         if (key == null) {
-            throw new IllegalArgumentException("key cannot be null");
+            throw new IllegalArgumentException("key must not null");
         }
         getMap().put(key, supplier);
     }
@@ -76,17 +75,38 @@ public class OnceDataHolder {
     @SuppressWarnings("unchecked")
     public static <T> T getOnce(String key, Supplier<T> supplier, Boolean enableLog) {
         if (key == null) {
-            throw new IllegalArgumentException("key cannot be null");
+            throw new IllegalArgumentException("key must not null");
+        }
+        if (supplier == null) {
+            throw new IllegalArgumentException("supplier must not null");
+        }
+        final Map<String, Object> map = getMap();
+        final Object exist = map.get(key);
+        if (exist instanceof OneTimeSupplierHolder) {
+            return (T) ((OneTimeSupplierHolder) exist).get();
+        }
+        if (exist instanceof Supplier) {
+            OneTimeSupplierHolder<T> oneTimeSupplierHolder =
+                    new OneTimeSupplierHolder<>(key, (Supplier) exist, enableLog);
+            try {
+                return oneTimeSupplierHolder.get();
+            } finally {
+                map.put(key, oneTimeSupplierHolder);
+            }
         }
         if (supplier instanceof OneTimeSupplierHolder) {
-            getMap().putIfAbsent(key, supplier);
-            return supplier.get();
+            try {
+                return supplier.get();
+            } finally {
+                map.put(key, supplier);
+            }
         }
-        final OneTimeSupplierHolder<T> oneTimeSupplierHolder =
-                (OneTimeSupplierHolder<T>) getMap().computeIfAbsent(key,
-                        k -> enableLog != null ? new OneTimeSupplierHolder<>(k, supplier, enableLog)
-                                : new OneTimeSupplierHolder<>(k, supplier));
-        return oneTimeSupplierHolder.get();
+        OneTimeSupplierHolder<T> oneTimeSupplierHolder = new OneTimeSupplierHolder<>(key, supplier, enableLog);
+        try {
+            return oneTimeSupplierHolder.get();
+        } finally {
+            map.put(key, oneTimeSupplierHolder);
+        }
     }
 
     public static <T> T getOnce(String key, Supplier<T> supplier) {
@@ -100,22 +120,31 @@ public class OnceDataHolder {
     @SuppressWarnings("unchecked")
     public static <T> T getUntilNotNull(String key, Supplier<T> supplier) {
         if (key == null) {
-            throw new IllegalArgumentException("key cannot be null");
+            throw new IllegalArgumentException("key must not null");
         }
+        final Map<String, Object> map = getMap();
         if (supplier instanceof SupplierHolder) {
-            getMap().putIfAbsent(key, supplier);
-            return supplier.get();
+            try {
+                return supplier.get();
+            } finally {
+                map.put(key, supplier);
+            }
         }
-        final SupplierHolder<T> supplierHolder =
-                (SupplierHolder<T>) getMap().computeIfAbsent(key,
-                        k -> new SupplierHolder<>(k, supplier));
-        return supplierHolder.get();
+        SupplierHolder<T> supplierHolder;
+        if ((supplierHolder = (SupplierHolder<T>) map.get(key)) == null) {
+            supplierHolder = new SupplierHolder<>(key, supplier);
+        }
+        try {
+            return supplierHolder.get();
+        } finally {
+            map.put(key, supplierHolder);
+        }
     }
 
     @SuppressWarnings("unchecked")
     public static <T> Supplier<T> getSupplier(String key) {
         if (key == null) {
-            throw new IllegalArgumentException("key cannot be null");
+            throw new IllegalArgumentException("key must not null");
         }
         return (Supplier<T>) getMap().get(key);
     }
@@ -123,7 +152,7 @@ public class OnceDataHolder {
     @SuppressWarnings({"rawtypes"})
     public static Supplier rawSupplier(String key) {
         if (key == null) {
-            throw new IllegalArgumentException("key cannot be null");
+            throw new IllegalArgumentException("key must not null");
         }
         return (Supplier) getMap().get(key);
     }

@@ -112,8 +112,15 @@ public class ServiceBootstrap {
                                     final S s = load(line, type, classLoader);
                                     multimap.put(name, s);
                                 } catch (Throwable t) {
-                                    log.warn("Failed to load class(interface: " + type + ", class line: "
-                                            + line + ") in " + url + ", cause: " + t.getMessage(), t);
+                                    if (t.getCause() instanceof ClassNotFoundException
+                                            || t.getCause() instanceof LinkageError) {
+                                        log.warn("Failed to load class(interface: " + type + ", class line: "
+                                                + line + ") in " + url + ", cause: " + t.getCause().getClass().getName()
+                                                + ", msg: " + t.getMessage());
+                                    } else {
+                                        log.warn("Failed to load class(interface: " + type + ", class line: "
+                                                + line + ") in " + url + ", cause: " + t.getMessage(), t);
+                                    }
                                 }
                             }
                         }
@@ -149,14 +156,16 @@ public class ServiceBootstrap {
             try {
                 c = Class.forName(name, true, loader);
             } catch (ClassNotFoundException x) {
-                fail(target, "Provider " + name + " not found");
+                fail(target, "Provider " + name + " occur ClassNotFoundException for " + x.getMessage(), x);
+            } catch (LinkageError x) {
+                fail(target, "Provider " + name + " occur " + x.getClass().getSimpleName()
+                        + " for " + x.getMessage(), x);
             }
             if (!target.isAssignableFrom(c)) {
                 fail(target, "Provider " + name + " not a subtype");
             }
             try {
-                S p = target.cast(c.newInstance());
-                return p;
+                return target.cast(c.newInstance());
             } catch (Throwable x) {
                 fail(target, "Provider " + name + " could not be instantiated", x);
             }

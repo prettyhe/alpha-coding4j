@@ -119,9 +119,27 @@ public class SyncInvokeAspect implements ApplicationContextAware {
                 return tuple.getS();
             }
         }
-        return InvokeUtils.syncInvoke(invokeLockCache, invokeKey,
+        final InvokeUtils.InvokeResult invokeResult = InvokeUtils.syncInvoke(invokeLockCache, invokeKey,
                 syncInvoke.maxAwait() == -1 ? null : syncInvoke.maxAwait(),
-                joinPoint::proceed, null).getData();
+                syncInvoke.failFastWhenTimeout(), syncInvoke.failFastWhenWaitInterrupted(), joinPoint::proceed, null);
+        if (invokeResult.isInterrupted() && syncInvoke.failFastWhenWaitInterrupted()
+                && !syncInvoke.failCallback().equals(FailCallback.class)) {
+            final FailCallback failCallback = FailCallbackFactory.instance(syncInvoke.failCallback());
+            return failCallback.onLocalWaitInterrupted(method, joinPoint.getArgs(), invokeResult.getData(),
+                    BeanDefineUtils.resolveValue(applicationContext, syncInvoke.failText(), String.class));
+        }
+        if (invokeResult.isWaitTimeout() && syncInvoke.failFastWhenTimeout()
+                && !syncInvoke.failCallback().equals(FailCallback.class)) {
+            final FailCallback failCallback = FailCallbackFactory.instance(syncInvoke.failCallback());
+            return failCallback.onLocalWaitTimeout(method, joinPoint.getArgs(), invokeResult.getData(),
+                    BeanDefineUtils.resolveValue(applicationContext, syncInvoke.failText(), String.class));
+        }
+        if (!invokeResult.isWinLock() && !syncInvoke.failCallback().equals(FailCallback.class)) {
+            final FailCallback failCallback = FailCallbackFactory.instance(syncInvoke.failCallback());
+            return failCallback.onLocalLockFail(method, joinPoint.getArgs(), invokeResult.getData(),
+                    BeanDefineUtils.resolveValue(applicationContext, syncInvoke.failText(), String.class));
+        }
+        return invokeResult.getData();
     }
 
     private String buildInvokeKey(JoinOperationContext context, String keyExpression) {

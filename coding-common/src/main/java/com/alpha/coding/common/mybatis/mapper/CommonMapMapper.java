@@ -137,6 +137,31 @@ public interface CommonMapMapper {
     int insertOrUpdateSelective(@Param("tableName") String tableName, @Param("record") Map record);
 
     /**
+     * execute batch insert, insert columns base on the given column names
+     *
+     * @param tableName   table name
+     * @param columnNames table column names, like: [column_a, column_b]
+     * @param records     records for insert, like: [(xxx,yyy), (mmm,nnn)]
+     * @return insert result
+     */
+    @Insert({"<script>",
+            "INSERT INTO ${tableName}",
+            "  <trim prefix='(' suffix=')' suffixOverrides=','>",
+            "    <foreach collection='columnNames' index='index' item='name' separator=','>",
+            "      ${name}",
+            "    </foreach>",
+            "  </trim>",
+            "VALUES",
+            "  <foreach collection='records' item='record' open='' separator=',' close=''>",
+            "    <foreach collection='record' index='index' item='value' open='(' separator=',' close=')'>",
+            "      #{value}",
+            "    </foreach>",
+            "  </foreach>",
+            "</script>"})
+    int batchInsert(@Param("tableName") String tableName, @Param("columnNames") String[] columnNames,
+                    @Param("records") List<Object[]> records);
+
+    /**
      * execute batch insert selective, insert columns base on the first record keys
      *
      * @param tableName table name
@@ -160,6 +185,37 @@ public interface CommonMapMapper {
             "  </foreach>",
             "</script>"})
     int batchInsertSelective(@Param("tableName") String tableName, @Param("records") List<Map> records);
+
+    /**
+     * execute batch insert or update, insert columns base on the given column names
+     *
+     * @param tableName   table name
+     * @param columnNames table column names, like: [column_a, column_b]
+     * @param records     records for insert, like: [(xxx,yyy), (mmm,nnn)]
+     * @return insert result
+     */
+    @Insert({"<script>",
+            "INSERT INTO ${tableName}",
+            "  <trim prefix='(' suffix=')' suffixOverrides=','>",
+            "    <foreach collection='columnNames' index='index' item='name' separator=','>",
+            "      ${name}",
+            "    </foreach>",
+            "  </trim>",
+            "VALUES",
+            "  <foreach collection='records' item='record' open='' separator=',' close=''>",
+            "    <foreach collection='record' index='index' item='value' open='(' separator=',' close=')'>",
+            "      #{value}",
+            "    </foreach>",
+            "  </foreach>",
+            "ON DUPLICATE KEY UPDATE",
+            "  <trim suffixOverrides=','>",
+            "    <foreach collection='columnNames' index='index' item='name' separator=','>",
+            "      ${name} = values(${name})",
+            "    </foreach>",
+            "  </trim>",
+            "</script>"})
+    int batchInsertOrUpdate(@Param("tableName") String tableName, @Param("columnNames") String[] columnNames,
+                            @Param("records") List<Object[]> records);
 
     /**
      * execute batch insert or update selective, insert columns base on the first record keys

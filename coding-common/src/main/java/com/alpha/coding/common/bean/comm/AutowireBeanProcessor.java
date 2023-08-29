@@ -45,7 +45,7 @@ public class AutowireBeanProcessor implements ApplicationContextAware, BeanPostP
             try {
                 applicationContext.getAutowireCapableBeanFactory().autowireBean(AopHelper.getTarget(bean));
                 if (log.isDebugEnabled()) {
-                    log.info("autowireBean for beanName={}, bean={}", beanName, bean);
+                    log.debug("autowireBean for beanName={}, bean={}", beanName, bean);
                 }
             } catch (Exception e) {
                 failWhenBeforeInitializationBeanNames.add(beanName);
@@ -61,14 +61,14 @@ public class AutowireBeanProcessor implements ApplicationContextAware, BeanPostP
     }
 
     @Override
-    public void onApplicationEvent(ContextRefreshedEvent contextClosedEvent) {
+    public void onApplicationEvent(ContextRefreshedEvent contextRefreshedEvent) {
         final AutowireCapableBeanFactory beanFactory = applicationContext.getAutowireCapableBeanFactory();
         for (String beanName : failWhenBeforeInitializationBeanNames) {
             try {
                 final Object bean = beanFactory.getBean(beanName);
                 beanFactory.autowireBean(AopHelper.getTarget(bean));
                 if (log.isDebugEnabled()) {
-                    log.info("autowireBean for beanName={}, bean={}", beanName, bean);
+                    log.debug("autowireBean for beanName={}, bean={}", beanName, bean);
                 }
             } catch (Exception e) {
                 log.warn("autowireBean fail for {}", beanName, e);

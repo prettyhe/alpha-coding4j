@@ -51,7 +51,7 @@ public class SupplierHolder<T> implements Supplier<T> {
         return new SupplierHolder<>(tag, supplier);
     }
 
-    public static <T> SupplierHolder<T> of(String tag, Supplier<T> supplier, boolean enableLog) {
+    public static <T> SupplierHolder<T> of(String tag, Supplier<T> supplier, Boolean enableLog) {
         return new SupplierHolder<>(tag, supplier, enableLog);
     }
 
@@ -71,7 +71,7 @@ public class SupplierHolder<T> implements Supplier<T> {
         this.logText = Objects::toString;
     }
 
-    public SupplierHolder(String tag, Supplier<T> supplier, boolean enableLog) {
+    public SupplierHolder(String tag, Supplier<T> supplier, Boolean enableLog) {
         this.tag = tag;
         this.supplier = supplier;
         this.logText = Objects::toString;

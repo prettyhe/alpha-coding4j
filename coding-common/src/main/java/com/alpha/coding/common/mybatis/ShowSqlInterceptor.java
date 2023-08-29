@@ -8,6 +8,7 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -71,7 +72,7 @@ public class ShowSqlInterceptor implements Interceptor {
                         if (parentValue == null) {
                             return null;
                         }
-                        return new HashMap<>(parentValue);
+                        return new LinkedHashMap<>(parentValue);
                     }
                 };
 
@@ -128,7 +129,7 @@ public class ShowSqlInterceptor implements Interceptor {
         public static Map<String, Object> getCopyOfContextMap() {
             Map<String, Object> oldMap = THREAD_LOCAL.get();
             if (oldMap != null) {
-                return new HashMap<>(oldMap);
+                return new LinkedHashMap<>(oldMap);
             } else {
                 return null;
             }

@@ -27,9 +27,9 @@ public class InvokeUtils {
     @Accessors(chain = true)
     public static class InvokeLock {
 
-        private CountDownLatch signal;
-        private Thread loaderThread;
-        private Object value;
+        private volatile CountDownLatch signal;
+        private volatile Thread loaderThread;
+        private volatile Object value;
 
     }
 
@@ -45,7 +45,7 @@ public class InvokeUtils {
          */
         private boolean interrupted;
         /**
-         * 最大等待时长
+         * 是否等待超时
          */
         private boolean waitTimeout;
         /**
@@ -57,14 +57,17 @@ public class InvokeUtils {
     /**
      * 同步加载缓存数据
      *
-     * @param lockCache     key锁缓存
-     * @param key           缓存key
-     * @param awaitMillis   最大等待时长
-     * @param valueSupplier 加载器：获取值
-     * @param valueConsumer 放置器：值写入缓存
+     * @param lockCache                   key锁缓存
+     * @param key                         缓存key
+     * @param awaitMillis                 最大等待时长
+     * @param failFastWhenTimeout         是否等待超时后快速失败
+     * @param failFastWhenWaitInterrupted 是否等待中断后快速失败
+     * @param valueSupplier               加载器：获取值
+     * @param valueConsumer               放置器：值写入缓存
      * @return InvokeResult
      */
     public static InvokeResult syncInvoke(Map<String, InvokeLock> lockCache, String key, Long awaitMillis,
+                                          boolean failFastWhenTimeout, boolean failFastWhenWaitInterrupted,
                                           ThrowableSupplier valueSupplier, Consumer valueConsumer) throws Throwable {
         if (key == null) {
             return null;
@@ -99,12 +102,15 @@ public class InvokeUtils {
             }
         } else {
             try {
-                if (awaitMillis == null) {
+                if (awaitMillis == null || awaitMillis < 0) {
                     lock.signal.await();
                 } else {
                     final boolean ok = lock.signal.await(awaitMillis, TimeUnit.MILLISECONDS);
                     if (!ok) {
                         log.warn("invoke wait timeout:{} for {}", awaitMillis, key);
+                        if (failFastWhenTimeout) {
+                            return new InvokeResult().setWaitTimeout(true).setData(lock.value);
+                        }
                         Object result = valueSupplier.get();
                         if (valueConsumer != null) {
                             valueConsumer.accept(result);
@@ -114,6 +120,9 @@ public class InvokeUtils {
                 }
             } catch (InterruptedException e) {
                 log.warn("invoke wait interrupted for {}", key);
+                if (failFastWhenWaitInterrupted) {
+                    return new InvokeResult().setInterrupted(true).setData(lock.value);
+                }
                 Object result = valueSupplier.get();
                 if (valueConsumer != null) {
                     valueConsumer.accept(result);
@@ -127,6 +136,24 @@ public class InvokeUtils {
     /**
      * 同步加载缓存数据
      *
+     * @param key                         缓存key
+     * @param awaitMillis                 最大等待时长
+     * @param failFastWhenTimeout         是否等待超时后快速失败
+     * @param failFastWhenWaitInterrupted 是否等待中断后快速失败
+     * @param valueSupplier               加载器：获取值
+     * @param valueConsumer               放置器：值写入缓存
+     * @return InvokeResult
+     */
+    public static InvokeResult syncInvoke(String key, Long awaitMillis,
+                                          boolean failFastWhenTimeout, boolean failFastWhenWaitInterrupted,
+                                          ThrowableSupplier valueSupplier, Consumer valueConsumer) throws Throwable {
+        return syncInvoke(LOCK_CACHE, key, awaitMillis, failFastWhenTimeout, failFastWhenWaitInterrupted,
+                valueSupplier, valueConsumer);
+    }
+
+    /**
+     * 同步加载缓存数据
+     *
      * @param key           缓存key
      * @param awaitMillis   最大等待时长
      * @param valueSupplier 加载器：获取值
@@ -135,7 +162,7 @@ public class InvokeUtils {
      */
     public static InvokeResult syncInvoke(String key, Long awaitMillis,
                                           ThrowableSupplier valueSupplier, Consumer valueConsumer) throws Throwable {
-        return syncInvoke(LOCK_CACHE, key, awaitMillis, valueSupplier, valueConsumer);
+        return syncInvoke(LOCK_CACHE, key, awaitMillis, false, false, valueSupplier, valueConsumer);
     }
 
 }

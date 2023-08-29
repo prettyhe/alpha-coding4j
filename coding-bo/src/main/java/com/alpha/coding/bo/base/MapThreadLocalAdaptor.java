@@ -1,6 +1,7 @@
 package com.alpha.coding.bo.base;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -24,7 +25,7 @@ public class MapThreadLocalAdaptor {
                     if (parentValue == null) {
                         return null;
                     }
-                    return new HashMap<>(parentValue);
+                    return new LinkedHashMap<>(parentValue);
                 }
             };
 
@@ -42,7 +43,7 @@ public class MapThreadLocalAdaptor {
             synchronized(MapThreadLocalAdaptor.class) {
                 map = INHERITABLE_THREAD_LOCAL.get();
                 if (map == null) {
-                    map = new HashMap<>();
+                    map = new LinkedHashMap<>();
                     INHERITABLE_THREAD_LOCAL.set(map);
                 }
             }
@@ -118,7 +119,7 @@ public class MapThreadLocalAdaptor {
     public static Map<String, Object> getCopyOfContextMap() {
         Map<String, Object> oldMap = INHERITABLE_THREAD_LOCAL.get();
         if (oldMap != null) {
-            return new HashMap<>(oldMap);
+            return new LinkedHashMap<>(oldMap);
         } else {
             return null;
         }

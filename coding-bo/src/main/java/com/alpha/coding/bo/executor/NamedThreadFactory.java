@@ -13,38 +13,43 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class NamedThreadFactory implements ThreadFactory {
 
-    private static final String defaultPoolName = "NamedPool";
-    private static final Map<String, AtomicInteger> namedPoolMap = new HashMap<>();
-    private final ThreadGroup group;
+    private static final String DEFAULT_POOL_NAME = "NamedPool";
+    private static final String DEFAULT_THREAD_INDEX_PREFIX = "td";
+    private static final Map<String, AtomicInteger> NAMED_POOL_MAP = new HashMap<>();
     private final AtomicInteger threadNumber = new AtomicInteger(1);
+    private final ThreadGroup group;
     private final String namePrefix;
     private final boolean daemon;
 
     public NamedThreadFactory() {
-        this(null, false);
+        this(null, null, false);
     }
 
-    public NamedThreadFactory(String prefix) {
-        this(prefix, false);
+    public NamedThreadFactory(String poolNamePrefix) {
+        this(poolNamePrefix, null, false);
     }
 
-    public NamedThreadFactory(String prefix, boolean daemon) {
-        String usePrefix = prefix == null ? defaultPoolName : prefix;
-        namePrefix = usePrefix + "-" + getByPoolName(usePrefix).getAndIncrement() + "-td-";
+    public NamedThreadFactory(String poolNamePrefix, boolean daemon) {
+        this(poolNamePrefix, null, daemon);
+    }
+
+    public NamedThreadFactory(String poolNamePrefix, String threadIndexPrefix, boolean daemon) {
+        String usePoolNamePrefix = poolNamePrefix == null ? DEFAULT_POOL_NAME : poolNamePrefix;
+        String useThreadIndexPrefix = threadIndexPrefix == null ? DEFAULT_THREAD_INDEX_PREFIX : threadIndexPrefix;
+        this.namePrefix = usePoolNamePrefix + "-" + getByPoolName(usePoolNamePrefix).getAndIncrement()
+                + "-" + useThreadIndexPrefix + "-";
         this.daemon = daemon;
         SecurityManager s = System.getSecurityManager();
-        group = (s == null) ? Thread.currentThread().getThreadGroup() : s.getThreadGroup();
+        this.group = (s == null) ? Thread.currentThread().getThreadGroup() : s.getThreadGroup();
     }
 
     public Thread newThread(Runnable r) {
-        Thread t = new Thread(group, r,
-                namePrefix + threadNumber.getAndIncrement(),
-                0);
-        t.setDaemon(daemon && !t.isDaemon());
-        if (t.getPriority() != Thread.NORM_PRIORITY) {
-            t.setPriority(Thread.NORM_PRIORITY);
+        Thread thread = new Thread(group, r, namePrefix + threadNumber.getAndIncrement(), 0);
+        thread.setDaemon(daemon && !thread.isDaemon());
+        if (thread.getPriority() != Thread.NORM_PRIORITY) {
+            thread.setPriority(Thread.NORM_PRIORITY);
         }
-        return t;
+        return thread;
     }
 
     public ThreadGroup getThreadGroup() {
@@ -52,13 +57,13 @@ public class NamedThreadFactory implements ThreadFactory {
     }
 
     private static AtomicInteger getByPoolName(String poolName) {
-        AtomicInteger atomicInteger = namedPoolMap.get(poolName);
+        AtomicInteger atomicInteger = NAMED_POOL_MAP.get(poolName);
         if (atomicInteger == null) {
             synchronized(NamedThreadFactory.class) {
-                atomicInteger = namedPoolMap.get(poolName);
+                atomicInteger = NAMED_POOL_MAP.get(poolName);
                 if (atomicInteger == null) {
                     atomicInteger = new AtomicInteger(1);
-                    namedPoolMap.put(poolName, atomicInteger);
+                    NAMED_POOL_MAP.put(poolName, atomicInteger);
                 }
             }
         }

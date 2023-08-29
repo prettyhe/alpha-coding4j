@@ -1,6 +1,6 @@
 package com.alpha.coding.bo.base;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -32,6 +32,7 @@ public class MapThreadLocalDiscardAspect {
      * 静态内部类工具
      */
     private static final class MapThreadLocal {
+
         private static final InheritableThreadLocal<Map<String, Object>> THREAD_LOCAL =
                 new InheritableThreadLocal<Map<String, Object>>() {
                     @Override
@@ -39,7 +40,7 @@ public class MapThreadLocalDiscardAspect {
                         if (parentValue == null) {
                             return null;
                         }
-                        return new HashMap<>(parentValue);
+                        return new LinkedHashMap<>(parentValue);
                     }
                 };
 
@@ -52,7 +53,7 @@ public class MapThreadLocalDiscardAspect {
                 synchronized(MapThreadLocal.class) {
                     map = THREAD_LOCAL.get();
                     if (map == null) {
-                        map = new HashMap<>();
+                        map = new LinkedHashMap<>();
                         THREAD_LOCAL.set(map);
                     }
                 }
@@ -96,7 +97,7 @@ public class MapThreadLocalDiscardAspect {
         public static Map<String, Object> getCopyOfContextMap() {
             Map<String, Object> oldMap = THREAD_LOCAL.get();
             if (oldMap != null) {
-                return new HashMap<>(oldMap);
+                return new LinkedHashMap<>(oldMap);
             } else {
                 return null;
             }
@@ -120,7 +121,7 @@ public class MapThreadLocalDiscardAspect {
             }
             int thisVersion = version + 1; // 版本+1
             // 保存快照
-            final Map<String, Object> existMap = new HashMap<>(discardKeys.length * 2);
+            final Map<String, Object> existMap = new LinkedHashMap<>(discardKeys.length * 2);
             for (String key : discardKeys) {
                 if (MapThreadLocalAdaptor.containsKey(key)) {
                     existMap.put(key, MapThreadLocalAdaptor.get(key));

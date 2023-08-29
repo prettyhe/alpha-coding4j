@@ -25,12 +25,32 @@ public @interface SyncInvoke {
     String key() default "";
 
     /**
-     * 最长等待时间,-1表示无限等待
+     * 最长等待时间(ms), -1表示无限等待
      */
     long maxAwait() default -1;
 
     /**
-     * Redis同步配置，默认不开启
+     * 等待超时后快速失败
+     */
+    boolean failFastWhenTimeout() default false;
+
+    /**
+     * 等待中断后快速失败
+     */
+    boolean failFastWhenWaitInterrupted() default false;
+
+    /**
+     * 失败/等待超时/等待中断回调
+     */
+    Class<? extends FailCallback> failCallback() default FailCallback.class;
+
+    /**
+     * 失败文案，支持外部化配置，如"${invoke.sync.failText:操作太频繁}"
+     */
+    String failText() default "";
+
+    /**
+     * Redis同步配置，默认不开启，开启时忽略本地配置
      */
     RedisSync redisSync() default @RedisSync(enable = false);
 

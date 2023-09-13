@@ -11,7 +11,7 @@ import java.lang.reflect.Method;
 public interface FailCallback {
 
     /**
-     * 本地请求加锁失败回调
+     * 本地请求竞争(一般是加锁)失败回调
      *
      * @param method      当前调用的方法
      * @param args        当前调用的参数
@@ -19,7 +19,7 @@ public interface FailCallback {
      * @param failText    当前失败文案
      * @return 回调结果
      */
-    default Object onLocalLockFail(Method method, Object[] args, Object currentData, String failText) {
+    default Object onLocalAcquireFail(Method method, Object[] args, Object currentData, String failText) {
         return currentData;
     }
 

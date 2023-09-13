@@ -119,8 +119,9 @@ public class SyncInvokeAspect implements ApplicationContextAware {
                 return tuple.getS();
             }
         }
-        final InvokeUtils.InvokeResult invokeResult = InvokeUtils.syncInvoke(invokeLockCache, invokeKey,
-                syncInvoke.maxAwait() == -1 ? null : syncInvoke.maxAwait(),
+        final int concurrency = BeanDefineUtils.resolveValue(applicationContext, syncInvoke.concurrency(), int.class);
+        final InvokeUtils.InvokeResult invokeResult = InvokeUtils.syncInvoke(invokeLockCache, invokeKey, concurrency,
+                syncInvoke.maxAwait() == -1 ? null : syncInvoke.maxAwait(), syncInvoke.failFastWhenAcquireFail(),
                 syncInvoke.failFastWhenTimeout(), syncInvoke.failFastWhenWaitInterrupted(), joinPoint::proceed, null);
         if (invokeResult.isInterrupted() && syncInvoke.failFastWhenWaitInterrupted()
                 && !syncInvoke.failCallback().equals(FailCallback.class)) {
@@ -136,7 +137,7 @@ public class SyncInvokeAspect implements ApplicationContextAware {
         }
         if (!invokeResult.isWinLock() && !syncInvoke.failCallback().equals(FailCallback.class)) {
             final FailCallback failCallback = FailCallbackFactory.instance(syncInvoke.failCallback());
-            return failCallback.onLocalLockFail(method, joinPoint.getArgs(), invokeResult.getData(),
+            return failCallback.onLocalAcquireFail(method, joinPoint.getArgs(), invokeResult.getData(),
                     BeanDefineUtils.resolveValue(applicationContext, syncInvoke.failText(), String.class));
         }
         return invokeResult.getData();

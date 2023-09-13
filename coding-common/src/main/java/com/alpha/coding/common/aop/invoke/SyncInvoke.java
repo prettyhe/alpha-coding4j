@@ -25,6 +25,16 @@ public @interface SyncInvoke {
     String key() default "";
 
     /**
+     * 并发数(大于1表示支持多并发处理)，支持外部化配置，如"${invoke.sync.concurrency:1}"
+     */
+    String concurrency() default "1";
+
+    /**
+     * 竞争失败后快速失败，否则进入等待
+     */
+    boolean failFastWhenAcquireFail() default false;
+
+    /**
      * 最长等待时间(ms), -1表示无限等待
      */
     long maxAwait() default -1;
@@ -53,5 +63,4 @@ public @interface SyncInvoke {
      * Redis同步配置，默认不开启，开启时忽略本地配置
      */
     RedisSync redisSync() default @RedisSync(enable = false);
-
 }

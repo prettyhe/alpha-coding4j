@@ -15,9 +15,9 @@ import lombok.extern.slf4j.Slf4j;
 public class LogWarnFailCallback implements FailCallback {
 
     @Override
-    public Object onLocalLockFail(Method method, Object[] args, Object currentData, String failText) {
-        log.warn("同步请求本地加锁失败:{},method={},args={}", failText, method.getName(), Arrays.toString(args));
-        return FailCallback.super.onLocalLockFail(method, args, currentData, failText);
+    public Object onLocalAcquireFail(Method method, Object[] args, Object currentData, String failText) {
+        log.warn("同步请求本地竞争失败:{},method={},args={}", failText, method.getName(), Arrays.toString(args));
+        return FailCallback.super.onLocalAcquireFail(method, args, currentData, failText);
     }
 
     @Override
@@ -37,5 +37,4 @@ public class LogWarnFailCallback implements FailCallback {
         log.warn("同步请求竞争失败:{},method={},args={}", failText, method.getName(), Arrays.toString(args));
         return null;
     }
-
 }

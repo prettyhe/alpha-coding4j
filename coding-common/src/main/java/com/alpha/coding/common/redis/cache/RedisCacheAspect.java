@@ -197,8 +197,8 @@ public class RedisCacheAspect implements ApplicationContextAware {
                     redisTemplate, valueSerializer, localCache);
             return result;
         } else {
-            return InvokeUtils.syncInvoke(loadLockCache, cacheKey, null,
-                    false, false, joinPoint::proceed,
+            return InvokeUtils.syncInvoke(loadLockCache, cacheKey, 1, null,
+                    false, false, false, joinPoint::proceed,
                     val -> putIntoCache(joinPoint.getArgs(), val, cacheKey, cacheConfig,
                             redisTemplate, valueSerializer, localCache)
             ).getData();

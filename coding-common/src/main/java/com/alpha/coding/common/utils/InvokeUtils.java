@@ -1,9 +1,11 @@
 package com.alpha.coding.common.utils;
 
 import java.util.Map;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 import com.alpha.coding.bo.function.ThrowableSupplier;
@@ -27,8 +29,8 @@ public class InvokeUtils {
     @Accessors(chain = true)
     public static class InvokeLock {
 
-        private volatile CountDownLatch signal;
-        private volatile Thread loaderThread;
+        private volatile BlockingQueue<Thread> queue;
+        private volatile AtomicInteger waitCnt;
         private volatile Object value;
 
     }
@@ -55,114 +57,162 @@ public class InvokeUtils {
     }
 
     /**
-     * 同步加载缓存数据
+     * 同步请求控制
      *
-     * @param lockCache                   key锁缓存
-     * @param key                         缓存key
+     * @param lockCache                   资源key锁缓存
+     * @param key                         资源key
+     * @param concurrency                 并发数(大于1表示支持多并发处理，否则忽略)
      * @param awaitMillis                 最大等待时长
+     * @param failFastWhenAcquireFail     是否竞争失败后快速失败
      * @param failFastWhenTimeout         是否等待超时后快速失败
      * @param failFastWhenWaitInterrupted 是否等待中断后快速失败
-     * @param valueSupplier               加载器：获取值
-     * @param valueConsumer               放置器：值写入缓存
+     * @param valueSupplier               加载器：提供值函数
+     * @param valueConsumer               放置器：值后置处理函数
      * @return InvokeResult
      */
-    public static InvokeResult syncInvoke(Map<String, InvokeLock> lockCache, String key, Long awaitMillis,
+    public static InvokeResult syncInvoke(Map<String, InvokeLock> lockCache, String key, int concurrency,
+                                          Long awaitMillis, boolean failFastWhenAcquireFail,
                                           boolean failFastWhenTimeout, boolean failFastWhenWaitInterrupted,
                                           ThrowableSupplier valueSupplier, Consumer valueConsumer) throws Throwable {
         if (key == null) {
             return null;
         }
-        boolean create = false;
         InvokeLock lock = lockCache.get(key);
         if (lock == null) {
             synchronized(lockCache) {
                 lock = lockCache.get(key);
                 if (lock == null) {
                     lock = new InvokeLock();
-                    lock.loaderThread = Thread.currentThread();
-                    lock.signal = new CountDownLatch(1);
-                    create = true;
+                    lock.queue = new LinkedBlockingDeque<>(Math.max(concurrency, 1));
+                    lock.waitCnt = new AtomicInteger(0);
                     lockCache.put(key, lock);
                 }
             }
         }
-        if (create || lock.getLoaderThread() == Thread.currentThread()) {
-            try {
+        boolean inQueue = false;
+        boolean addToQueue = false;
+        // 成功添加到队列的线程或重入(已在队列)时可直接执行，失败若快速失败则直接返回
+        // 否则进入等待流程，等待直接结束或等待到期后立即执行(或快速失败)，等待中断处理
+        try {
+            if ((inQueue = lock.queue.contains(Thread.currentThread()))
+                    || ((addToQueue = lock.queue.offer(Thread.currentThread())))) {
                 Object result = valueSupplier.get();
                 lock.value = result;
                 if (valueConsumer != null) {
                     valueConsumer.accept(result);
                 }
                 return new InvokeResult().setWinLock(true).setData(result);
-            } finally {
-                lock.signal.countDown();
-                if (create) {
+            } else if (failFastWhenAcquireFail) {
+                // 快速失败，直接返回
+                return new InvokeResult().setWinLock(false).setData(lock.value);
+            } else {
+                lock.waitCnt.incrementAndGet();
+                try {
+                    if (awaitMillis == null || awaitMillis < 0) {
+                        lock.queue.put(Thread.currentThread());
+                        addToQueue = true;
+                    } else {
+                        addToQueue = lock.queue.offer(Thread.currentThread(), awaitMillis, TimeUnit.MILLISECONDS);
+                    }
+                } catch (InterruptedException e) {
+                    log.warn("invoke wait interrupted for {}", key);
+                    lock.waitCnt.decrementAndGet();
+                    if (failFastWhenWaitInterrupted) {
+                        return new InvokeResult().setWinLock(false).setInterrupted(true).setData(lock.value);
+                    }
+                    // 等待中断后直接处理
+                    Object result = valueSupplier.get();
+                    lock.value = result;
+                    if (valueConsumer != null) {
+                        valueConsumer.accept(result);
+                    }
+                    return new InvokeResult().setWinLock(false).setInterrupted(true).setData(result);
+                }
+                // 等待结束处理
+                lock.waitCnt.decrementAndGet();
+                if (addToQueue) {
+                    // 等待成功
+                    Object result = valueSupplier.get();
+                    lock.value = result;
+                    if (valueConsumer != null) {
+                        valueConsumer.accept(result);
+                    }
+                    return new InvokeResult().setWinLock(true).setData(result);
+                } else {
+                    // 等待超时
+                    log.warn("invoke wait timeout:{} for {}", awaitMillis, key);
+                    if (failFastWhenTimeout) {
+                        return new InvokeResult().setWaitTimeout(true).setData(lock.value);
+                    }
+                    // 等待超时后直接处理
+                    Object result = valueSupplier.get();
+                    lock.value = result;
+                    if (valueConsumer != null) {
+                        valueConsumer.accept(result);
+                    }
+                    return new InvokeResult().setWinLock(false).setWaitTimeout(true).setData(result);
+                }
+            }
+        } finally {
+            if (addToQueue) {
+                lock.queue.remove(Thread.currentThread());
+                if (lock.queue.peek() == null && lock.waitCnt.get() <= 0) {
                     lockCache.remove(key);
                 }
             }
-        } else {
-            try {
-                if (awaitMillis == null || awaitMillis < 0) {
-                    lock.signal.await();
-                } else {
-                    final boolean ok = lock.signal.await(awaitMillis, TimeUnit.MILLISECONDS);
-                    if (!ok) {
-                        log.warn("invoke wait timeout:{} for {}", awaitMillis, key);
-                        if (failFastWhenTimeout) {
-                            return new InvokeResult().setWaitTimeout(true).setData(lock.value);
-                        }
-                        Object result = valueSupplier.get();
-                        if (valueConsumer != null) {
-                            valueConsumer.accept(result);
-                        }
-                        return new InvokeResult().setWaitTimeout(true).setData(result);
-                    }
-                }
-            } catch (InterruptedException e) {
-                log.warn("invoke wait interrupted for {}", key);
-                if (failFastWhenWaitInterrupted) {
-                    return new InvokeResult().setInterrupted(true).setData(lock.value);
-                }
-                Object result = valueSupplier.get();
-                if (valueConsumer != null) {
-                    valueConsumer.accept(result);
-                }
-                return new InvokeResult().setInterrupted(true).setData(result);
-            }
-            return new InvokeResult().setData(lock.value);
         }
     }
 
     /**
-     * 同步加载缓存数据
+     * 同步请求控制
      *
-     * @param key                         缓存key
+     * @param key                         资源key
      * @param awaitMillis                 最大等待时长
+     * @param concurrency                 并发数
      * @param failFastWhenTimeout         是否等待超时后快速失败
      * @param failFastWhenWaitInterrupted 是否等待中断后快速失败
-     * @param valueSupplier               加载器：获取值
-     * @param valueConsumer               放置器：值写入缓存
+     * @param valueSupplier               加载器：提供值函数
+     * @param valueConsumer               放置器：值后置处理函数
      * @return InvokeResult
      */
-    public static InvokeResult syncInvoke(String key, Long awaitMillis,
+    public static InvokeResult syncInvoke(String key, int concurrency, Long awaitMillis,
+                                          boolean failFastWhenAcquireFail,
                                           boolean failFastWhenTimeout, boolean failFastWhenWaitInterrupted,
                                           ThrowableSupplier valueSupplier, Consumer valueConsumer) throws Throwable {
-        return syncInvoke(LOCK_CACHE, key, awaitMillis, failFastWhenTimeout, failFastWhenWaitInterrupted,
-                valueSupplier, valueConsumer);
+        return syncInvoke(LOCK_CACHE, key, concurrency, awaitMillis, failFastWhenAcquireFail, failFastWhenTimeout,
+                failFastWhenWaitInterrupted, valueSupplier, valueConsumer);
     }
 
     /**
-     * 同步加载缓存数据
+     * 同步请求控制
      *
-     * @param key           缓存key
+     * @param key                         资源key
+     * @param awaitMillis                 最大等待时长
+     * @param failFastWhenTimeout         是否等待超时后快速失败
+     * @param failFastWhenWaitInterrupted 是否等待中断后快速失败
+     * @param valueSupplier               加载器：提供值函数
+     * @param valueConsumer               放置器：值后置处理函数
+     * @return InvokeResult
+     */
+    public static InvokeResult syncInvoke(String key, Long awaitMillis, boolean failFastWhenAcquireFail,
+                                          boolean failFastWhenTimeout, boolean failFastWhenWaitInterrupted,
+                                          ThrowableSupplier valueSupplier, Consumer valueConsumer) throws Throwable {
+        return syncInvoke(LOCK_CACHE, key, 1, awaitMillis, failFastWhenAcquireFail, failFastWhenTimeout,
+                failFastWhenWaitInterrupted, valueSupplier, valueConsumer);
+    }
+
+    /**
+     * 同步请求控制
+     *
+     * @param key           资源key
      * @param awaitMillis   最大等待时长
-     * @param valueSupplier 加载器：获取值
-     * @param valueConsumer 放置器：值写入缓存
+     * @param valueSupplier 加载器：提供值函数
+     * @param valueConsumer 放置器：值后置处理函数
      * @return InvokeResult
      */
     public static InvokeResult syncInvoke(String key, Long awaitMillis,
                                           ThrowableSupplier valueSupplier, Consumer valueConsumer) throws Throwable {
-        return syncInvoke(LOCK_CACHE, key, awaitMillis, false, false, valueSupplier, valueConsumer);
+        return syncInvoke(LOCK_CACHE, key, 1, awaitMillis, false, false, false, valueSupplier, valueConsumer);
     }
 
 }

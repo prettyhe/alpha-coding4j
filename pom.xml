@@ -33,7 +33,7 @@
         <maven.source.version>1.8</maven.source.version>
         <maven.target.version>1.8</maven.target.version>
         <!--dependencies version-->
-        <coding4j.springframework.version>5.2.20.RELEASE</coding4j.springframework.version>
+        <coding4j.springframework.version>5.2.25.RELEASE</coding4j.springframework.version>
         <coding4j.springframework.data.version>2.2.3.RELEASE</coding4j.springframework.data.version>
         <coding4j.jedis.version>3.1.0</coding4j.jedis.version>
         <coding4j.guava.version>20.0</coding4j.guava.version>
@@ -41,10 +41,10 @@
         <coding4j.fastjson.version>1.2.83</coding4j.fastjson.version>
         <coding4j.jackson.version>2.10.0</coding4j.jackson.version>
         <coding4j.slf4j.version>1.7.26</coding4j.slf4j.version>
-        <coding4j.log4j.version>2.17.0</coding4j.log4j.version>
+        <coding4j.log4j.version>2.17.1</coding4j.log4j.version>
         <coding4j.commons-logging.version>1.2</coding4j.commons-logging.version>
         <coding4j.commons-configuration.version>1.10</coding4j.commons-configuration.version>
-        <coding4j.commons-net.version>3.6</coding4j.commons-net.version>
+        <coding4j.commons-net.version>3.9.0</coding4j.commons-net.version>
         <coding4j.commons-lang.version>2.6</coding4j.commons-lang.version>
         <coding4j.commons-io.version>2.11.0</coding4j.commons-io.version>
         <coding4j.commons-dbcp.version>1.4</coding4j.commons-dbcp.version>

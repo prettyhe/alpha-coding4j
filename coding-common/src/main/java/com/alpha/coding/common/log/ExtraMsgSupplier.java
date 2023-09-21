@@ -31,6 +31,13 @@ public interface ExtraMsgSupplier {
         public static void append(String msg) {
             current().ifPresent(p -> p.appender().accept(msg));
         }
+
+        /**
+         * 在前追加消息
+         */
+        public static void aheadAppend(String msg) {
+            current().ifPresent(p -> p.aheadAppender().accept(msg));
+        }
     }
 
     /**
@@ -46,6 +53,15 @@ public interface ExtraMsgSupplier {
     default Consumer<String> appender() {
         return s -> {
             // 扩展消息实现
+        };
+    }
+
+    /**
+     * 附加消息前置扩展函数
+     */
+    default Consumer<String> aheadAppender() {
+        return s -> {
+            // 签章扩展消息实现
         };
     }
 

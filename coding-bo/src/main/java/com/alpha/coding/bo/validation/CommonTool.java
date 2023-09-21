@@ -31,6 +31,19 @@ public class CommonTool {
     private static final Pattern BIRTHDAY = Pattern.compile("^(\\d{2,4})([/\\-.年]?)(\\d{1,2})([/\\-.月]?)(\\d{1,2})日?$");
 
     /**
+     * 台湾身份证号正则
+     */
+    private static final Pattern PATTERN_TW_IDCARD = Pattern.compile("^[a-zA-Z][0-9]{9}$");
+    /**
+     * 澳门身份证号正则
+     */
+    private static final Pattern PATTERN_MC_IDCARD = Pattern.compile("^[157][0-9]{6}\\(?[0-9A-Z]\\)?$");
+    /**
+     * 香港身份证号正则
+     */
+    private static final Pattern PATTERN_HK_IDCARD = Pattern.compile("^[A-Z]{1,2}[0-9]{6}\\(?[0-9A]\\)?$");
+
+    /**
      * 身份证日期格式
      */
     private static final String DATE_FORMAT = "yyyyMMdd";
@@ -50,91 +63,91 @@ public class CommonTool {
     /**
      * 省市代码表
      */
-    private static Map<String, String> cityCodes = new HashMap<>();
+    private static final Map<String, String> CITY_CODES = new HashMap<>();
     /**
      * 台湾身份首字母对应数字
      */
-    private static Map<String, Integer> twFirstCode = new HashMap<>();
+    private static final Map<String, Integer> TW_FIRST_CODE = new HashMap<>();
     /**
      * 香港身份首字母对应数字
      */
-    private static Map<String, Integer> hkFirstCode = new HashMap<>();
+    private static final Map<String, Integer> HK_FIRST_CODE = new HashMap<>();
 
     static {
-        cityCodes.put("11", "北京");
-        cityCodes.put("12", "天津");
-        cityCodes.put("13", "河北");
-        cityCodes.put("14", "山西");
-        cityCodes.put("15", "内蒙古");
-        cityCodes.put("21", "辽宁");
-        cityCodes.put("22", "吉林");
-        cityCodes.put("23", "黑龙江");
-        cityCodes.put("31", "上海");
-        cityCodes.put("32", "江苏");
-        cityCodes.put("33", "浙江");
-        cityCodes.put("34", "安徽");
-        cityCodes.put("35", "福建");
-        cityCodes.put("36", "江西");
-        cityCodes.put("37", "山东");
-        cityCodes.put("41", "河南");
-        cityCodes.put("42", "湖北");
-        cityCodes.put("43", "湖南");
-        cityCodes.put("44", "广东");
-        cityCodes.put("45", "广西");
-        cityCodes.put("46", "海南");
-        cityCodes.put("50", "重庆");
-        cityCodes.put("51", "四川");
-        cityCodes.put("52", "贵州");
-        cityCodes.put("53", "云南");
-        cityCodes.put("54", "西藏");
-        cityCodes.put("61", "陕西");
-        cityCodes.put("62", "甘肃");
-        cityCodes.put("63", "青海");
-        cityCodes.put("64", "宁夏");
-        cityCodes.put("65", "新疆");
-        cityCodes.put("71", "台湾");
-        cityCodes.put("81", "香港");
-        cityCodes.put("82", "澳门");
-        cityCodes.put("91", "国外");
+        CITY_CODES.put("11", "北京");
+        CITY_CODES.put("12", "天津");
+        CITY_CODES.put("13", "河北");
+        CITY_CODES.put("14", "山西");
+        CITY_CODES.put("15", "内蒙古");
+        CITY_CODES.put("21", "辽宁");
+        CITY_CODES.put("22", "吉林");
+        CITY_CODES.put("23", "黑龙江");
+        CITY_CODES.put("31", "上海");
+        CITY_CODES.put("32", "江苏");
+        CITY_CODES.put("33", "浙江");
+        CITY_CODES.put("34", "安徽");
+        CITY_CODES.put("35", "福建");
+        CITY_CODES.put("36", "江西");
+        CITY_CODES.put("37", "山东");
+        CITY_CODES.put("41", "河南");
+        CITY_CODES.put("42", "湖北");
+        CITY_CODES.put("43", "湖南");
+        CITY_CODES.put("44", "广东");
+        CITY_CODES.put("45", "广西");
+        CITY_CODES.put("46", "海南");
+        CITY_CODES.put("50", "重庆");
+        CITY_CODES.put("51", "四川");
+        CITY_CODES.put("52", "贵州");
+        CITY_CODES.put("53", "云南");
+        CITY_CODES.put("54", "西藏");
+        CITY_CODES.put("61", "陕西");
+        CITY_CODES.put("62", "甘肃");
+        CITY_CODES.put("63", "青海");
+        CITY_CODES.put("64", "宁夏");
+        CITY_CODES.put("65", "新疆");
+        CITY_CODES.put("71", "台湾");
+        CITY_CODES.put("81", "香港");
+        CITY_CODES.put("82", "澳门");
+        CITY_CODES.put("91", "国外");
 
-        twFirstCode.put("A", 10);
-        twFirstCode.put("B", 11);
-        twFirstCode.put("C", 12);
-        twFirstCode.put("D", 13);
-        twFirstCode.put("E", 14);
-        twFirstCode.put("F", 15);
-        twFirstCode.put("G", 16);
-        twFirstCode.put("H", 17);
-        twFirstCode.put("J", 18);
-        twFirstCode.put("K", 19);
-        twFirstCode.put("L", 20);
-        twFirstCode.put("M", 21);
-        twFirstCode.put("N", 22);
-        twFirstCode.put("P", 23);
-        twFirstCode.put("Q", 24);
-        twFirstCode.put("R", 25);
-        twFirstCode.put("S", 26);
-        twFirstCode.put("T", 27);
-        twFirstCode.put("U", 28);
-        twFirstCode.put("V", 29);
-        twFirstCode.put("X", 30);
-        twFirstCode.put("Y", 31);
-        twFirstCode.put("W", 32);
-        twFirstCode.put("Z", 33);
-        twFirstCode.put("I", 34);
-        twFirstCode.put("O", 35);
+        TW_FIRST_CODE.put("A", 10);
+        TW_FIRST_CODE.put("B", 11);
+        TW_FIRST_CODE.put("C", 12);
+        TW_FIRST_CODE.put("D", 13);
+        TW_FIRST_CODE.put("E", 14);
+        TW_FIRST_CODE.put("F", 15);
+        TW_FIRST_CODE.put("G", 16);
+        TW_FIRST_CODE.put("H", 17);
+        TW_FIRST_CODE.put("J", 18);
+        TW_FIRST_CODE.put("K", 19);
+        TW_FIRST_CODE.put("L", 20);
+        TW_FIRST_CODE.put("M", 21);
+        TW_FIRST_CODE.put("N", 22);
+        TW_FIRST_CODE.put("P", 23);
+        TW_FIRST_CODE.put("Q", 24);
+        TW_FIRST_CODE.put("R", 25);
+        TW_FIRST_CODE.put("S", 26);
+        TW_FIRST_CODE.put("T", 27);
+        TW_FIRST_CODE.put("U", 28);
+        TW_FIRST_CODE.put("V", 29);
+        TW_FIRST_CODE.put("X", 30);
+        TW_FIRST_CODE.put("Y", 31);
+        TW_FIRST_CODE.put("W", 32);
+        TW_FIRST_CODE.put("Z", 33);
+        TW_FIRST_CODE.put("I", 34);
+        TW_FIRST_CODE.put("O", 35);
 
         //来自http://shenfenzheng.bajiu.cn/?rid=40
-        hkFirstCode.put("A", 1);// 持证人拥有香港居留权
-        hkFirstCode.put("B", 2);// 持证人所报称的出生日期或地点自首次登记以后，曾作出更改
-        hkFirstCode.put("C", 3);// 持证人登记领证时在香港的居留受到入境事务处处长的限制
-        hkFirstCode.put("N", 14);// 持证人所报的姓名自首次登记以后，曾作出更改
-        hkFirstCode.put("O", 15);// 持证人报称在香港、澳门及中国以外其他地区或国家出生
-        hkFirstCode.put("R", 18);// 持证人拥有香港入境权
-        hkFirstCode.put("U", 21);// 持证人登记领证时在香港的居留不受入境事务处处长的限制
-        hkFirstCode.put("W", 23);// 持证人报称在澳门地区出生
-        hkFirstCode.put("X", 24);// 持证人报称在中国大陆出生
-        hkFirstCode.put("Z", 26);// 持证人报称在香港出生
+        HK_FIRST_CODE.put("A", 1);// 持证人拥有香港居留权
+        HK_FIRST_CODE.put("B", 2);// 持证人所报称的出生日期或地点自首次登记以后，曾作出更改
+        HK_FIRST_CODE.put("C", 3);// 持证人登记领证时在香港的居留受到入境事务处处长的限制
+        HK_FIRST_CODE.put("N", 14);// 持证人所报的姓名自首次登记以后，曾作出更改
+        HK_FIRST_CODE.put("O", 15);// 持证人报称在香港、澳门及中国以外其他地区或国家出生
+        HK_FIRST_CODE.put("R", 18);// 持证人拥有香港入境权
+        HK_FIRST_CODE.put("U", 21);// 持证人登记领证时在香港的居留不受入境事务处处长的限制
+        HK_FIRST_CODE.put("W", 23);// 持证人报称在澳门地区出生
+        HK_FIRST_CODE.put("X", 24);// 持证人报称在中国大陆出生
+        HK_FIRST_CODE.put("Z", 26);// 持证人报称在香港出生
     }
 
     public static Date parseDate(String dateStr, String format, Locale locale) {
@@ -369,7 +382,7 @@ public class CommonTool {
         if (NUMBERS.matcher(idCard).matches()) {
             // 省份
             String proCode = idCard.substring(0, 2);
-            if (null == cityCodes.get(proCode)) {
+            if (null == CITY_CODES.get(proCode)) {
                 return false;
             }
 
@@ -398,7 +411,7 @@ public class CommonTool {
         if (card.length() != 8 && card.length() != 9 && idCard.length() != 10) {
             return null;
         }
-        if (idCard.matches("^[a-zA-Z][0-9]{9}$")) { // 台湾
+        if (PATTERN_TW_IDCARD.matcher(idCard).matches()) { // 台湾
             info[0] = "台湾";
             char char2 = idCard.charAt(1);
             if ('1' == char2) {
@@ -411,10 +424,10 @@ public class CommonTool {
                 return info;
             }
             info[2] = isValidTWCard(idCard) ? "true" : "false";
-        } else if (idCard.matches("^[157][0-9]{6}\\(?[0-9A-Z]\\)?$")) { // 澳门
+        } else if (PATTERN_MC_IDCARD.matcher(idCard).matches()) { // 澳门
             info[0] = "澳门";
             info[1] = "N";
-        } else if (idCard.matches("^[A-Z]{1,2}[0-9]{6}\\(?[0-9A]\\)?$")) { // 香港
+        } else if (PATTERN_HK_IDCARD.matcher(idCard).matches()) { // 香港
             info[0] = "香港";
             info[1] = "N";
             info[2] = isValidHKCard(idCard) ? "true" : "false";
@@ -435,7 +448,7 @@ public class CommonTool {
             return false;
         }
         String start = idCard.substring(0, 1);
-        Integer iStart = twFirstCode.get(start);
+        Integer iStart = TW_FIRST_CODE.get(start);
         if (null == iStart) {
             return false;
         }
@@ -473,7 +486,7 @@ public class CommonTool {
             sum = 522 + (Character.toUpperCase(card.charAt(0)) - 55) * 8;
         }
         String start = idCard.substring(0, 1);
-        Integer iStart = hkFirstCode.get(start);
+        Integer iStart = HK_FIRST_CODE.get(start);
         if (null == iStart) {
             return false;
         }

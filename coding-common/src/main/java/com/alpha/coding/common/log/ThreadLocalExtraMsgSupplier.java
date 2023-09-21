@@ -1,6 +1,5 @@
 package com.alpha.coding.common.log;
 
-import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -17,12 +16,15 @@ public class ThreadLocalExtraMsgSupplier implements ExtraMsgSupplier {
 
     public static final String KEY = "MonitorLogExtraMsg";
 
-    private Supplier<String> supplier =
-            () -> Optional.ofNullable(MapThreadLocalAdaptor.get(KEY)).map(String::valueOf).orElse((String) null);
+    private Supplier<String> supplier = () -> MapThreadLocalAdaptor.getAsString(KEY);
 
     private Consumer<String> appender = s -> Optional.ofNullable(s)
             .ifPresent(p -> MapThreadLocalAdaptor.put(KEY, Optional.ofNullable(MapThreadLocalAdaptor.get(KEY))
-                    .filter(Objects::nonNull).map(x -> x + p).orElse(p)));
+                    .map(x -> x + p).orElse(p)));
+
+    private Consumer<String> aheadAppender = s -> Optional.ofNullable(s)
+            .ifPresent(p -> MapThreadLocalAdaptor.put(KEY, Optional.ofNullable(MapThreadLocalAdaptor.get(KEY))
+                    .map(x -> p + x).orElse(p)));
 
     @Override
     public Supplier<String> supplier() {
@@ -32,5 +34,10 @@ public class ThreadLocalExtraMsgSupplier implements ExtraMsgSupplier {
     @Override
     public Consumer<String> appender() {
         return appender;
+    }
+
+    @Override
+    public Consumer<String> aheadAppender() {
+        return aheadAppender;
     }
 }

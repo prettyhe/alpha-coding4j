@@ -21,6 +21,18 @@ import org.apache.ibatis.annotations.Update;
 public interface CommonMapMapper {
 
     /**
+     * execute insert all data from an exist table by select
+     *
+     * @param targetTableName target table name
+     * @param sourceTableName source table name
+     */
+    @Insert({"<script>",
+            "INSERT INTO ${targetTableName} SELECT * FROM ${sourceTableName}",
+            "</script>"})
+    int insertAllFromSelectTable(@Param("targetTableName") String targetTableName,
+                                 @Param("sourceTableName") String sourceTableName);
+
+    /**
      * execute insert by custom statement
      *
      * @param insertStatement insert sql statement, like: insert into table_a(code,name) values(#{record.code},#{
@@ -216,6 +228,38 @@ public interface CommonMapMapper {
             "</script>"})
     int batchInsertOrUpdate(@Param("tableName") String tableName, @Param("columnNames") String[] columnNames,
                             @Param("records") List<Object[]> records);
+
+    /**
+     * execute batch insert or update selective, insert columns base on the first record keys,
+     * Null value is not updated
+     *
+     * @param tableName   table name
+     * @param columnNames table column names, like: [column_a, column_b]
+     * @param records     records for insert, like: [(xxx,yyy), (mmm,nnn)]
+     * @return insert result
+     */
+    @Insert({"<script>",
+            "INSERT INTO ${tableName}",
+            "  <trim prefix='(' suffix=')' suffixOverrides=','>",
+            "    <foreach collection='columnNames' index='index' item='name' separator=','>",
+            "      ${name}",
+            "    </foreach>",
+            "  </trim>",
+            "VALUES",
+            "  <foreach collection='records' item='record' open='' separator=',' close=''>",
+            "    <foreach collection='record' index='index' item='value' open='(' separator=',' close=')'>",
+            "      #{value}",
+            "    </foreach>",
+            "  </foreach>",
+            "ON DUPLICATE KEY UPDATE",
+            "  <trim suffixOverrides=','>",
+            "    <foreach collection='columnNames' index='index' item='name' separator=','>",
+            "      ${name} = COALESCE(values(${name}), ${name})",
+            "    </foreach>",
+            "  </trim>",
+            "</script>"})
+    int batchNotNullInsertOrUpdate(@Param("tableName") String tableName, @Param("columnNames") String[] columnNames,
+                                   @Param("records") List<Object[]> records);
 
     /**
      * execute batch insert or update selective, insert columns base on the first record keys

@@ -5,6 +5,7 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.math.RoundingMode;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -204,12 +205,12 @@ public class MathUtils {
         if (bd == null) {
             return defaultVal;
         }
-        BigDecimal divide = bd.multiply(HUNDRED).divide(BigDecimal.ONE, precision, BigDecimal.ROUND_HALF_UP);
-        return divide.toString() + "%";
+        BigDecimal divide = bd.multiply(HUNDRED).divide(BigDecimal.ONE, precision, RoundingMode.HALF_UP);
+        return divide.toPlainString() + "%";
     }
 
     public static BigDecimal setScale(BigDecimal bd, int newScale) {
-        return bd == null ? null : bd.setScale(newScale, BigDecimal.ROUND_HALF_UP);
+        return bd == null ? null : bd.setScale(newScale, RoundingMode.HALF_UP);
     }
 
     public static BigDecimal setScale(BigDecimal bd, int newScale, int roundingMode) {

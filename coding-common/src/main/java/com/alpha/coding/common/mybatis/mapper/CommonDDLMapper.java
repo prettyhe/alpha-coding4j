@@ -69,4 +69,15 @@ public interface CommonDDLMapper {
     @Update({"${alterStatement}"})
     int alterTable(@Param("alterStatement") String alterStatement);
 
+    /**
+     * create table like exist table
+     *
+     * @param newTableName   new table name
+     * @param existTableName exist table name
+     */
+    @Update({"<script>",
+            "CREATE TABLE ${newTableName} LIKE ${existTableName}",
+            "</script>"})
+    int createTableLike(@Param("newTableName") String newTableName, @Param("existTableName") String existTableName);
+
 }

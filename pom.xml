@@ -95,7 +95,7 @@
         <coding4j.HikariCP.version>4.0.3</coding4j.HikariCP.version>
         <coding4j.jsonpath.version>2.6.0</coding4j.jsonpath.version>
         <coding4j.rocketmq.version>4.7.0</coding4j.rocketmq.version>
-        <coding4j.activemq.version>5.15.10</coding4j.activemq.version>
+        <coding4j.activemq.version>5.15.16</coding4j.activemq.version>
         <!--test dependencies version-->
         <coding4j.junit.version>4.13.1</coding4j.junit.version>
         <coding4j.jmock-junit4.version>2.12.0</coding4j.jmock-junit4.version>

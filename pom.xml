@@ -80,7 +80,7 @@
         <coding4j.hibernate-validator.version>6.0.20.Final</coding4j.hibernate-validator.version>
         <coding4j.groovy.version>2.5.22</coding4j.groovy.version>
         <coding4j.caffeine.version>2.8.0</coding4j.caffeine.version>
-        <coding4j.batik-transcoder.version>1.12</coding4j.batik-transcoder.version>
+        <coding4j.batik-transcoder.version>1.17</coding4j.batik-transcoder.version>
         <coding4j.snakeyaml.version>1.33</coding4j.snakeyaml.version>
         <coding4j.asm.version>3.1</coding4j.asm.version>
         <coding4j.findbugs.version>3.0.2</coding4j.findbugs.version>

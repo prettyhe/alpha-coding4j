@@ -1,5 +1,6 @@
 package com.alpha.coding.common.datasource;
 
+import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -127,13 +128,13 @@ public class DataSourceRegisterUtils {
         // 获取连接时最大等待时间，单位毫秒
         BeanDefineUtils.setIfAbsent(builder, environment, "maxWait",
                 keysFunction.apply("jdbc.maxWait"), Long.class, 60000L, propertyMap);
-        // 配置间隔多久才进行一次检测，检测需要关闭的空闲连接，单位是毫秒
+        // 配置间隔多久才进行一次检测，检测需要关闭的空闲连接，单位毫秒
         BeanDefineUtils.setIfAbsent(builder, environment, "timeBetweenEvictionRunsMillis",
                 keysFunction.apply("jdbc.timeBetweenEvictionRunsMillis"), Long.class, 60000L, propertyMap);
-        // 连接保持空闲而不被驱逐的最小时间
+        // 连接保持空闲而不被驱逐的最小时间，单位毫秒
         BeanDefineUtils.setIfAbsent(builder, environment, "minEvictableIdleTimeMillis",
                 keysFunction.apply("jdbc.minEvictableIdleTimeMillis"), Long.class, 300000L, propertyMap);
-        // 连接保持空闲而不被驱逐的最大时间
+        // 连接保持空闲而不被驱逐的最大时间，单位毫秒
         BeanDefineUtils.setIfAbsent(builder, environment, "maxEvictableIdleTimeMillis",
                 keysFunction.apply("jdbc.maxEvictableIdleTimeMillis"), Long.class, null, propertyMap);
         // 检查连接的SQL，默认=>SELECT 1, DB2默认=>SELECT 1 FROM SYSIBM.DUAL，可自定义覆盖
@@ -141,7 +142,7 @@ public class DataSourceRegisterUtils {
                 keysFunction.apply("jdbc.validationQuery"), null,
                 !"db2".equals(createDataSourceEnv.getType()) ? "SELECT 1" : "SELECT 1 FROM SYSIBM.DUAL",
                 propertyMap);
-        // 检查连接是否有效的超时时间
+        // 检查连接是否有效的超时时间，单位秒
         BeanDefineUtils.setIfAbsent(builder, environment, "validationQueryTimeout",
                 keysFunction.apply("jdbc.validationQueryTimeout"), Long.class, null, propertyMap);
         // 申请连接的时候检测，如果空闲时间大于timeBetweenEvictionRunsMillis，执行validationQuery检测连接是否有效
@@ -167,7 +168,7 @@ public class DataSourceRegisterUtils {
                 keysFunction.apply("jdbc.keepAlive"), Boolean.class, null, propertyMap);
         // 当连接的空闲时间大于keepAliveBetweenTimeMillis（默认2分钟），但是小于minEvictableIdleTimeMillis（默认30分钟），
         // Druid会通过调用validationQuery保持该连接的有效性
-        // 当连接空闲时间大于minEvictableIdleTimeMillis，Druid会直接将该连接关闭，keepAlive会无效
+        // 当连接空闲时间大于minEvictableIdleTimeMillis，单位毫秒，Druid会直接将该连接关闭，keepAlive会无效
         BeanDefineUtils.setIfAbsent(builder, environment, "keepAliveBetweenTimeMillis",
                 keysFunction.apply("jdbc.keepAliveBetweenTimeMillis"), Long.class, null, propertyMap);
         // 配置监控统计拦截的filters，去掉后监控界面sql无法统计
@@ -407,7 +408,9 @@ public class DataSourceRegisterUtils {
                 propertyMap);
         // 控制将测试连接的活动性的最长时间，可接受的最低验证超时为250毫秒。 默认值：5000
         BeanDefineUtils.setIfAbsent(builder, environment, "validationTimeout",
-                keysFunction.apply("jdbc.validationQueryTimeout"), Long.class, null, propertyMap);
+                keysFunction.apply("jdbc.validationQueryTimeout"), String.class, null,
+                x -> ((BigDecimal) Converter.convertToNumber.apply(x, BigDecimal.class))
+                        .multiply(new BigDecimal(1000)).longValue(), propertyMap);
         // 用于跟数据库保持心跳连接，防止底层网络基础设施超时断开，定期验证连接的有效性
         BeanDefineUtils.setIfAbsent(builder, environment, "keepaliveTime",
                 keysFunction.apply("jdbc.keepAliveBetweenTimeMillis"), Long.class, 60000L, propertyMap);

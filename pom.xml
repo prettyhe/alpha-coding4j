@@ -87,7 +87,7 @@
         <coding4j.redisson.version>3.14.0</coding4j.redisson.version>
         <coding4j.c3p0.version>0.9.5.5</coding4j.c3p0.version>
         <coding4j.HikariCP.version>4.0.3</coding4j.HikariCP.version>
-        <coding4j.jsonpath.version>2.6.0</coding4j.jsonpath.version>
+        <coding4j.jsonpath.version>2.9.0</coding4j.jsonpath.version>
         <coding4j.rocketmq.version>4.7.0</coding4j.rocketmq.version>
         <coding4j.activemq.version>5.15.16</coding4j.activemq.version>
         <!--test dependencies version-->

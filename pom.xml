@@ -33,7 +33,7 @@
         <maven.source.version>1.8</maven.source.version>
         <maven.target.version>1.8</maven.target.version>
         <!--dependencies version-->
-        <coding4j.springframework.version>5.2.25.RELEASE</coding4j.springframework.version>
+        <coding4j.springframework.version>6.0.15</coding4j.springframework.version>
         <coding4j.springframework.data.version>2.2.3.RELEASE</coding4j.springframework.data.version>
         <coding4j.jedis.version>3.1.0</coding4j.jedis.version>
         <coding4j.guava.version>20.0</coding4j.guava.version>

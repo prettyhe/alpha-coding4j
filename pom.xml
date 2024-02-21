@@ -57,7 +57,7 @@
         <coding4j.commons-pool2.version>2.8.0</coding4j.commons-pool2.version>
         <coding4j.commons-lang3.version>3.12.0</coding4j.commons-lang3.version>
         <coding4j.commons-collections4.version>4.4</coding4j.commons-collections4.version>
-        <coding4j.commons-compress.version>1.21</coding4j.commons-compress.version>
+        <coding4j.commons-compress.version>1.26.0</coding4j.commons-compress.version>
         <coding4j.javax.servlet-api.version>3.1.0</coding4j.javax.servlet-api.version>
         <coding4j.httpclient.version>4.5.13</coding4j.httpclient.version>
         <coding4j.mybatis.version>3.5.6</coding4j.mybatis.version>

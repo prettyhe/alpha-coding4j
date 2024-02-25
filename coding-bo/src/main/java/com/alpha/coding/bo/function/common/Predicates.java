@@ -227,6 +227,26 @@ public interface Predicates {
     };
 
     /**
+     * 判断字符串是否为JSON对象字符串
+     */
+    Predicate<CharSequence> isJsonObjStr = cs -> {
+        if (cs != null) {
+            return cs.charAt(0) == '{' && cs.charAt(cs.length() - 1) == '}';
+        }
+        return false;
+    };
+
+    /**
+     * 判断字符串是否为JSON数组字符串
+     */
+    Predicate<CharSequence> isJsonArrayStr = cs -> {
+        if (cs != null) {
+            return cs.charAt(0) == '[' && cs.charAt(cs.length() - 1) == ']';
+        }
+        return false;
+    };
+
+    /**
      * 时间是否在指定区间内(闭区间)
      */
     TiPredicate<Date, Date, Date> isBetween = (d, st, et) -> d.compareTo(st) >= 0 && d.compareTo(et) <= 0;

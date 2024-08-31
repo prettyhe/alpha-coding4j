@@ -25,6 +25,11 @@ public @interface SyncInvoke {
     String key() default "";
 
     /**
+     * 条件，SpEL表达式。为空或执行返回为true时启用限制
+     */
+    String condition() default "";
+
+    /**
      * 并发数(大于1表示支持多并发处理)，支持外部化配置，如"${invoke.sync.concurrency:1}"
      */
     String concurrency() default "1";

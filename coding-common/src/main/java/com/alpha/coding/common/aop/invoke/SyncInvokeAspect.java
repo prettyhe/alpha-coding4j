@@ -57,17 +57,25 @@ public class SyncInvokeAspect implements ApplicationContextAware {
         }
         final SyncInvoke syncInvoke = method.getAnnotation(SyncInvoke.class);
         final JoinPointContext joinPointContext = new JoinPointContext(joinPoint);
+        final boolean condition = evalCondition(joinPointContext.getJoinOperationContext(), syncInvoke.condition());
+        if (!condition) {
+            return joinPoint.proceed();
+        }
         final String invokeKey = buildInvokeKey(joinPointContext.getJoinOperationContext(), syncInvoke.key());
         final RedisSync redisSync = syncInvoke.redisSync();
         if (redisSync.enable()) {
             RedisTemplate redisTemplate = (RedisTemplate) applicationContext.getBean(redisSync.redisTemplateBean());
             final int rateLimit = BeanDefineUtils.resolveValue(applicationContext, redisSync.rateLimit(), int.class);
+            final long maxWaitSeconds =
+                    BeanDefineUtils.resolveValue(applicationContext, redisSync.maxWaitSeconds(), long.class);
+            final int tryLockIntervalMillis =
+                    BeanDefineUtils.resolveValue(applicationContext, redisSync.tryLockIntervalMillis(), int.class);
             final Throwable[] throwableArray = new Throwable[1];
             Tuple<Boolean, Object> tuple = null;
             // 令牌阈值为1，使用分布式锁；令牌阈值大于1，使用限流
             if (rateLimit == 1 && redisSync.failFast()) {
                 tuple = RedisTemplateUtils.doInLockAutoRenewalReturnOnLockFail(redisTemplate, invokeKey,
-                        redisSync.expireSeconds(), () -> {
+                        redisSync.expireSeconds(), maxWaitSeconds, tryLockIntervalMillis, () -> {
                             try {
                                 return joinPoint.proceed();
                             } catch (Throwable throwable) {
@@ -155,6 +163,21 @@ public class SyncInvokeAspect implements ApplicationContextAware {
             return String.valueOf(generate(context.getTarget(), context.getMetadata().getMethod(),
                     context.getMethodSignature()));
         }
+    }
+
+    /**
+     * 执行条件表达式
+     */
+    private boolean evalCondition(JoinOperationContext context, String conditionExpression) {
+        if (StringUtils.isBlank(conditionExpression)) {
+            return true;
+        }
+        final Object condition = AopHelper.evalSpELExpress(GlobalExpressionCache.getCache(),
+                context.getMethodCacheKey(), conditionExpression, getExpressionParser(),
+                AopHelper.createEvaluationContext(context.getMetadata().getMethod(), context.getArgs(),
+                        context.getTarget(), context.getMetadata().getTargetClass(), NO_RESULT,
+                        applicationContext, getParameterNameDiscoverer()));
+        return "true".equalsIgnoreCase(String.valueOf(condition));
     }
 
     private Object generate(Object target, Method method, String methodSignature) {

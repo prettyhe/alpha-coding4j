@@ -286,4 +286,16 @@ public interface Predicates {
      */
     Predicate<Map<?, ?>> isNotEmptyMap = isEmptyMap.negate();
 
+    /**
+     * 判断两个字符串是否相等，忽略空串
+     */
+    BiPredicate<CharSequence, CharSequence> testStrEqualIgnoreEmpty = (t, u) ->
+            Objects.equals(isEmptyStr.test(t) ? null : t, isEmptyStr.test(u) ? null : u);
+
+    /**
+     * 判断两个字符串是否相等，忽略空白串
+     */
+    BiPredicate<CharSequence, CharSequence> testStrEqualIgnoreBlank = (t, u) ->
+            Objects.equals(isBlankStr.test(t) ? null : t, isBlankStr.test(u) ? null : u);
+
 }

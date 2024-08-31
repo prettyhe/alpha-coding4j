@@ -48,7 +48,7 @@ public class RedisTemplateUtils {
     private static final ScheduleDelegator LOCK_RENEWAL_SCHEDULER_DELEGATOR =
             ScheduleDelegator.build(LOCK_RENEWAL_SCHEDULER);
     private static final String CLIENT_ID = UUID.randomUUID().toString().replace("-", "").toUpperCase();
-    private static transient Method REDIS_TEMPLATE_SET_EX = null;
+    private static Method REDIS_TEMPLATE_SET_EX = null;
     private static final StringRedisSerializer STRING_REDIS_SERIALIZER =
             new StringRedisSerializer(StandardCharsets.UTF_8);
     private static final JdkSerializationRedisSerializer JDK_SERIALIZATION_REDIS_SERIALIZER =
@@ -120,7 +120,7 @@ public class RedisTemplateUtils {
      * @param redisTemplate redisTemplate
      * @param key           锁定的key
      * @param uqVal         获取锁客户端的位移标识
-     * @param expireSeconds 锁定时长
+     * @param expireSeconds 锁定时长（秒）
      * @return 是否获取锁
      */
     @Deprecated
@@ -138,7 +138,7 @@ public class RedisTemplateUtils {
      *
      * @param redisTemplate redisTemplate
      * @param key           锁定的key
-     * @param expireSeconds 锁定时长
+     * @param expireSeconds 锁定时长（秒）
      * @return 是否获取锁
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -196,15 +196,53 @@ public class RedisTemplateUtils {
      *
      * @param redisTemplate RedisTemplate
      * @param key           锁定的key
-     * @param expireSeconds 锁定时间
+     * @param expireSeconds 锁定时间（秒）
      * @param callback      锁定期间回调
      * @return 执行结果元组(是否成功获取锁, 回调执行结果)
      */
     @SuppressWarnings({"rawtypes"})
     public static <T> Tuple<Boolean, T> doInLockReturnOnLockFail(RedisTemplate redisTemplate, String key,
                                                                  long expireSeconds, RedisLockCallback<T> callback) {
-        if (!lock(redisTemplate, key, expireSeconds)) {
-            return new Tuple<>(false, null);
+        return doInLockReturnOnLockFail(redisTemplate, key, expireSeconds, 0, null, callback);
+    }
+
+    /**
+     * 在锁中执行，获取不到锁时立即返回
+     *
+     * @param redisTemplate         RedisTemplate
+     * @param key                   锁定的key
+     * @param expireSeconds         锁定时间（秒）
+     * @param maxWaitSeconds        最长等待时间（秒），正整数有效
+     * @param tryLockIntervalMillis 尝试获取锁的时间间隔（毫秒），默认100ms
+     * @param callback              锁定期间回调
+     * @return 执行结果元组(是否成功获取锁, 回调执行结果)
+     */
+    @SuppressWarnings({"rawtypes"})
+    public static <T> Tuple<Boolean, T> doInLockReturnOnLockFail(RedisTemplate redisTemplate, String key,
+                                                                 long expireSeconds,
+                                                                 long maxWaitSeconds, Integer tryLockIntervalMillis,
+                                                                 RedisLockCallback<T> callback) {
+        if (maxWaitSeconds <= 0) {
+            if (!lock(redisTemplate, key, expireSeconds)) {
+                return new Tuple<>(false, null);
+            }
+        } else {
+            final int interval = tryLockIntervalMillis == null ? 100 : tryLockIntervalMillis;
+            final long st = System.nanoTime();
+            while (true) {
+                if (lock(redisTemplate, key, expireSeconds)) {
+                    break;
+                }
+                final long seconds = TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - st);
+                if (seconds >= maxWaitSeconds) {
+                    return new Tuple<>(false, null);
+                }
+                try {
+                    Thread.sleep(interval);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
         }
         try {
             return new Tuple<>(true, callback.execute());
@@ -218,7 +256,7 @@ public class RedisTemplateUtils {
      *
      * @param redisTemplate RedisTemplate
      * @param key           锁定的key
-     * @param expireSeconds 锁定时间
+     * @param expireSeconds 锁定时间（秒）
      * @param callback      锁定期间回调
      * @return 执行结果元组(是否成功获取锁, 回调执行结果)
      */
@@ -226,8 +264,47 @@ public class RedisTemplateUtils {
     public static <T> Tuple<Boolean, T> doInLockAutoRenewalReturnOnLockFail(RedisTemplate redisTemplate,
                                                                             String key, long expireSeconds,
                                                                             RedisLockCallback<T> callback) {
-        if (!lock(redisTemplate, key, expireSeconds)) {
-            return new Tuple<>(false, null);
+        return doInLockAutoRenewalReturnOnLockFail(redisTemplate, key, expireSeconds, 0, null, callback);
+    }
+
+    /**
+     * 在锁中执行(自动续期)，获取不到锁时立即返回
+     *
+     * @param redisTemplate         RedisTemplate
+     * @param key                   锁定的key
+     * @param expireSeconds         锁定时间（秒）
+     * @param maxWaitSeconds        最长等待时间（秒），正整数有效
+     * @param tryLockIntervalMillis 尝试获取锁的时间间隔（毫秒），默认100ms
+     * @param callback              锁定期间回调
+     * @return 执行结果元组(是否成功获取锁, 回调执行结果)
+     */
+    @SuppressWarnings({"rawtypes"})
+    public static <T> Tuple<Boolean, T> doInLockAutoRenewalReturnOnLockFail(RedisTemplate redisTemplate,
+                                                                            String key, long expireSeconds,
+                                                                            long maxWaitSeconds,
+                                                                            Integer tryLockIntervalMillis,
+                                                                            RedisLockCallback<T> callback) {
+        if (maxWaitSeconds <= 0) {
+            if (!lock(redisTemplate, key, expireSeconds)) {
+                return new Tuple<>(false, null);
+            }
+        } else {
+            final int interval = tryLockIntervalMillis == null ? 100 : tryLockIntervalMillis;
+            final long st = System.nanoTime();
+            while (true) {
+                if (lock(redisTemplate, key, expireSeconds)) {
+                    break;
+                }
+                final long seconds = TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - st);
+                if (seconds >= maxWaitSeconds) {
+                    return new Tuple<>(false, null);
+                }
+                try {
+                    Thread.sleep(interval);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
         }
         final AtomicBoolean run = new AtomicBoolean(true);
         try {
@@ -242,17 +319,17 @@ public class RedisTemplateUtils {
     /**
      * 在锁中执行，获取不到锁时定时尝试
      *
-     * @param redisTemplate   RedisTemplate
-     * @param key             锁定的key
-     * @param expireSeconds   锁定时间
-     * @param tryLockInterval 尝试获取锁的时间间隔，默认100ms
-     * @param callback        锁定期间回调
+     * @param redisTemplate         RedisTemplate
+     * @param key                   锁定的key
+     * @param expireSeconds         锁定时间（秒）
+     * @param tryLockIntervalMillis 尝试获取锁的时间间隔（毫秒），默认100ms
+     * @param callback              锁定期间回调
      * @return 回调执行结果
      */
     @SuppressWarnings({"rawtypes"})
     public static <T> T doInLock(RedisTemplate redisTemplate, String key, long expireSeconds,
-                                 Integer tryLockInterval, RedisLockCallback<T> callback) {
-        int interval = tryLockInterval == null ? 100 : tryLockInterval;
+                                 Integer tryLockIntervalMillis, RedisLockCallback<T> callback) {
+        final int interval = tryLockIntervalMillis == null ? 100 : tryLockIntervalMillis;
         while (true) {
             if (!lock(redisTemplate, key, expireSeconds)) {
                 try {
@@ -273,17 +350,17 @@ public class RedisTemplateUtils {
     /**
      * 在锁中执行（自动续期），获取不到锁时定时尝试
      *
-     * @param redisTemplate   RedisTemplate
-     * @param key             锁定的key
-     * @param expireSeconds   锁定时间
-     * @param tryLockInterval 尝试获取锁的时间间隔，默认100ms
-     * @param callback        锁定期间回调
+     * @param redisTemplate         RedisTemplate
+     * @param key                   锁定的key
+     * @param expireSeconds         锁定时间（秒）
+     * @param tryLockIntervalMillis 尝试获取锁的时间间隔（毫秒），默认100ms
+     * @param callback              锁定期间回调
      * @return 回调执行结果
      */
     @SuppressWarnings({"rawtypes"})
     public static <T> T doInLockAutoRenewal(RedisTemplate redisTemplate, String key, long expireSeconds,
-                                            Integer tryLockInterval, RedisLockCallback<T> callback) {
-        int interval = tryLockInterval == null ? 100 : tryLockInterval;
+                                            Integer tryLockIntervalMillis, RedisLockCallback<T> callback) {
+        final int interval = tryLockIntervalMillis == null ? 100 : tryLockIntervalMillis;
         while (true) {
             if (!lock(redisTemplate, key, expireSeconds)) {
                 try {
@@ -309,7 +386,7 @@ public class RedisTemplateUtils {
      *
      * @param redisTemplate RedisTemplate
      * @param key           续期的key
-     * @param expireSeconds 有效期(秒)
+     * @param expireSeconds 有效期（秒）
      * @param run           释放标识
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -442,7 +519,7 @@ public class RedisTemplateUtils {
      *
      * @param redisTemplate redisTemplate
      * @param key           令牌key
-     * @param expireSeconds 令牌持有时长
+     * @param expireSeconds 令牌持有时长（秒）
      * @param rateLimit     令牌数阈值
      * @return 是否获取到令牌
      */
@@ -489,7 +566,7 @@ public class RedisTemplateUtils {
      *
      * @param redisTemplate RedisTemplate
      * @param key           令牌key
-     * @param expireSeconds 令牌持有时间
+     * @param expireSeconds 令牌持有时间（秒）
      * @param rateLimit     令牌数阈值
      * @param callback      令牌持有期间回调
      * @return 执行结果元组(是否成功获取到限流令牌, 回调执行结果)
@@ -513,7 +590,7 @@ public class RedisTemplateUtils {
      *
      * @param redisTemplate RedisTemplate
      * @param key           令牌key
-     * @param expireSeconds 令牌持有时间
+     * @param expireSeconds 令牌持有时间（秒）
      * @param rateLimit     令牌数阈值
      * @param callback      令牌持有期间回调
      * @return 执行结果元组(是否成功获取到限流令牌, 回调执行结果)
@@ -539,18 +616,18 @@ public class RedisTemplateUtils {
     /**
      * 获取到限流令牌执行，获取不到限流令牌时定时尝试
      *
-     * @param redisTemplate   RedisTemplate
-     * @param key             令牌key
-     * @param expireSeconds   令牌持有时间
-     * @param rateLimit       令牌数阈值
-     * @param tryLockInterval 尝试获取令牌的时间间隔，默认100ms
-     * @param callback        令牌持有期间回调
+     * @param redisTemplate         RedisTemplate
+     * @param key                   令牌key
+     * @param expireSeconds         令牌持有时间（秒）
+     * @param rateLimit             令牌数阈值
+     * @param tryLockIntervalMillis 尝试获取令牌的时间间隔（毫秒），默认100ms
+     * @param callback              令牌持有期间回调
      * @return 回调执行结果
      */
     @SuppressWarnings({"rawtypes"})
     public static <T> T doWithRateLimit(RedisTemplate redisTemplate, String key, long expireSeconds,
-                                        int rateLimit, Integer tryLockInterval, RedisLockCallback<T> callback) {
-        int interval = tryLockInterval == null ? 100 : tryLockInterval;
+                                        int rateLimit, Integer tryLockIntervalMillis, RedisLockCallback<T> callback) {
+        final int interval = tryLockIntervalMillis == null ? 100 : tryLockIntervalMillis;
         while (true) {
             if (!acquireRateLimit(redisTemplate, key, expireSeconds, rateLimit)) {
                 try {
@@ -571,19 +648,19 @@ public class RedisTemplateUtils {
     /**
      * 获取到限流令牌后执行（自动续期），获取不到限流令牌时定时尝试
      *
-     * @param redisTemplate   RedisTemplate
-     * @param key             令牌key
-     * @param expireSeconds   令牌持有时间
-     * @param rateLimit       令牌数阈值
-     * @param tryLockInterval 尝试获取限流令牌的时间间隔，默认100ms
-     * @param callback        获取到限流令牌后回调
+     * @param redisTemplate         RedisTemplate
+     * @param key                   令牌key
+     * @param expireSeconds         令牌持有时间（秒）
+     * @param rateLimit             令牌数阈值
+     * @param tryLockIntervalMillis 尝试获取限流令牌的时间间隔（毫秒），默认100ms
+     * @param callback              获取到限流令牌后回调
      * @return 回调执行结果
      */
     @SuppressWarnings({"rawtypes"})
     public static <T> T doWithRateLimitAutoRenewal(RedisTemplate redisTemplate, String key, long expireSeconds,
-                                                   int rateLimit, Integer tryLockInterval,
+                                                   int rateLimit, Integer tryLockIntervalMillis,
                                                    RedisLockCallback<T> callback) {
-        int interval = tryLockInterval == null ? 100 : tryLockInterval;
+        final int interval = tryLockIntervalMillis == null ? 100 : tryLockIntervalMillis;
         while (true) {
             if (!acquireRateLimit(redisTemplate, key, expireSeconds, rateLimit)) {
                 try {

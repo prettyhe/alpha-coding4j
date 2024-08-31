@@ -13,7 +13,9 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Locale;
+import java.util.SimpleTimeZone;
 import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
 
 /**
  * DateUtils default parse-format:{yyyy-MM-dd HH:mm:ss}
@@ -37,6 +39,9 @@ public class DateUtils {
     public static final String PURE_DATETIME_PATTERN = "yyyyMMddHHmmss";
     public static final String PURE_DATETIME_MS_PATTERN = "yyyyMMddHHmmssSSS";
     public static final String TIME_FORMAT = "HH:mm:ss";
+    public static final String RFC822_DATE_FORMAT = "EEE, dd MMM yyyy HH:mm:ss z";
+    public static final String ISO8601_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
+    public static final String ISO8601_DATE_FORMAT_1 = "yyyy-MM-dd'T'HH:mm:ss'Z'";
 
     public static final long MILLIS_DAY = 24 * 3600 * 1000;
     public static final long MILLIS_HOUR = 3600 * 1000;
@@ -171,22 +176,36 @@ public class DateUtils {
     }
 
     /**
-     * 使用于本工具里定义的几种格式的字符串转换成日期, 时间戳(或ms)自行转换即可
+     * 使用于本工具里定义的几种格式的字符串转换成日期，无法转换时使用传入的补充格式转换
+     *
+     * @param dateStr              时间字符串
+     * @param supplementaryFormats 补充的格式
      */
-    public static Date smartParse(String dateStr) {
+    public static Date smartParse(String dateStr, String... supplementaryFormats) {
         if (StringUtils.isBlank(dateStr)) {
             return null;
         }
         final String trimDate = dateStr.trim();
+        // 纯数值格式
         if (StringUtils.isNumeric(trimDate)) {
-            return parseByChoose(trimDate, Arrays.asList(
+            Date date = parseByChoose(trimDate, Arrays.asList(
                     PURE_DATETIME_MS_PATTERN,
                     PURE_DATETIME_PATTERN,
                     DATE_HOUR_FORMAT,
                     DEFAULT_DATE_FORMAT
             ));
+            if (date == null && supplementaryFormats != null) {
+                for (String format : supplementaryFormats) {
+                    date = parse(dateStr, format);
+                    if (date != null) {
+                        return date;
+                    }
+                }
+            }
+            return date;
         }
-        return parseByChoose(trimDate, Arrays.asList(
+        // 非纯数值格式
+        Date date = parseByChoose(trimDate, Arrays.asList(
                 DATE_MILLIS_FORMAT,
                 DEFAULT_FORMAT,
                 DATE_HOUR_MINUTE_FORMAT,
@@ -195,6 +214,15 @@ public class DateUtils {
                 DATE_FORMAT_1,
                 DATE_FORMAT_2
         ));
+        if (date == null && supplementaryFormats != null) {
+            for (String format : supplementaryFormats) {
+                date = parse(dateStr, format);
+                if (date != null) {
+                    return date;
+                }
+            }
+        }
+        return date;
     }
 
     /**
@@ -255,6 +283,72 @@ public class DateUtils {
      */
     public static Date parse(String dateStr) {
         return parse(dateStr, DEFAULT_FORMAT);
+    }
+
+    /**
+     * 格式化时间：EEE, dd MMM yyyy HH:mm:ss z
+     */
+    public static String formatRFC822Date(Date date) {
+        return getRFC822DateFormat().format(date);
+    }
+
+    /**
+     * 解析时间：EEE, dd MMM yyyy HH:mm:ss z
+     */
+    public static Date parseRFC822Date(String dateString) throws ParseException {
+        return getRFC822DateFormat().parse(dateString);
+    }
+
+    /**
+     * 时间格式：EEE, dd MMM yyyy HH:mm:ss z
+     */
+    private static DateFormat getRFC822DateFormat() {
+        SimpleDateFormat rfc822DateFormat = new SimpleDateFormat(RFC822_DATE_FORMAT, Locale.US);
+        rfc822DateFormat.setTimeZone(new SimpleTimeZone(0, "GMT"));
+        return rfc822DateFormat;
+    }
+
+    /**
+     * 格式化时间：yyyy-MM-dd'T'HH:mm:ss.SSS'Z'
+     */
+    public static String formatISO8601Date(Date date) {
+        return getISO8601DateFormat().format(date);
+    }
+
+    /**
+     * 格式化时间：yyyy-MM-dd'T'HH:mm:ss'Z'
+     */
+    public static String formatAlternativeISO8601Date(Date date) {
+        return getAlternativeISO8601DateFormat().format(date);
+    }
+
+    /**
+     * 解析时间：yyyy-MM-dd'T'HH:mm:ss.SSS'Z' 或 yyyy-MM-dd'T'HH:mm:ss'Z'
+     */
+    public static Date parseISO8601Date(String dateString) throws ParseException {
+        try {
+            return getISO8601DateFormat().parse(dateString);
+        } catch (ParseException var2) {
+            return getAlternativeISO8601DateFormat().parse(dateString);
+        }
+    }
+
+    /**
+     * 时间格式：yyyy-MM-dd'T'HH:mm:ss.SSS'Z'
+     */
+    private static DateFormat getISO8601DateFormat() {
+        SimpleDateFormat df = new SimpleDateFormat(ISO8601_DATE_FORMAT, Locale.US);
+        df.setTimeZone(new SimpleTimeZone(0, "GMT"));
+        return df;
+    }
+
+    /**
+     * 时间格式：yyyy-MM-dd'T'HH:mm:ss'Z'
+     */
+    private static DateFormat getAlternativeISO8601DateFormat() {
+        SimpleDateFormat df = new SimpleDateFormat(ISO8601_DATE_FORMAT_1, Locale.US);
+        df.setTimeZone(new SimpleTimeZone(0, "GMT"));
+        return df;
     }
 
     /**
@@ -695,7 +789,7 @@ public class DateUtils {
         if (minuteInterval <= 0) {
             return dates;
         }
-        long deltaMs = minuteInterval * 60 * 1000;
+        long deltaMs = (long) minuteInterval * 60 * 1000;
         dates.add(start);
         long endTime = end.getTime();
         long tmp = start.getTime();
@@ -803,35 +897,57 @@ public class DateUtils {
     }
 
     /**
-     * 格式化时间差值
+     * 格式化时间差值，精确到毫秒
      *
-     * @param st 起始时间
-     * @param et 终止时间
+     * @param st 起始时间(时间戳，ms)
+     * @param et 终止时间(时间戳，ms)
      */
     public static String formatMinusDate(long st, long et) {
+        return formatMinusDate(st, et, TimeUnit.MILLISECONDS);
+    }
+
+    /**
+     * 格式化时间差值
+     *
+     * @param st        起始时间(时间戳，ms)
+     * @param et        终止时间(时间戳，ms)
+     * @param precision 精度
+     */
+    public static String formatMinusDate(long st, long et, TimeUnit precision) {
         long delta = et - st;
         StringBuilder sb = new StringBuilder();
         final long day = delta / MILLIS_DAY;
-        if (day > 0) {
+        if (day > 0 && (precision == null || precision == TimeUnit.DAYS || precision == TimeUnit.HOURS
+                                || precision == TimeUnit.MINUTES || precision == TimeUnit.SECONDS
+                                || precision == TimeUnit.MILLISECONDS)) {
             sb.append(day).append("天");
         }
         delta %= MILLIS_DAY;
         final long hour = delta / MILLIS_HOUR;
-        if (day > 0 || hour > 0) {
+        if ((day > 0 || hour > 0) && (precision == null || precision == TimeUnit.HOURS
+                                              || precision == TimeUnit.MINUTES || precision == TimeUnit.SECONDS
+                                              || precision == TimeUnit.MILLISECONDS)) {
             sb.append(hour).append("时");
         }
         delta %= MILLIS_HOUR;
         final long minute = delta / MILLIS_MINUTE;
-        if (day > 0 || hour > 0 || minute > 0) {
+        if ((day > 0 || hour > 0 || minute > 0)
+                && (precision == null || precision == TimeUnit.MINUTES
+                            || precision == TimeUnit.SECONDS
+                            || precision == TimeUnit.MILLISECONDS)) {
             sb.append(minute).append("分");
         }
         delta %= MILLIS_MINUTE;
         final long second = delta / MILLIS_SECOND;
-        if (day > 0 || hour > 0 || minute > 0 || second > 0) {
+        if ((day > 0 || hour > 0 || minute > 0 || second > 0)
+                && (precision == null || precision == TimeUnit.SECONDS || precision == TimeUnit.MILLISECONDS)) {
             sb.append(second).append("秒");
         }
         delta %= MILLIS_SECOND;
-        sb.append(delta).append("毫秒");
+        if ((day > 0 || hour > 0 || minute > 0 || second > 0 || delta > 0)
+                && (precision == null || precision == TimeUnit.MILLISECONDS)) {
+            sb.append(delta).append("毫秒");
+        }
         return sb.toString();
     }
 

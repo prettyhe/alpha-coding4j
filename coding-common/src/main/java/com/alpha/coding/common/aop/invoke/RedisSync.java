@@ -35,6 +35,16 @@ public @interface RedisSync {
     boolean failFast() default true;
 
     /**
+     * 获取锁时最长等待时间（秒），在failFast=true时生效，支持外部化配置，如"${invoke.sync.maxWaitSeconds:5}"
+     */
+    String maxWaitSeconds() default "0";
+
+    /**
+     * 尝试获取锁的时间间隔（毫秒），在failFast=true时生效，默认100ms，支持外部化配置，如"${invoke.sync.tryLockIntervalMillis:100}"
+     */
+    String tryLockIntervalMillis() default "100";
+
+    /**
      * 限流令牌阈值，支持外部化配置，如"${invoke.sync.rateLimit:1}"
      */
     String rateLimit() default "1";

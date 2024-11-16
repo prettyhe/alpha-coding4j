@@ -2,8 +2,7 @@ package com.alpha.coding.common.bean.define;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.Charset;
-import java.util.ArrayList;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +30,7 @@ import org.yaml.snakeyaml.Yaml;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONException;
 import com.alpha.coding.bo.base.Tuple;
+import com.alpha.coding.bo.util.ConverterUtil;
 import com.alpha.coding.common.utils.IOUtils;
 import com.alpha.coding.common.utils.StringUtils;
 import com.google.common.collect.ArrayListMultimap;
@@ -168,15 +168,16 @@ public class DefineBeanFactory implements ApplicationContextAware, InitializingB
                     case YAML:
                         try {
                             try (InputStream is = new ClassPathResource(define.getSrcLocation()).getInputStream()) {
-                                List list = new Yaml().loadAs(is, ArrayList.class);
+                                final Object content = new Yaml().load(is);
+                                final List<?> list = ConverterUtil.convertToListByJson(content, clazz);
                                 for (int i = 0; i < list.size(); i++) {
-                                    Object bean = JSON.parseObject(JSON.toJSONString(list.get(i)), clazz);
-                                    registerBean(clazz, bean, i, define);
+                                    registerBean(clazz, list.get(i), i, define);
                                 }
                             }
                         } catch (ClassCastException e) {
                             try (InputStream is = new ClassPathResource(define.getSrcLocation()).getInputStream()) {
-                                Object bean = new Yaml().loadAs(is, clazz);
+                                final Object content = new Yaml().load(is);
+                                final Object bean = ConverterUtil.convertByJson(content, clazz);
                                 registerBean(clazz, bean, null, define);
                             }
                         }
@@ -185,7 +186,7 @@ public class DefineBeanFactory implements ApplicationContextAware, InitializingB
                         try {
                             try (InputStream is = new ClassPathResource(define.getSrcLocation()).getInputStream()) {
                                 List list = JSON.parseArray(
-                                        IOUtils.readFromInputStream(is, Charset.forName("UTF-8"), false),
+                                        IOUtils.readFromInputStream(is, StandardCharsets.UTF_8, false),
                                         clazz);
                                 for (int i = 0; i < list.size(); i++) {
                                     registerBean(clazz, list.get(i), i, define);

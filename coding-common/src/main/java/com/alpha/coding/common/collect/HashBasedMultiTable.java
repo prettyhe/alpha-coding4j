@@ -30,6 +30,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class HashBasedMultiTable<R, C, V> implements Serializable {
 
+    private static final long serialVersionUID = 6432260991987583638L;
+
     @NonNull
     final Map<R, Multimap<C, V>> backingMap;
     @NonNull
@@ -156,6 +158,11 @@ public class HashBasedMultiTable<R, C, V> implements Serializable {
         if (multimap != null) {
             this.getOrCreate(rowKey).putAll(multimap);
         }
+    }
+
+    @Override
+    public String toString() {
+        return backingMap == null ? null : backingMap.toString();
     }
 
 }

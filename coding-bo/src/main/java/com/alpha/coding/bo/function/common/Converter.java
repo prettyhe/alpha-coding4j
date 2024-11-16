@@ -11,6 +11,7 @@ import java.util.function.Function;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.parser.Feature;
 
 /**
  * Converter
@@ -87,12 +88,12 @@ public interface Converter {
         }
         if (s instanceof String) {
             try {
-                return JSON.parseObject((String) s, t);
+                return JSON.parseObject((String) s, t, Feature.OrderedField);
             } catch (Exception e) {
-                return JSON.parseObject(JSON.toJSONString(s), t);
+                return JSON.parseObject(JSON.toJSONString(s), t, Feature.OrderedField);
             }
         }
-        return JSON.parseObject(JSON.toJSONString(s), t);
+        return JSON.parseObject(JSON.toJSONString(s), t, Feature.OrderedField);
     };
 
     /**
@@ -106,12 +107,12 @@ public interface Converter {
             return (JSONObject) val;
         }
         if (val instanceof Map) {
-            final JSONObject result = new JSONObject();
+            final JSONObject result = new JSONObject(true);
             ((Map) (val)).forEach((k, v) -> result.put(String.valueOf(k), v));
             return result;
         }
         if (val instanceof String) {
-            return JSON.parseObject((String) val);
+            return JSON.parseObject((String) val, Feature.OrderedField);
         }
         return (JSONObject) JSON.toJSON(val);
     };
@@ -119,7 +120,8 @@ public interface Converter {
     /**
      * Object => JSONObject, when result is null, return a new JSONObject
      */
-    Function<Object, JSONObject> toJSONObjectNewWhenNull = toJSONObject.andThen(p -> p == null ? new JSONObject() : p);
+    Function<Object, JSONObject> toJSONObjectNewWhenNull =
+            toJSONObject.andThen(p -> p == null ? new JSONObject(true) : p);
 
     /**
      * 数值间相互转化

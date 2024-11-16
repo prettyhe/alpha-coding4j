@@ -18,6 +18,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.core.Ordered;
 import org.springframework.util.ClassUtils;
 
 import com.alibaba.dubbo.common.URL;
@@ -39,7 +40,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Data
 @Accessors(chain = true)
-public class ApplicationEnv implements InitializingBean, ApplicationListener<ContextRefreshedEvent> {
+public class ApplicationEnv implements InitializingBean, ApplicationListener<ContextRefreshedEvent>, Ordered {
 
     private String system;
     private String appName;
@@ -197,6 +198,11 @@ public class ApplicationEnv implements InitializingBean, ApplicationListener<Con
             log.info("ApplicationEnv is system={},appName={},host={},port={},module={},pid={},extraMap={}",
                     system, appName, host, port, module, pid, extraMap);
         }
+    }
+
+    @Override
+    public int getOrder() {
+        return 100;
     }
 
     /**

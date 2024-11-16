@@ -15,9 +15,17 @@ import java.io.Reader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
+
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
+
+import com.alpha.coding.bo.base.Triple;
 
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -695,6 +703,59 @@ public class IOUtils {
             downloadUrlData(url, outputStream, connTimeout, readTimeout);
             return outputStream.toByteArray();
         }
+    }
+
+    /**
+     * 从classpath路径下打开文件，为避免内存泄漏，需要手动关闭打开的文件流
+     *
+     * @param filePath 文件路径
+     * @return Triple(f = 文件路径, s = 文件名, t = 文件输入流)
+     * @throws IOException 抛出IOException
+     */
+    public static Triple<String, String, InputStream> openFromClasspath(String filePath) throws IOException {
+        final ClassPathResource classPathResource = new ClassPathResource(filePath);
+        if (classPathResource.exists()) {
+            return Triple.of(classPathResource.getPath(), classPathResource.getFilename(),
+                    classPathResource.getInputStream());
+        }
+        return Triple.empty();
+    }
+
+    /**
+     * 从classpath路径下打开文件并读取为文本
+     *
+     * @param filePath 文件路径
+     * @param charset  字符集
+     * @throws IOException 抛出IOException
+     */
+    public static String readAsStringFromClasspath(String filePath, Charset charset) throws IOException {
+        final Triple<String, String, InputStream> tri = openFromClasspath(filePath);
+        if (tri.getT() == null) {
+            return null;
+        }
+        try {
+            return readFromInputStream(tri.getT(), Optional.ofNullable(charset).orElse(StandardCharsets.UTF_8), true);
+        } finally {
+            releaseStream(tri.getT());
+        }
+    }
+
+    /**
+     * 按路径模式查找资源
+     *
+     * @param locationPattern 路径模式，如: classpath*:/xxx/*.json
+     * @return List of Triple(f = url, s = 文件名, t = 文件输入流)
+     * @throws IOException 抛出IOException
+     * @see PathMatchingResourcePatternResolver#getResources(String)
+     */
+    public static List<Triple<URL, String, InputStream>> findAndOpenByPathMatching(String locationPattern)
+            throws IOException {
+        final Resource[] resources = new PathMatchingResourcePatternResolver().getResources(locationPattern);
+        List<Triple<URL, String, InputStream>> list = new ArrayList<>(resources.length);
+        for (Resource resource : resources) {
+            list.add(Triple.of(resource.getURL(), resource.getFilename(), resource.getInputStream()));
+        }
+        return list;
     }
 
 }

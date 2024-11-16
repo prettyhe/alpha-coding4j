@@ -12,6 +12,7 @@ import org.springframework.beans.factory.DisposableBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.core.Ordered;
 
 import com.alpha.coding.bo.executor.NamedExecutorPool;
 import com.alpha.coding.bo.executor.RunnableWrapper;
@@ -27,7 +28,7 @@ import lombok.extern.slf4j.Slf4j;
  * Date: 2020-02-21
  */
 @Slf4j
-public class ContextWarmUpInitializer implements ApplicationListener<ContextRefreshedEvent>, DisposableBean {
+public class ContextWarmUpInitializer implements ApplicationListener<ContextRefreshedEvent>, DisposableBean, Ordered {
 
     private final AtomicInteger initFlag = new AtomicInteger(0);
     private final List<ExecutorService> executorServiceList = new ArrayList<>();
@@ -144,6 +145,11 @@ public class ContextWarmUpInitializer implements ApplicationListener<ContextRefr
                 e.printStackTrace();
             }
         }
+    }
+
+    @Override
+    public int getOrder() {
+        return 200;
     }
 
 }

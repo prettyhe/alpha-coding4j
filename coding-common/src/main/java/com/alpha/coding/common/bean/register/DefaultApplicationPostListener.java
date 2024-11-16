@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.core.Ordered;
 
 import com.alpha.coding.common.utils.ClassUtils;
 
@@ -18,7 +19,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class DefaultApplicationPostListener
-        implements ApplicationPostListener, ApplicationListener<ContextRefreshedEvent> {
+        implements ApplicationPostListener, ApplicationListener<ContextRefreshedEvent>, Ordered {
 
     public static final String BEAN_NAME = "InternalApplicationPostListener";
 
@@ -36,6 +37,11 @@ public class DefaultApplicationPostListener
     public void onApplicationEvent(ContextRefreshedEvent contextRefreshedEvent) {
         log.info("应用刷新回调:{}", postCallbacks.size());
         postCallbacks.forEach(Runnable::run);
+    }
+
+    @Override
+    public int getOrder() {
+        return -200;
     }
 
 }

@@ -50,6 +50,18 @@ public interface FailCallback {
     }
 
     /**
+     * 请求次数超限回调
+     *
+     * @param method   当前调用的方法
+     * @param args     当前调用的参数
+     * @param failText 当前失败文案
+     * @return 回调结果
+     */
+    default Object onExceedInvokeTimes(Method method, Object[] args, String failText) {
+        return null;
+    }
+
+    /**
      * 请求竞争失败回调
      *
      * @param method   当前调用的方法

@@ -25,6 +25,23 @@ public @interface RedisSync {
     boolean enable() default true;
 
     /**
+     * 请求计数key，SpEL表达式
+     */
+    String invokeCountKey() default "";
+
+    /**
+     * 最大请求次数，支持外部化配置，如"${invoke.sync.maxInvokeTimes:5}"
+     */
+    String maxInvokeTimes() default "-1";
+
+    /**
+     * 请求计数时间区间，支持外部化配置，如"${invoke.sync.invokeCountTimeRange:86400}"
+     * <li>TODAY:即当天有效</li>
+     * <li>其它数值:从开始计数的秒数内有效</li>
+     */
+    String invokeCountTimeRange() default "";
+
+    /**
      * 过期时间(秒)
      */
     long expireSeconds() default 5;
@@ -63,5 +80,10 @@ public @interface RedisSync {
      * 失败文案，支持外部化配置，如"${invoke.sync.failText:操作太频繁}"
      */
     String failText() default "";
+
+    /**
+     * 超过访问次数限制文案，支持外部化配置，如"${invoke.sync.exceedInvokeTimesText:次数超限}"
+     */
+    String exceedInvokeTimesText() default "";
 
 }

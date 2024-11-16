@@ -6,7 +6,7 @@ import java.util.Optional;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.Codec;
-import org.redisson.codec.MarshallingCodec;
+import org.redisson.codec.Kryo5Codec;
 import org.redisson.config.Config;
 import org.redisson.config.ReadMode;
 import org.redisson.connection.balancer.RoundRobinLoadBalancer;
@@ -51,7 +51,7 @@ public class RedissonConfiguration implements EnvironmentAware {
      * <li>redis.port</li>
      * <li>redis.password</li>
      * <li>redis.db</li>
-     * <li>redisson.codec:org.redisson.codec.MarshallingCodec</li>
+     * <li>redisson.codec:org.redisson.codec.Kryo5Codec</li>
      */
     private RedissonClient singleServerClient() {
         Config config = new Config();
@@ -82,7 +82,7 @@ public class RedissonConfiguration implements EnvironmentAware {
      * <li>redis.sentinel.password</li>
      * <li>redis.db</li>
      * <li>redis.sentinel.readMode:SLAVE/MASTER/MASTER_SLAVE</li>
-     * <li>redisson.codec:org.redisson.codec.MarshallingCodec</li>
+     * <li>redisson.codec:org.redisson.codec.Kryo5Codec</li>
      */
     private RedissonClient sentinelClient() {
         Config config = new Config();
@@ -121,7 +121,7 @@ public class RedissonConfiguration implements EnvironmentAware {
      * <li>redis.cluster.password</li>
      * <li>redis.sentinel.readMode:SLAVE/MASTER/MASTER_SLAVE</li>
      * <li>redis.cluster.scanInterval:扫描间隔</li>
-     * <li>redisson.codec:org.redisson.codec.MarshallingCodec</li>
+     * <li>redisson.codec:org.redisson.codec.Kryo5Codec</li>
      */
     private RedissonClient clusterClient() {
         Config config = new Config();
@@ -153,6 +153,9 @@ public class RedissonConfiguration implements EnvironmentAware {
         return Redisson.create(config);
     }
 
+    /**
+     * 查找系列化实现类，默认：org.redisson.codec.Kryo5Codec
+     */
     private Codec findCodec() {
         final String codecClass = environment.getProperty("redisson.codec");
         if (StringUtils.isNotBlank(codecClass)) {
@@ -167,7 +170,7 @@ public class RedissonConfiguration implements EnvironmentAware {
                 log.warn("build Redisson Codec from {} fail", codecClass, e);
             }
         }
-        return new MarshallingCodec();
+        return new Kryo5Codec();
     }
 
 }

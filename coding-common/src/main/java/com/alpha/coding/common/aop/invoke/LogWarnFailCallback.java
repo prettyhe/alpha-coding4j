@@ -33,8 +33,15 @@ public class LogWarnFailCallback implements FailCallback {
     }
 
     @Override
+    public Object onExceedInvokeTimes(Method method, Object[] args, String failText) {
+        log.warn("请求次数超限:{},method={},args={}", failText, method.getName(), Arrays.toString(args));
+        return FailCallback.super.onExceedInvokeTimes(method, args, failText);
+    }
+
+    @Override
     public Object callback(Method method, Object[] args, String failText) {
         log.warn("同步请求竞争失败:{},method={},args={}", failText, method.getName(), Arrays.toString(args));
         return null;
     }
+
 }

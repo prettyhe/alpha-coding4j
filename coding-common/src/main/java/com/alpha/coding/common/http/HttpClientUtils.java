@@ -280,36 +280,93 @@ public class HttpClientUtils {
                              Supplier<CloseableHttpClient> clientSupplier, Consumer<HttpGet> getConsumer)
             throws IOException {
         final long startTime = System.nanoTime();
+        final HttpGetContext httpGetContext = new HttpGetContext()
+                .setUrl(url).setCharset(charset).setHttpConfig(httpConfig)
+                .setClientSupplier(clientSupplier).setGetConsumer(getConsumer);
         String ret = null;
-        CloseableHttpClient httpClient = null;
-        CloseableHttpResponse response = null;
         try {
-            httpClient = clientSupplier != null ? clientSupplier.get()
-                    : DefaultHttpClientSupplier.create().setHttpConfig(httpConfig)
-                            .setUseHttps(url.startsWith("https://")).get();
-            final RequestConfig.Builder configBuilder = RequestConfig.custom();
-            configBuilder.setSocketTimeout(httpConfig.getSoTimeout());
-            configBuilder.setConnectTimeout(httpConfig.getConnTimeout());
-            configBuilder.setConnectionRequestTimeout(httpConfig.getConnTimeout());
-            if (StringUtils.isNotBlank(httpConfig.getHttpProxyHost()) && httpConfig.getHttpProxyPort() > 0) {
-                configBuilder.setProxy(new HttpHost(httpConfig.getHttpProxyHost(), httpConfig.getHttpProxyPort()));
-            }
-            final RequestConfig requestConfig = configBuilder.build();
-            final HttpGet httpGet = new HttpGet(url);
-            httpGet.setConfig(requestConfig);
-            if (getConsumer != null) {
-                getConsumer.accept(httpGet);
-            }
-            response = httpClient.execute(httpGet);
-            ret = parseResponse(response, charset);
+            doGet(httpGetContext);
+            ret = parseResponse(httpGetContext.response, charset);
         } finally {
-            close(httpClient, response);
+            close(httpGetContext.httpClient, httpGetContext.response);
             final long endTime = System.nanoTime();
             log.debug("http-get: connTo={},soTo={},retry={},url={},res={},elapsed={}",
                     httpConfig.getConnTimeout(), httpConfig.getSoTimeout(), httpConfig.getRetry(), url, ret,
                     Functions.formatNanos.apply(endTime - startTime));
         }
         return ret;
+    }
+
+    /**
+     * http get 请求
+     *
+     * @param url            请求
+     * @param charset        编码
+     * @param httpConfig     请求配置(须非空)
+     * @param clientSupplier CloseableHttpClient提供者
+     * @param getConsumer    get请求回调函数
+     * @throws IOException IOException
+     */
+    public static void get(String url, String charset, HttpConfig httpConfig,
+                           Supplier<CloseableHttpClient> clientSupplier, Consumer<HttpGet> getConsumer,
+                           Consumer<HttpResponse> httpResponseConsumer) throws IOException {
+        final long startTime = System.nanoTime();
+        final HttpGetContext httpGetContext = new HttpGetContext()
+                .setUrl(url).setCharset(charset).setHttpConfig(httpConfig)
+                .setClientSupplier(clientSupplier).setGetConsumer(getConsumer);
+        try {
+            doGet(httpGetContext);
+            if (httpResponseConsumer != null) {
+                httpResponseConsumer.accept(httpGetContext.response);
+            }
+        } finally {
+            close(httpGetContext.httpClient, httpGetContext.response);
+            final long endTime = System.nanoTime();
+            log.debug("http-get: connTo={},soTo={},retry={},url={},res={},elapsed={}",
+                    httpConfig.getConnTimeout(), httpConfig.getSoTimeout(), httpConfig.getRetry(), url, null,
+                    Functions.formatNanos.apply(endTime - startTime));
+        }
+    }
+
+    /**
+     * 构建并执行post请求
+     */
+    private static void doGet(HttpGetContext context) throws IOException {
+        context.httpClient = context.clientSupplier != null ? context.clientSupplier.get()
+                : DefaultHttpClientSupplier.create().setHttpConfig(context.httpConfig)
+                        .setUseHttps(context.url.startsWith("https://")).get();
+        final RequestConfig.Builder configBuilder = RequestConfig.custom();
+        configBuilder.setSocketTimeout(context.httpConfig.getSoTimeout());
+        configBuilder.setConnectTimeout(context.httpConfig.getConnTimeout());
+        configBuilder.setConnectionRequestTimeout(context.httpConfig.getConnTimeout());
+        if (StringUtils.isNotBlank(context.httpConfig.getHttpProxyHost())
+                && context.httpConfig.getHttpProxyPort() > 0) {
+            configBuilder.setProxy(new HttpHost(context.httpConfig.getHttpProxyHost(),
+                    context.httpConfig.getHttpProxyPort()));
+        }
+        if (context.requestConfigConsumer != null) {
+            context.requestConfigConsumer.accept(configBuilder);
+        }
+        final RequestConfig requestConfig = configBuilder.build();
+        final HttpGet httpGet = new HttpGet(context.url);
+        httpGet.setConfig(requestConfig);
+        if (context.getConsumer != null) {
+            context.getConsumer.accept(httpGet);
+        }
+        context.response = context.httpClient.execute(httpGet);
+    }
+
+    @Data
+    @Accessors(chain = true)
+    private static class HttpGetContext {
+        private CloseableHttpClient httpClient;
+        private CloseableHttpResponse response;
+        private String url;
+        private String charset;
+        private HttpConfig httpConfig;
+        private Supplier<CloseableHttpClient> clientSupplier;
+        private Consumer<RequestConfig.Builder> requestConfigConsumer;
+        private Consumer<HttpGet> getConsumer;
     }
 
     private static void close(Closeable... closeableObj) {
@@ -716,32 +773,16 @@ public class HttpClientUtils {
                               Consumer<HttpPost> postConsumer,
                               BiConsumer<Logger, HttpExecRes> finalLogConsumer) throws IOException {
         final long startTime = System.nanoTime();
+        final HttpPostContext httpPostContext = new HttpPostContext()
+                .setUrl(url).setCharset(charset).setHttpConfig(httpConfig)
+                .setClientSupplier(clientSupplier).setRequestConfigConsumer(requestConfigConsumer)
+                .setPostConsumer(postConsumer);
         String ret = null;
-        CloseableHttpClient httpClient = null;
-        CloseableHttpResponse response = null;
         try {
-            httpClient = clientSupplier != null ? clientSupplier.get()
-                    : DefaultHttpClientSupplier.create().setHttpConfig(httpConfig)
-                            .setUseHttps(url.startsWith("https://")).get();
-            final RequestConfig.Builder configBuilder = RequestConfig.custom();
-            configBuilder.setSocketTimeout(httpConfig.getSoTimeout());
-            configBuilder.setConnectTimeout(httpConfig.getConnTimeout());
-            configBuilder.setConnectionRequestTimeout(httpConfig.getConnTimeout());
-            if (StringUtils.isNotBlank(httpConfig.getHttpProxyHost()) && httpConfig.getHttpProxyPort() > 0) {
-                configBuilder.setProxy(new HttpHost(httpConfig.getHttpProxyHost(), httpConfig.getHttpProxyPort()));
-            }
-            if (requestConfigConsumer != null) {
-                requestConfigConsumer.accept(configBuilder);
-            }
-            final HttpPost httpPost = new HttpPost(url);
-            httpPost.setConfig(configBuilder.build());
-            if (postConsumer != null) {
-                postConsumer.accept(httpPost);
-            }
-            response = httpClient.execute(httpPost);
-            ret = parseResponse(response, charset == null ? DEFAULT_CHARSET_STR : charset);
+            doPost(httpPostContext);
+            ret = parseResponse(httpPostContext.response, charset == null ? DEFAULT_CHARSET_STR : charset);
         } finally {
-            close(httpClient, response);
+            close(httpPostContext.httpClient, httpPostContext.response);
             final long endTime = System.nanoTime();
             if (finalLogConsumer != null) {
                 finalLogConsumer.accept(log,
@@ -749,6 +790,85 @@ public class HttpClientUtils {
             }
         }
         return ret;
+    }
+
+    /**
+     * http post 请求
+     *
+     * @param url                   请求
+     * @param charset               编码
+     * @param httpConfig            请求配置(须非空)
+     * @param clientSupplier        CloseableHttpClient提供者
+     * @param requestConfigConsumer 配置回调
+     * @param postConsumer          post回调
+     * @param httpResponseConsumer  响应体消费
+     * @param finalLogConsumer      执行完log回调
+     * @throws IOException IOException
+     */
+    public static void post(String url, String charset, HttpConfig httpConfig,
+                            Supplier<CloseableHttpClient> clientSupplier,
+                            Consumer<RequestConfig.Builder> requestConfigConsumer,
+                            Consumer<HttpPost> postConsumer,
+                            Consumer<HttpResponse> httpResponseConsumer,
+                            BiConsumer<Logger, HttpExecRes> finalLogConsumer) throws IOException {
+        final long startTime = System.nanoTime();
+        final HttpPostContext httpPostContext = new HttpPostContext()
+                .setUrl(url).setCharset(charset).setHttpConfig(httpConfig)
+                .setClientSupplier(clientSupplier).setRequestConfigConsumer(requestConfigConsumer)
+                .setPostConsumer(postConsumer);
+        try {
+            doPost(httpPostContext);
+            if (httpResponseConsumer != null) {
+                httpResponseConsumer.accept(httpPostContext.response);
+            }
+        } finally {
+            close(httpPostContext.httpClient, httpPostContext.response);
+            final long endTime = System.nanoTime();
+            if (finalLogConsumer != null) {
+                finalLogConsumer.accept(log,
+                        new HttpExecRes(TimeUnit.NANOSECONDS.toMillis(endTime - startTime), null));
+            }
+        }
+    }
+
+    /**
+     * 构建并执行post请求
+     */
+    private static void doPost(HttpPostContext context) throws IOException {
+        context.httpClient = context.clientSupplier != null ? context.clientSupplier.get()
+                : DefaultHttpClientSupplier.create().setHttpConfig(context.httpConfig)
+                        .setUseHttps(context.url.startsWith("https://")).get();
+        final RequestConfig.Builder configBuilder = RequestConfig.custom();
+        configBuilder.setSocketTimeout(context.httpConfig.getSoTimeout());
+        configBuilder.setConnectTimeout(context.httpConfig.getConnTimeout());
+        configBuilder.setConnectionRequestTimeout(context.httpConfig.getConnTimeout());
+        if (StringUtils.isNotBlank(context.httpConfig.getHttpProxyHost())
+                && context.httpConfig.getHttpProxyPort() > 0) {
+            configBuilder.setProxy(new HttpHost(context.httpConfig.getHttpProxyHost(),
+                    context.httpConfig.getHttpProxyPort()));
+        }
+        if (context.requestConfigConsumer != null) {
+            context.requestConfigConsumer.accept(configBuilder);
+        }
+        final HttpPost httpPost = new HttpPost(context.url);
+        httpPost.setConfig(configBuilder.build());
+        if (context.postConsumer != null) {
+            context.postConsumer.accept(httpPost);
+        }
+        context.response = context.httpClient.execute(httpPost);
+    }
+
+    @Data
+    @Accessors(chain = true)
+    private static class HttpPostContext {
+        private CloseableHttpClient httpClient;
+        private CloseableHttpResponse response;
+        private String url;
+        private String charset;
+        private HttpConfig httpConfig;
+        private Supplier<CloseableHttpClient> clientSupplier;
+        private Consumer<RequestConfig.Builder> requestConfigConsumer;
+        private Consumer<HttpPost> postConsumer;
     }
 
     @Data

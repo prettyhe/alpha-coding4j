@@ -62,7 +62,7 @@ public class EnableAutoIdentityBeanHandler implements ConfigurationRegisterHandl
                 final Class<? extends BeanNameGenerator> generatorClass = attribute.getClass("beanNameGenerator");
                 final BeanNameGenerator beanNameGenerator = generatorMap.computeIfAbsent(generatorClass, k -> {
                     try {
-                        return k.newInstance();
+                        return com.alpha.coding.common.utils.ClassUtils.newInstance(k);
                     } catch (Exception e) {
                         throw new BeanCreationException("No such BeanNameGenerator: " + generatorClass.getName());
                     }

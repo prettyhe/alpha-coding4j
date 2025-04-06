@@ -17,6 +17,7 @@ import com.alpha.coding.bo.trace.HalfTraceIdGenerator;
 import com.alpha.coding.bo.trace.TimestampBase62UUIDTraceIdGenerator;
 import com.alpha.coding.bo.trace.TraceIdGenerator;
 import com.alpha.coding.bo.trace.UUIDTraceIdGenerator;
+import com.alpha.coding.common.utils.ClassUtils;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -43,7 +44,7 @@ public class TraceAgentFilter extends AbstractEnhancerFilter {
         try {
             final String traceIdGenerator = filterConfig.getInitParameter("traceIdGenerator");
             if (Predicates.isNotBlankStr.test(traceIdGenerator)) {
-                this.traceIdGenerator = (TraceIdGenerator) loadClass(traceIdGenerator).newInstance();
+                this.traceIdGenerator = (TraceIdGenerator) ClassUtils.newInstance(loadClass(traceIdGenerator));
             }
         } catch (Exception e) {
             log.warn("Init TraceAgentFilter Exception", e);

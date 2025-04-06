@@ -23,7 +23,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @Component
-@RedisMessage(topic = RedisTopics.DATA_A_CHANGE, redisSerializerSupplier = DataAChangePublisher.class)
+@RedisMessage(topic = RedisTopics.DATA_A_CHANGE, redisValueSerializerSupplier = DataAChangePublisher.class)
 public class DataAChangePublisher extends RedisMessagePublisherTemplate implements Supplier<RedisSerializer> {
 
     @Autowired

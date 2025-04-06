@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
@@ -24,6 +25,10 @@ import com.alpha.coding.bo.base.Tuple;
  * Date: 2020-02-21
  */
 public class SqlUtils {
+
+    private static final List<Class<?>> PRINT_RESULT_VALUE_TYPES = Arrays.asList(boolean.class,
+            byte.class, char.class, double.class, float.class, int.class, long.class, short.class,
+            Boolean.class, Byte.class, Character.class, Double.class, Float.class, Long.class, Short.class);
 
     public static String append(String s) {
         String ret = s.replaceAll("\\\\", "\\\\\\\\");
@@ -81,7 +86,7 @@ public class SqlUtils {
      * @return result
      */
     public static String toConditionSql(List<String> condition) {
-        if (condition == null || condition.size() <= 0) {
+        if (condition == null || condition.isEmpty()) {
             return " ";
         }
         StringBuffer sb = new StringBuffer();
@@ -189,37 +194,12 @@ public class SqlUtils {
      * 打印SQL，替换原始预编译SQL中的?为实际传入值
      */
     public static String printSQL(String sql, Object[] args) {
-        if (args == null || args.length <= 0) {
+        if (args == null || args.length == 0) {
             return sql;
         }
         final Object[] values = new Object[args.length];
         for (int i = 0; i < args.length; i++) {
-            Object arg = args[i];
-            String str = null;
-            if (arg instanceof String) {
-                str = "'" + arg.toString() + "'";
-            } else if (arg instanceof java.sql.Date) {
-                str = "'" + DateUtils.format((Date) arg, DateUtils.DATE_FORMAT) + "'";
-            } else if (arg instanceof java.sql.Time) {
-                str = "'" + DateUtils.format((Date) arg, DateUtils.TIME_FORMAT) + "'";
-            } else if (arg instanceof Date) {
-                str = "'" + DateUtils.format((Date) arg, DateUtils.DEFAULT_FORMAT) + "'";
-            } else if (arg instanceof LocalDate) {
-                str = "'" + ((LocalDate) arg).format(DateTimeFormatter.ofPattern(DateUtils.DATE_FORMAT)) + "'";
-            } else if (arg instanceof LocalTime) {
-                str = "'" + ((LocalTime) arg).format(DateTimeFormatter.ofPattern(DateUtils.TIME_FORMAT)) + "'";
-            } else if (arg instanceof LocalDateTime) {
-                str = "'" + ((LocalDateTime) arg).format(DateTimeFormatter.ofPattern(DateUtils.DEFAULT_FORMAT)) + "'";
-            } else if (arg instanceof byte[]) {
-                str = "''";
-            } else {
-                if (arg != null) {
-                    str = arg.toString();
-                } else {
-                    str = "NULL"; // 注意，null转化成NULL
-                }
-            }
-            values[i] = str;
+            values[i] = formatValueToSQLString(args[i]);
         }
         if (sql.contains("%")) {
             String[] tokens = sql.split("%", -1);
@@ -234,6 +214,65 @@ public class SqlUtils {
         } else {
             return String.format(sql.replaceAll("\\?", "%s"), values);
         }
+    }
+
+    /**
+     * 检查是否是时间日期类类型并格式化
+     */
+    public static String tryFormatDateForSQL(Object target) {
+        if (target instanceof java.sql.Date) {
+            return DateUtils.format((Date) target, DateUtils.DATE_FORMAT);
+        } else if (target instanceof java.sql.Time) {
+            return DateUtils.format((Date) target, DateUtils.TIME_FORMAT);
+        } else if (target instanceof Date) {
+            return DateUtils.format((Date) target, DateUtils.DEFAULT_FORMAT);
+        } else if (target instanceof LocalDate) {
+            return ((LocalDate) target).format(DateTimeFormatter.ofPattern(DateUtils.DATE_FORMAT));
+        } else if (target instanceof LocalTime) {
+            return ((LocalTime) target).format(DateTimeFormatter.ofPattern(DateUtils.TIME_FORMAT));
+        } else if (target instanceof LocalDateTime) {
+            return ((LocalDateTime) target).format(DateTimeFormatter.ofPattern(DateUtils.DEFAULT_FORMAT));
+        }
+        return null;
+    }
+
+    /**
+     * 将值转成字符串，针对byte[]类型的取空
+     */
+    public static String formatValueToSQLString(Object target) {
+        String value = null;
+        if (target instanceof String) {
+            value = "'" + target + "'";
+        } else if (target instanceof byte[]) {
+            value = "''";
+        } else {
+            final String dateStr = tryFormatDateForSQL(target);
+            if (dateStr != null) {
+                value = "'" + dateStr + "'";
+            } else if (target != null) {
+                value = target.toString();
+            } else {
+                value = "NULL"; // 注意，null转化成NULL
+            }
+        }
+        return value;
+    }
+
+    /**
+     * 将SQL执行结果格式化，仅针对返回单个结果的，如insert/update/delete类操作的
+     */
+    public static String formatSQLExecResult(Object returnValue) {
+        Object target = returnValue;
+        if (returnValue instanceof Collection && ((Collection) returnValue).size() == 1) {
+            target = ((Collection) returnValue).iterator().next();
+        }
+        if (target == null) {
+            return null;
+        }
+        if (target instanceof Number || PRINT_RESULT_VALUE_TYPES.contains(target.getClass())) {
+            return target.toString();
+        }
+        return tryFormatDateForSQL(target);
     }
 
 }

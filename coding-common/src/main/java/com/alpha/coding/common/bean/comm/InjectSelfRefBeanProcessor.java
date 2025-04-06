@@ -5,7 +5,6 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.springframework.aop.support.AopUtils;
-import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ApplicationListener;
@@ -17,6 +16,7 @@ import org.springframework.core.Ordered;
 import com.alpha.coding.bo.assist.ref.InjectRef;
 import com.alpha.coding.bo.assist.ref.InjectRefType;
 import com.alpha.coding.bo.assist.ref.RefContext;
+import com.alpha.coding.common.aop.assist.AopHelper;
 
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -25,14 +25,14 @@ import lombok.extern.slf4j.Slf4j;
  * InjectSelfRefBeanProcessor
  *
  * <p>
- * 对bean初始化的一个拦截，处理{@link AbstractSelfRefBean}类bean的初始化
+ * 对bean初始化的一个拦截，处理{@link AbstractSelfRefBean}、{@link SelfRefBean}类bean的初始化
  * </p>
  *
  * @version 1.0
  * Date: 2020-02-21
  */
 @Slf4j
-public class InjectSelfRefBeanProcessor implements BeanPostProcessor, ApplicationContextAware,
+public class InjectSelfRefBeanProcessor implements ApplicationContextAware,
         ApplicationListener<ApplicationContextEvent>, Ordered {
 
     @Setter
@@ -68,7 +68,12 @@ public class InjectSelfRefBeanProcessor implements BeanPostProcessor, Applicatio
             });
             applicationContext.getBeansOfType(SelfRefBean.class).forEach((beanName, bean) -> {
                 if (AopUtils.isAopProxy(bean)) {
-                    SelfRefBeanDelegator.register(beanName, bean.self(), bean);
+                    try {
+                        SelfRefBeanDelegator.register(beanName, (SelfRefBean) AopHelper.getTarget(bean), bean);
+                    } catch (Exception e) {
+                        log.warn("SelfRefBeanDelegator.register fail for beanName={}, bean={}", beanName, bean, e);
+                        SelfRefBeanDelegator.register(beanName, bean.self(), bean);
+                    }
                 } else {
                     SelfRefBeanDelegator.register(beanName, bean,
                             (SelfRefBean) applicationContext.getBean(beanName));

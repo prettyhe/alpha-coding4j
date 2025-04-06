@@ -1,5 +1,6 @@
 package com.alpha.coding.common.utils;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 import java.util.function.Supplier;
 
@@ -55,13 +56,13 @@ public class MapUtils {
     }
 
     public static <K, V> V createAndGet(Map<K, V> map, K key, Class<V> clz)
-            throws IllegalAccessException, InstantiationException {
+            throws IllegalAccessException, InstantiationException, NoSuchMethodException, InvocationTargetException {
         V v = map.get(key);
         if (v == null) {
             synchronized(map) {
                 v = map.get(key);
                 if (v == null) {
-                    v = clz.newInstance();
+                    v = ClassUtils.newInstance(clz);
                     map.put(key, v);
                 }
             }

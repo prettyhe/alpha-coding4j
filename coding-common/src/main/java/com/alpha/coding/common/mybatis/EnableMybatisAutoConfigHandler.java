@@ -2,7 +2,10 @@ package com.alpha.coding.common.mybatis;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -25,6 +28,7 @@ import com.alpha.coding.common.bean.spi.RegisterBeanDefinitionContext;
 import com.alpha.coding.common.datasource.CreateDataSourceEnv;
 import com.alpha.coding.common.datasource.DataSourceRegisterUtils;
 import com.alpha.coding.common.utils.ListUtils;
+import com.alpha.coding.common.utils.MD5Utils;
 import com.alpha.coding.common.utils.SpringAnnotationConfigUtils;
 import com.alpha.coding.common.utils.StringUtils;
 
@@ -62,14 +66,7 @@ public class EnableMybatisAutoConfigHandler implements ConfigurationRegisterHand
             BeanDefinitionRegistryUtils.overideBeanDefinition(registry, "auto_PageHandlerInterceptor",
                     pageDefinitionBuilder.getBeanDefinition(), true);
         }
-        // 注册 showSqlInterceptor
-        BeanDefinitionBuilder showSQLDefinitionBuilder =
-                BeanDefinitionBuilder.genericBeanDefinition(ShowSqlInterceptor.class);
-        final Properties showSQLProperties = new Properties();
-        showSQLProperties.put("sqlIdAbbreviated", true);
-        showSQLDefinitionBuilder.addPropertyValue("properties", showSQLProperties);
-        BeanDefinitionRegistryUtils.overideBeanDefinition(registry, "auto_ShowSqlInterceptor",
-                showSQLDefinitionBuilder.getBeanDefinition(), true);
+        final Map<String, String> showSqlInterceptorBeanNameMap = new HashMap<>();
         // 注册mybatis相关配置
         for (AnnotationAttributes attributes : annotationAttributes) {
             final AnnotationAttributes dataSource = attributes.getAnnotation("dataSource");
@@ -132,8 +129,35 @@ public class EnableMybatisAutoConfigHandler implements ConfigurationRegisterHand
             if (attributes.getBoolean("enablePageHandlerInterceptor")) {
                 plugins.add("auto_PageHandlerInterceptor");
             }
+            // 处理ShowSqlInterceptor
             if (attributes.getBoolean("enableShowSqlInterceptor")) {
-                plugins.add("auto_ShowSqlInterceptor");
+                final String[] showSqlInterceptorProperties = attributes.getStringArray("showSqlInterceptorProperties");
+                final Map<String, Object> propertiesMap = new LinkedHashMap<>();
+                for (String property : showSqlInterceptorProperties) {
+                    final int index = property.indexOf('=');
+                    if (index > 0) {
+                        propertiesMap.put(property.substring(0, index).trim(), BeanDefineUtils.resolveValue(context,
+                                property.substring(index + 1).trim(), Object.class));
+                    }
+                }
+                if (log.isDebugEnabled()) {
+                    log.debug("showSqlInterceptorProperties for prefix={},tag={} is {}", prefix, tag, propertiesMap);
+                }
+                final String propertiesStr = propertiesMap.entrySet().stream()
+                        .map(en -> en.getKey() + "=" + en.getValue())
+                        .collect(Collectors.joining("\n"));
+                plugins.add(showSqlInterceptorBeanNameMap.computeIfAbsent(MD5Utils.md5(propertiesStr), k -> {
+                    // 注册 showSqlInterceptor
+                    BeanDefinitionBuilder showSQLDefinitionBuilder =
+                            BeanDefinitionBuilder.genericBeanDefinition(ShowSqlInterceptor.class);
+                    final Properties showSQLProperties = new Properties();
+                    showSQLProperties.putAll(propertiesMap);
+                    showSQLDefinitionBuilder.addPropertyValue("properties", showSQLProperties);
+                    final String showSqlInterceptorBeanName = prefix + "ShowSqlInterceptor" + tag;
+                    BeanDefinitionRegistryUtils.overideBeanDefinition(registry, showSqlInterceptorBeanName,
+                            showSQLDefinitionBuilder.getBeanDefinition(), true);
+                    return showSqlInterceptorBeanName;
+                }));
             }
             plugins.addAll(Arrays.asList(attributes.getStringArray("extPlugins")));
             sqlSessionFactoryBeanBuilder.addPropertyValue("plugins", ListUtils.toArray(plugins.stream()

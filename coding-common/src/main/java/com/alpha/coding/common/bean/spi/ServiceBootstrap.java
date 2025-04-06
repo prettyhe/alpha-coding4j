@@ -16,6 +16,7 @@ import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
 import java.util.function.Supplier;
 
+import com.alpha.coding.common.utils.ClassUtils;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
@@ -165,7 +166,7 @@ public class ServiceBootstrap {
                 fail(target, "Provider " + name + " not a subtype");
             }
             try {
-                return target.cast(c.newInstance());
+                return target.cast(ClassUtils.newInstance(c));
             } catch (Throwable x) {
                 fail(target, "Provider " + name + " could not be instantiated", x);
             }

@@ -4,6 +4,7 @@ import java.sql.PreparedStatement;
 import java.sql.Statement;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.BiFunction;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,10 +43,12 @@ public class MessageMonitorDao {
         } catch (Exception e) {
             log.warn("拼装SQL异常 => {}", sql, e);
         }
+        Object returnValue = null;
         Throwable throwable = null;
         final long startNanoTime = System.nanoTime();
         try {
-            return execute.apply(sql, args);
+            returnValue = execute.apply(sql, args);
+            return returnValue;
         } catch (Throwable e) {
             throwable = e;
             throw e;
@@ -56,9 +59,11 @@ public class MessageMonitorDao {
                         StringUtils.abbreviateDotSplit(ClassUtils.getCallerCallerClassName(), 2),
                         printSQL, throwable.getMessage(), Functions.formatNanos.apply(endNanoTime - startNanoTime));
             } else {
-                log.info("{}: {}; cost {}",
+                String sqlResultStr = Optional.ofNullable(SqlUtils.formatSQLExecResult(returnValue))
+                        .map(s -> "; result: " + s).orElse("");
+                log.info("{}: {}; cost {}{}",
                         StringUtils.abbreviateDotSplit(ClassUtils.getCallerCallerClassName(), 2),
-                        printSQL, Functions.formatNanos.apply(endNanoTime - startNanoTime));
+                        printSQL, Functions.formatNanos.apply(endNanoTime - startNanoTime), sqlResultStr);
             }
         }
     }

@@ -17,6 +17,7 @@ import com.alpha.coding.bo.annotation.HttpParam;
 import com.alpha.coding.common.http.HttpParameterUtils;
 import com.alpha.coding.common.http.HttpUtils;
 import com.alpha.coding.common.http.model.HttpParamControl;
+import com.alpha.coding.common.utils.ClassUtils;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -67,7 +68,7 @@ public class CustomHandlerMethodArgumentResolver implements HandlerMethodArgumen
             }
         } else {
             try {
-                target = parameter.getParameterType().newInstance();
+                target = ClassUtils.newInstance(parameter.getParameterType());
                 HttpParameterUtils.parseHttpParameter(request, target);
             } catch (Exception e) {
                 if (log.isTraceEnabled()) {

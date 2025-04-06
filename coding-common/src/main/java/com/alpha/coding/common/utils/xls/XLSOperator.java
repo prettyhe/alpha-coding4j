@@ -6,6 +6,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 import org.apache.commons.beanutils.ConvertUtils;
@@ -23,6 +24,8 @@ import com.alpha.coding.common.utils.convert.NumberConverter;
  */
 public abstract class XLSOperator {
 
+    private static final Map<Class<?>, Map<Field, XLSLabelContext>> FIELD_LABEL_MAP_CACHE = new ConcurrentHashMap<>();
+
     static {
         Stream.of(Long.class, Integer.class, BigDecimal.class)
                 .forEach(type -> {
@@ -34,20 +37,22 @@ public abstract class XLSOperator {
     }
 
     public static Map<Field, XLSLabelContext> fieldLabelMap(Class<?> clazz) {
-        final List<Field> fields = FieldUtils.findMatchedFields(clazz, null);
-        Map<Field, XLSLabelContext> map = new HashMap<>();
-        for (Field field : fields) {
-            final XLSLabel xlsLabel = field.getAnnotation(XLSLabel.class);
-            if (xlsLabel != null) {
-                map.put(field, new XLSLabelContext(xlsLabel));
-                continue;
+        return FIELD_LABEL_MAP_CACHE.computeIfAbsent(clazz, k -> {
+            final List<Field> fields = FieldUtils.findMatchedFields(k, null);
+            Map<Field, XLSLabelContext> map = new HashMap<>();
+            for (Field field : fields) {
+                final XLSLabel xlsLabel = field.getAnnotation(XLSLabel.class);
+                if (xlsLabel != null) {
+                    map.put(field, new XLSLabelContext(xlsLabel));
+                    continue;
+                }
+                final Label label = field.getAnnotation(Label.class);
+                if (label != null) {
+                    map.put(field, new XLSLabelContext(label));
+                }
             }
-            final Label label = field.getAnnotation(Label.class);
-            if (label != null) {
-                map.put(field, new XLSLabelContext(label));
-            }
-        }
-        return map;
+            return map;
+        });
     }
 
 }

@@ -38,6 +38,7 @@ import com.alpha.coding.common.event.parser.EventKeyParser;
 import com.alpha.coding.common.event.parser.EventKeyParserFactory;
 import com.alpha.coding.common.event.parser.ParseSrcWrapper;
 import com.alpha.coding.common.spring.spel.GlobalExpressionCache;
+import com.alpha.coding.common.utils.ClassUtils;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
@@ -127,7 +128,7 @@ public class EventMonitorAspect implements ApplicationContextAware {
             final BiFunction<Class<? extends EnumWithCodeSupplier>, String, EnumWithCodeSupplier>
                     eventTypeParser = eventTypeParseCache.computeIfAbsent(elementKey, p -> {
                 try {
-                    return eventType.typeParser().newInstance();
+                    return ClassUtils.newInstance(eventType.typeParser());
                 } catch (Exception e) {
                     log.warn("cannot get eventTypeParser instance for {}", elementKey);
                 }

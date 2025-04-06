@@ -18,7 +18,7 @@ import java.util.regex.Pattern;
  */
 public class TableNameParser {
 
-    private static final String TOKEN_GROUP_START = "(";
+    private static final String LEFT_BRACKET = "(";
     private static final String TOKEN_COMMA = ",";
     private static final String TOKEN_SET = "set";
     private static final String TOKEN_OF = "of";
@@ -34,11 +34,12 @@ public class TableNameParser {
     private static final String KEYWORD_FROM = "from";
     private static final String KEYWORD_USING = "using";
     private static final String KEYWORD_UPDATE = "update";
+    private static final String KEYWORD_STRAIGHT_JOIN = "straight_join";
+    private static final String KEYWORD_DUPLICATE = "duplicate";
 
-    private static final List<String> concerned = Arrays
-            .asList(KEYWORD_TABLE, KEYWORD_INTO, KEYWORD_JOIN, KEYWORD_USING, KEYWORD_UPDATE);
-    private static final List<String> ignored = Arrays
-            .asList(TOKEN_GROUP_START, TOKEN_SET, TOKEN_OF, TOKEN_DUAL);
+    private static final List<String> concerned = Arrays.asList(KEYWORD_TABLE, KEYWORD_INTO, KEYWORD_JOIN,
+            KEYWORD_USING, KEYWORD_UPDATE, KEYWORD_STRAIGHT_JOIN);
+    private static final List<String> ignored = Arrays.asList(LEFT_BRACKET, TOKEN_SET, TOKEN_OF, TOKEN_DUAL);
 
     /**
      * 该表达式会匹配 SQL 中不是 SQL TOKEN 的部分，比如换行符，注释信息，结尾的 {@code ;} 等。
@@ -84,6 +85,8 @@ public class TableNameParser {
                 String current = tokens.get(index++).getValue();
                 if (isFromToken(current)) {
                     processFromToken(tokens, index, visitor);
+                } else if (isOnDuplicateKeyUpdate(current, index)) {
+                    index = skipDuplicateKeyUpdateIndex(index);
                 } else if (concerned.contains(current.toLowerCase())) {
                     if (hasMoreTokens(tokens, index)) {
                         SqlToken next = tokens.get(index++);
@@ -110,7 +113,7 @@ public class TableNameParser {
      * @param sql SQL
      * @return 语句
      */
-    protected List<SqlToken> fetchAllTokens(String sql) {
+    private List<SqlToken> fetchAllTokens(String sql) {
         List<SqlToken> tokens = new ArrayList<>();
         Matcher matcher = NON_SQL_TOKEN_PATTERN.matcher(sql);
         int last = 0;
@@ -136,10 +139,10 @@ public class TableNameParser {
      * @return 判断是不是 Oracle 特殊的删除手法
      */
     private static boolean isOracleSpecialDelete(String current, List<SqlToken> tokens, int index) {
-        if (TOKEN_DELETE.equals(current)) {
+        if (TOKEN_DELETE.equalsIgnoreCase(current)) {
             if (hasMoreTokens(tokens, index++)) {
                 String next = tokens.get(index).getValue();
-                return !KEYWORD_FROM.equals(next) && !TOKEN_ALL.equals(next);
+                return !KEYWORD_FROM.equalsIgnoreCase(next) && !TOKEN_ALL.equals(next);
             }
         }
         return false;
@@ -147,9 +150,24 @@ public class TableNameParser {
 
     private boolean isCreateIndex(String current, List<SqlToken> tokens, int index) {
         index++; // Point to next token
-        if (TOKEN_CREATE.equals(current.toLowerCase()) && hasIthToken(tokens, index)) {
+        if (TOKEN_CREATE.equalsIgnoreCase(current) && hasIthToken(tokens, index)) {
             String next = tokens.get(index).getValue();
-            return TOKEN_INDEX.equals(next.toLowerCase());
+            return TOKEN_INDEX.equalsIgnoreCase(next);
+        }
+        return false;
+    }
+
+    /**
+     * @param current 当前token
+     * @param index   索引
+     * @return 判断是否是mysql的特殊语法 on duplicate key update
+     */
+    private boolean isOnDuplicateKeyUpdate(String current, int index) {
+        if (KEYWORD_DUPLICATE.equalsIgnoreCase(current)) {
+            if (hasMoreTokens(tokens, index++)) {
+                String next = tokens.get(index).getValue();
+                return KEYWORD_UPDATE.equalsIgnoreCase(next);
+            }
         }
         return false;
     }
@@ -159,7 +177,12 @@ public class TableNameParser {
     }
 
     private static boolean isFromToken(String currentToken) {
-        return KEYWORD_FROM.equals(currentToken.toLowerCase());
+        return KEYWORD_FROM.equalsIgnoreCase(currentToken);
+    }
+
+    private int skipDuplicateKeyUpdateIndex(int index) {
+        // on duplicate key update为mysql的固定写法，直接跳过即可。
+        return index + 2;
     }
 
     private static void processFromToken(List<SqlToken> tokens, int index, TableNameVisitor visitor) {

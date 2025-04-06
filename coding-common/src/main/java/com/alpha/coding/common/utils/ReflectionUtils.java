@@ -18,6 +18,7 @@ import lombok.extern.slf4j.Slf4j;
  * Date: 2020-02-21
  */
 @Slf4j
+@Deprecated
 public class ReflectionUtils {
 
     /**
@@ -26,7 +27,7 @@ public class ReflectionUtils {
      * @param clazz class类型
      * @return 返回首个泛型类型
      */
-    public static Class getSuperClassGenericType(final Class clazz) {
+    public static Class<?> getSuperClassGenericType(final Class<?> clazz) {
         return getSuperClassGenericType(clazz, 0);
     }
 
@@ -37,7 +38,7 @@ public class ReflectionUtils {
      * @param index 泛型参数位置
      * @return 返回指定位置的泛型类型
      */
-    public static Class getSuperClassGenericType(final Class clazz, final int index) {
+    public static Class<?> getSuperClassGenericType(final Class<?> clazz, final int index) {
         Type genType = clazz.getGenericSuperclass();
 
         if (!(genType instanceof ParameterizedType)) {
@@ -57,20 +58,19 @@ public class ReflectionUtils {
             return Object.class;
         }
 
-        return (Class) params[index];
+        return (Class<?>) params[index];
     }
 
     /**
-     * 获取class属性的get方法
+     * 获取classs属性的get方法
      *
      * @param c            class
      * @param propertyName 属性名
      * @return get Method
      */
-    public static Method getGetterMethod(Class c, String propertyName) {
+    public static Method getGetterMethod(Class<?> c, String propertyName) {
         try {
-            Method m = c.getMethod("get" + initStr(propertyName));
-            return m;
+            return c.getMethod("get" + initStr(propertyName));
         } catch (Exception e) {
             throw new RuntimeException("getter not found");
         }
@@ -80,7 +80,7 @@ public class ReflectionUtils {
      * 首字母变大写
      *
      * @param string
-     * @return result
+     * @return
      */
     private static String initStr(String string) {
         return string.substring(0, 1).toUpperCase() + string.substring(1);

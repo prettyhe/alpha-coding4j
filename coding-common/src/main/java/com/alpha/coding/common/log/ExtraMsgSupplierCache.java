@@ -1,7 +1,10 @@
 package com.alpha.coding.common.log;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+
+import com.alpha.coding.common.utils.ClassUtils;
 
 /**
  * ExtraMsgSupplierCache
@@ -16,10 +19,8 @@ public class ExtraMsgSupplierCache {
     public static ExtraMsgSupplier getDefault(Class<? extends ExtraMsgSupplier> cls) {
         return CACHE.computeIfAbsent(cls, k -> {
             try {
-                return cls.newInstance();
-            } catch (InstantiationException e) {
-                throw new RuntimeException(e);
-            } catch (IllegalAccessException e) {
+                return ClassUtils.newInstance(k);
+            } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
                 throw new RuntimeException(e);
             }
         });

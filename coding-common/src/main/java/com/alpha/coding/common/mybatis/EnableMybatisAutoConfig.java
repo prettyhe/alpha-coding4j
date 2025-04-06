@@ -72,6 +72,16 @@ public @interface EnableMybatisAutoConfig {
     boolean enableShowSqlInterceptor() default true;
 
     /**
+     * 启用com.alpha.coding.common.mybatis.ShowSqlInterceptor时的配置参数,k=v形式，v支持外部配置化参数
+     * <p>
+     * sqlIdAbbreviated=true
+     * </p>
+     */
+    String[] showSqlInterceptorProperties() default {
+            "sqlIdAbbreviated=${mybatis.plugins.ShowSqlInterceptor.sqlIdAbbreviated:true}",
+            "enableShowDatabaseName=${mybatis.plugins.ShowSqlInterceptor.enableShowDatabaseName:false}"};
+
+    /**
      * 其它扩展插件(org.apache.ibatis.plugin.Interceptor)beanName
      */
     String[] extPlugins() default {};

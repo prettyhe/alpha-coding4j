@@ -16,6 +16,7 @@ import com.alpha.coding.bo.constant.Keys;
 import com.alpha.coding.bo.function.common.Predicates;
 import com.alpha.coding.common.http.CookieUtils;
 import com.alpha.coding.common.http.HttpParameterUtils;
+import com.alpha.coding.common.utils.ClassUtils;
 import com.alpha.coding.common.utils.IpUtils;
 
 import lombok.Data;
@@ -84,7 +85,7 @@ public class InitLocalFilter extends AbstractEnhancerFilter {
         }
         Object envContext = null;
         try {
-            envContext = this.envContextClass.newInstance();
+            envContext = ClassUtils.newInstance(this.envContextClass);
             HttpParameterUtils.parseHttpParameter(request, envContext);
         } catch (Exception e) {
             log.error("ParseParamErr for {}", request.getRequestURI());

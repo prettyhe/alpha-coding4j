@@ -1,6 +1,7 @@
 package com.alpha.coding.common.utils.xls;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
@@ -21,6 +22,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import com.alpha.coding.bo.base.MapThreadLocalAdaptor;
 import com.alpha.coding.bo.handler.XLSCellHandler;
+import com.alpha.coding.common.utils.ClassUtils;
 import com.alpha.coding.common.utils.DateUtils;
 import com.alpha.coding.common.utils.StringUtils;
 
@@ -213,8 +215,9 @@ public class XLSWriter extends XLSOperator {
                     MapThreadLocalAdaptor.computeIfAbsent(XLS_CELL_HANDLER_LOCAL_KEY, k -> new HashMap<>());
             cellHandler = handlerMap.computeIfAbsent(handlerClass, c -> {
                 try {
-                    return c.newInstance();
-                } catch (InstantiationException | IllegalAccessException e) {
+                    return ClassUtils.newInstance(c);
+                } catch (InstantiationException | IllegalAccessException | NoSuchMethodException |
+                        InvocationTargetException e) {
                     log.warn("create XLSCellHandler fail for {}", handlerClass.getName(), e);
                 }
                 return null;

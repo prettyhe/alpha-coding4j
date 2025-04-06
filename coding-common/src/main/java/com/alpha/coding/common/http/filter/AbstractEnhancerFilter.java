@@ -13,6 +13,7 @@ import javax.servlet.ServletResponse;
 
 import com.alpha.coding.bo.base.Tuple;
 import com.alpha.coding.bo.function.common.Predicates;
+import com.alpha.coding.common.utils.ClassUtils;
 
 import lombok.Setter;
 
@@ -34,7 +35,7 @@ public abstract class AbstractEnhancerFilter implements Filter, FilterModifierEn
             this.filterEnhancers = new ArrayList<>();
             for (String name : filterEnhancers.split(",")) {
                 try {
-                    this.filterEnhancers.add((FilterEnhancer) loadClass(name).newInstance());
+                    this.filterEnhancers.add((FilterEnhancer) ClassUtils.newInstance(loadClass(name)));
                 } catch (Exception e) {
                     throw new ServletException(e);
                 }

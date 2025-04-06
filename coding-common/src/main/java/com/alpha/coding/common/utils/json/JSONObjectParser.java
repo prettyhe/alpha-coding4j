@@ -1,10 +1,12 @@
 package com.alpha.coding.common.utils.json;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 
 import com.alibaba.fastjson.JSONObject;
 import com.alpha.coding.bo.annotation.JsonPath;
 import com.alpha.coding.bo.function.common.Converter;
+import com.alpha.coding.common.utils.ClassUtils;
 import com.alpha.coding.common.utils.FieldUtils;
 
 import lombok.extern.slf4j.Slf4j;
@@ -22,11 +24,12 @@ public class JSONObjectParser {
     }
 
     public static <T> T mapper(JSONObject jsonObject, Class<T> clz)
-            throws IllegalAccessException, InstantiationException {
+            throws IllegalAccessException, InstantiationException, NoSuchMethodException, InvocationTargetException {
         if (jsonObject == null) {
             return null;
         }
-        return mapper(jsonObject, FieldUtils.findMatchedFields(clz, null).toArray(new Field[0]), clz.newInstance());
+        return mapper(jsonObject, FieldUtils.findMatchedFields(clz, null).toArray(new Field[0]),
+                ClassUtils.newInstance(clz));
     }
 
     public static <T> T mapper(JSONObject jsonObject, Class<T> clz, T t) {

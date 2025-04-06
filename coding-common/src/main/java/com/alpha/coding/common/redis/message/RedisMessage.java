@@ -23,22 +23,27 @@ import org.springframework.data.redis.serializer.RedisSerializer;
 public @interface RedisMessage {
 
     /**
-     * topic
+     * topic，适用于发布与订阅
      */
     String[] topic() default {};
 
     /**
-     * topic正则表达式
+     * topic正则表达式，适用于订阅
      */
     String[] topicPattern() default {};
 
     /**
-     * 序列化工具提供者
+     * key序列化工具提供者
      */
-    Class<? extends Supplier<RedisSerializer>> redisSerializerSupplier() default NoneRedisSerializerProvider.class;
+    Class<? extends Supplier<RedisSerializer>> redisKeySerializerSupplier() default StringRedisSerializerProvider.class;
 
     /**
-     * 是否自动注入到所有{RedisMessageListenerContainer}
+     * value序列化工具提供者
+     */
+    Class<? extends Supplier<RedisSerializer>> redisValueSerializerSupplier() default NoneRedisSerializerProvider.class;
+
+    /**
+     * 是否自动注入到{RedisMessageListenerContainer}
      */
     boolean injectAllListenerContainer() default true;
 

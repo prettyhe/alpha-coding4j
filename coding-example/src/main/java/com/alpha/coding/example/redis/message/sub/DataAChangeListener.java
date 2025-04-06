@@ -1,6 +1,7 @@
 package com.alpha.coding.example.redis.message.sub;
 
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.connection.Message;
@@ -24,7 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 @RedisMessage(topic = RedisTopics.DATA_A_CHANGE)
 public class DataAChangeListener implements MessageListener {
 
-    private final Charset charset = Charset.forName("UTF-8");
+    private final Charset charset = StandardCharsets.UTF_8;
 
     @Autowired
     private SomeServiceWithCache someServiceWithCache;

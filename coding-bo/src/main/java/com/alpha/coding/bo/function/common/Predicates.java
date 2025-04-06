@@ -28,7 +28,7 @@ public interface Predicates {
     /**
      * 非空校验
      */
-    Predicate<Object> notEmptyPredicate = t -> t != null && String.valueOf(t).length() > 0;
+    Predicate<Object> notEmptyPredicate = t -> t != null && !String.valueOf(t).isEmpty();
 
     /**
      * 判断一个字符串是否是预期的整数字符串
@@ -230,7 +230,7 @@ public interface Predicates {
      * 判断字符串是否为JSON对象字符串
      */
     Predicate<CharSequence> isJsonObjStr = cs -> {
-        if (cs != null) {
+        if (cs != null && cs.length() >= 2) {
             return cs.charAt(0) == '{' && cs.charAt(cs.length() - 1) == '}';
         }
         return false;
@@ -240,7 +240,7 @@ public interface Predicates {
      * 判断字符串是否为JSON数组字符串
      */
     Predicate<CharSequence> isJsonArrayStr = cs -> {
-        if (cs != null) {
+        if (cs != null && cs.length() >= 2) {
             return cs.charAt(0) == '[' && cs.charAt(cs.length() - 1) == ']';
         }
         return false;

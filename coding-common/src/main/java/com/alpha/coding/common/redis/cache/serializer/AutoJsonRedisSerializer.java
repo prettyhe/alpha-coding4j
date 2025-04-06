@@ -18,6 +18,7 @@ import org.springframework.data.redis.serializer.SerializationException;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
 import com.alpha.coding.common.assist.compiler.JDKCompilerHelper;
+import com.alpha.coding.common.utils.ClassUtils;
 import com.alpha.coding.common.utils.IOUtils;
 import com.google.common.reflect.TypeToken;
 
@@ -90,7 +91,10 @@ public class AutoJsonRedisSerializer implements RedisSerializer {
                                     log.debug("generate class for {} get TypeReference: {}",
                                             key, clz == null ? null : clz.getName());
                                 }
-                                TYPE_CACHE.put(key, (TypeReference) (clz.newInstance()));
+                                if (clz == null) {
+                                    throw new ClassNotFoundException(className);
+                                }
+                                TYPE_CACHE.put(key, (TypeReference) (ClassUtils.newInstance(clz)));
                                 if (log.isDebugEnabled()) {
                                     log.debug("generate class for {} get Type: {}",
                                             key, TYPE_CACHE.get(key).getType());

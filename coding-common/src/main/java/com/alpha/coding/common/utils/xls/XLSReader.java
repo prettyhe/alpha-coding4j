@@ -12,6 +12,7 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 
 import com.alpha.coding.bo.base.Tuple;
+import com.alpha.coding.common.utils.ClassUtils;
 import com.alpha.coding.common.utils.FieldUtils;
 
 import lombok.extern.slf4j.Slf4j;
@@ -78,7 +79,7 @@ public class XLSReader extends XLSOperator {
         }
         List<T> ret = new ArrayList<>();
         for (List<Tuple<String, Object>> fieldValues : lines) {
-            T t = genInstance(fieldValues, clazz);
+            T t = makeAndFillInstance(fieldValues, clazz);
             if (t == null) {
                 continue;
             }
@@ -87,10 +88,13 @@ public class XLSReader extends XLSOperator {
         return ret;
     }
 
-    private static <T> T genInstance(List<Tuple<String, Object>> fieldValues, Class<T> clazz) {
+    /**
+     * 将表格的一行数据转换为实例对象，对象中的字段需被 @XLSLabel 标注
+     */
+    public static <T> T makeAndFillInstance(List<Tuple<String, Object>> fieldValues, Class<T> clazz) {
         T newInstance = null;
         try {
-            newInstance = clazz.newInstance();
+            newInstance = ClassUtils.newInstance(clazz);
             final Map<Field, XLSLabelContext> fieldLabelMap = XLSOperator.fieldLabelMap(clazz);
             for (Field field : fieldLabelMap.keySet()) {
                 final XLSLabelContext label = fieldLabelMap.get(field);

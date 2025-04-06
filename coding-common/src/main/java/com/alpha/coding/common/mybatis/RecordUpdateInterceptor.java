@@ -105,7 +105,7 @@ public class RecordUpdateInterceptor extends ShowSqlInterceptor {
         final String sqlId = mappedStatement.getId();
         final BoundSql boundSql = mappedStatement.getBoundSql(parameter);
         final Configuration configuration = mappedStatement.getConfiguration();
-        final String originalSql = boundSql.getSql().replaceAll("[\\s]+", " ");
+        final String originalSql = boundSql.getSql().replaceAll("\\s+", " ");
         Collection<String> tables = null;
         try {
             tables = new TableNameParser(originalSql.toLowerCase()).tables();

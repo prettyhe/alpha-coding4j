@@ -1,7 +1,10 @@
 package com.alpha.coding.common.aop.invoke;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
+import com.alpha.coding.common.utils.ClassUtils;
 
 /**
  * FailCallbackFactory
@@ -16,8 +19,9 @@ public class FailCallbackFactory {
     public static FailCallback instance(Class<? extends FailCallback> clz) {
         return MAP.computeIfAbsent(clz, k -> {
             try {
-                return k.newInstance();
-            } catch (InstantiationException | IllegalAccessException e) {
+                return ClassUtils.newInstance(k);
+            } catch (InstantiationException | IllegalAccessException | NoSuchMethodException |
+                    InvocationTargetException e) {
                 throw new RuntimeException(e);
             }
         });

@@ -1,5 +1,6 @@
 package com.alpha.coding.common.redis;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.Optional;
 
@@ -162,11 +163,11 @@ public class RedissonConfiguration implements EnvironmentAware {
             try {
                 final Class<?> clz = ClassUtils.loadClass(codecClass, true);
                 if (Codec.class.isAssignableFrom(clz)) {
-                    return (Codec) clz.newInstance();
+                    return (Codec) ClassUtils.newInstance(clz);
                 } else {
                     log.warn("Redisson Codec type error => {}", codecClass);
                 }
-            } catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
+            } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
                 log.warn("build Redisson Codec from {} fail", codecClass, e);
             }
         }

@@ -1,14 +1,16 @@
 package com.alpha.coding.common.utils.json;
 
+import java.lang.reflect.Type;
 import java.util.function.BiConsumer;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.TypeReference;
 
 /**
  * JSONObjectUtils
  *
  * @version 1.0
- * Date: 2020-02-21
  */
 public class JSONObjectUtils {
 
@@ -19,9 +21,39 @@ public class JSONObjectUtils {
      * @param path       相对于根的绝对目录,如a.b
      * @param pathSep    路径分隔符，如\\.（转义）
      */
+    @Deprecated
     public static Object getValue(JSONObject jsonObject, String path, String pathSep) {
-        String[] paths = path.split(pathSep);
-        return getValue(jsonObject, paths);
+        return getValue(jsonObject, path, pathSep, Object.class);
+    }
+
+    /**
+     * 获取jsonObject中路径为path的值
+     *
+     * @param jsonObject jsonObject,如{"a":{"b":1}}
+     * @param path       相对于根的绝对目录,默认半角逗号分隔,如a.b
+     */
+    public static <T> T getValue(JSONObject jsonObject, String path, Type type) {
+        return getValue(jsonObject, path.split("\\."), type);
+    }
+
+    /**
+     * 获取jsonObject中路径为path的值
+     *
+     * @param jsonObject jsonObject,如{"a":{"b":1}}
+     * @param path       相对于根的绝对目录,默认半角逗号分隔,如a.b
+     */
+    public static <T> T getValue(JSONObject jsonObject, String path, String sep, Type type) {
+        return getValue(jsonObject, path.split(sep), type);
+    }
+
+    /**
+     * 获取jsonObject中路径为path的值
+     *
+     * @param jsonObject jsonObject,如{"a":{"b":1}}
+     * @param path       相对于根的绝对目录,默认半角逗号分隔,如a.b
+     */
+    public static <T> T getValue(JSONObject jsonObject, String path, TypeReference<T> typeReference) {
+        return getValue(jsonObject, path.split("\\."), typeReference);
     }
 
     /**
@@ -30,29 +62,92 @@ public class JSONObjectUtils {
      * @param jsonObject jsonObject,如{"a":{"b":1}}
      * @param paths      相对于根的绝对目录序列,如[a,b]
      */
+    @Deprecated
     public static Object getValue(JSONObject jsonObject, String[] paths) {
+        return getValue(jsonObject, paths, Object.class);
+    }
+
+    /**
+     * 获取jsonObject中路径为path的值
+     *
+     * @param jsonObject jsonObject,如{"a":{"b":1}}
+     * @param paths      相对于根的绝对目录序列,如[a,b]
+     */
+    public static <T> T getValue(JSONObject jsonObject, String[] paths, Type type) {
         int i = 0;
-        JSONObject obj = jsonObject;
+        Object obj = jsonObject;
         while (i < paths.length - 1) {
             if (obj == null) {
                 return null;
             }
-            obj = obj.getJSONObject(paths[i++]);
+            obj = JSON.toJSON(obj);
+            if (obj instanceof JSONObject) {
+                obj = ((JSONObject) obj).get(paths[i++]);
+            } else {
+                return null;
+            }
         }
-        return obj == null ? null : obj.get(paths[i]);
+        if (obj == null) {
+            return null;
+        }
+        obj = JSON.toJSON(obj);
+        if (obj instanceof JSONObject) {
+            return ((JSONObject) obj).getObject(paths[i], type);
+        }
+        return null;
+    }
+
+    /**
+     * 获取jsonObject中路径为path的值
+     *
+     * @param jsonObject jsonObject,如{"a":{"b":1}}
+     * @param paths      相对于根的绝对目录序列,如[a,b]
+     */
+    public static <T> T getValue(JSONObject jsonObject, String[] paths, TypeReference<T> typeReference) {
+        int i = 0;
+        Object obj = jsonObject;
+        while (i < paths.length - 1) {
+            if (obj == null) {
+                return null;
+            }
+            obj = JSON.toJSON(obj);
+            if (obj instanceof JSONObject) {
+                obj = ((JSONObject) obj).get(paths[i++]);
+            } else {
+                return null;
+            }
+        }
+        if (obj == null) {
+            return null;
+        }
+        obj = JSON.toJSON(obj);
+        if (obj instanceof JSONObject) {
+            return ((JSONObject) obj).getObject(paths[i], typeReference);
+        }
+        return null;
     }
 
     /**
      * 获取jsonObject中路径为path的值
      *
      * @param jsonObject jsonObject,如{"c":1}
-     * @param path       相对于根的绝对目录,如a.b
-     * @param pathSep    路径分隔符，如\\.（转义）
+     * @param path       相对于根的绝对目录,默认半角逗号分隔,如a.b
      * @param value      值，如test，结果jsonObject变成{"a":{"b":"test"},"c":1}
      */
-    public static void putValue(JSONObject jsonObject, String path, String pathSep, Object value) {
-        String[] paths = path.split(pathSep);
-        putValue(jsonObject, paths, value);
+    public static boolean putValue(JSONObject jsonObject, String path, Object value) {
+        return putValue(jsonObject, path.split("\\."), value);
+    }
+
+    /**
+     * 获取jsonObject中路径为path的值
+     *
+     * @param jsonObject jsonObject,如{"c":1}
+     * @param path       相对于根的绝对目录,默认半角逗号分隔,如a.b
+     * @param sep        路径分隔符
+     * @param value      值，如test，结果jsonObject变成{"a":{"b":"test"},"c":1}
+     */
+    public static boolean putValue(JSONObject jsonObject, String path, String sep, Object value) {
+        return putValue(jsonObject, path.split(sep), value);
     }
 
     /**
@@ -62,35 +157,42 @@ public class JSONObjectUtils {
      * @param paths      相对于根的绝对目录序列,如[a,b]
      * @param value      值，如test，结果jsonObject变成{"a":{"b":"test"},"c":1}
      */
-    public static void putValue(JSONObject jsonObject, String[] paths, final Object value) {
-        updateNode(jsonObject, paths, (json, key) -> json.put(key, value));
+    public static boolean putValue(JSONObject jsonObject, String[] paths, final Object value) {
+        return updateNode(jsonObject, paths, (json, key) -> json.put(key, value));
     }
 
-    private static JSONObject getJSONObjectExceptionToNull(JSONObject parent, String key) {
-        final Object obj = parent.get(key);
-        if (obj == null) {
-            return null;
+    /**
+     * 更新节点
+     */
+    private static boolean updateNode(JSONObject jsonObject, String[] paths, BiConsumer<JSONObject, String> action) {
+        if (jsonObject == null) {
+            return false;
         }
-        try {
-            return parent.getJSONObject(key);
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    private static void updateNode(JSONObject jsonObject, String[] paths, BiConsumer<JSONObject, String> action) {
         int i = 0;
-        JSONObject json = jsonObject;
+        Object obj = jsonObject;
         while (i < paths.length - 1) {
             String key = paths[i++];
-            JSONObject obj = getJSONObjectExceptionToNull(json, key);
-            if (obj == null) {
-                obj = new JSONObject();
+            Object parent = obj;
+            if (!(parent instanceof JSONObject)) {
+                return false;
             }
-            json.put(key, obj);
-            json = obj;
+            obj = ((JSONObject) parent).computeIfAbsent(key, k -> new JSONObject());
         }
-        action.accept(json, paths[i]);
+        if (obj instanceof JSONObject) {
+            action.accept((JSONObject) obj, paths[i]);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * 删除jsonObject中路径为path的值
+     *
+     * @param jsonObject jsonObject,如{"a":{"b":1}}
+     * @param path       相对于根的绝对路径,默认半角逗号分隔,如a.b
+     */
+    public static boolean removeValue(JSONObject jsonObject, String path) {
+        return updateNode(jsonObject, path.split("\\."), JSONObject::remove);
     }
 
     /**
@@ -99,8 +201,8 @@ public class JSONObjectUtils {
      * @param jsonObject jsonObject,如{"a":{"b":1}}
      * @param paths      相对于根的绝对目录序列,如[a,b]
      */
-    public static void removeValue(JSONObject jsonObject, String[] paths) {
-        updateNode(jsonObject, paths, JSONObject::remove);
+    public static boolean removeValue(JSONObject jsonObject, String[] paths) {
+        return updateNode(jsonObject, paths, JSONObject::remove);
     }
 
 }

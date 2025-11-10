@@ -34,7 +34,7 @@ import lombok.Data;
  * SyncInvokeAspect
  *
  * @version 1.0
- * Date: 2020-02-21
+ * Date: 2019年11月13日
  */
 @Data
 public class SyncInvokeAspect implements ApplicationContextAware {
@@ -62,8 +62,15 @@ public class SyncInvokeAspect implements ApplicationContextAware {
         }
         final SyncInvoke syncInvoke = method.getAnnotation(SyncInvoke.class);
         final JoinPointContext joinPointContext = new JoinPointContext(joinPoint);
-        final boolean condition = evalCondition(joinPointContext.getJoinOperationContext(), syncInvoke.condition());
-        if (!condition) {
+        if (evalCondition(joinPointContext.getJoinOperationContext(), syncInvoke.blockCondition())) {
+            if (!syncInvoke.failCallback().equals(FailCallback.class)) {
+                final FailCallback failCallback = FailCallbackFactory.instance(syncInvoke.failCallback());
+                return failCallback.onBlocked(method, joinPoint.getArgs(),
+                        BeanDefineUtils.resolveValue(applicationContext, syncInvoke.blockedText(), String.class));
+            }
+            return null;
+        }
+        if (!evalCondition(joinPointContext.getJoinOperationContext(), syncInvoke.condition())) {
             return joinPoint.proceed();
         }
         final String invokeKey = buildInvokeKey(joinPointContext.getJoinOperationContext(), syncInvoke.key());
@@ -203,8 +210,10 @@ public class SyncInvokeAspect implements ApplicationContextAware {
      * 执行条件表达式
      */
     private boolean evalCondition(JoinOperationContext context, String conditionExpression) {
-        if (StringUtils.isBlank(conditionExpression)) {
+        if (StringUtils.isBlank(conditionExpression) || "true".equalsIgnoreCase(conditionExpression)) {
             return true;
+        } else if ("false".equalsIgnoreCase(conditionExpression)) {
+            return false;
         }
         final Object condition = AopHelper.evalSpELExpress(GlobalExpressionCache.getCache(),
                 context.getMethodCacheKey(), conditionExpression, getExpressionParser(),

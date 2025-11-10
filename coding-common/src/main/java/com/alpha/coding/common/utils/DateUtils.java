@@ -21,7 +21,6 @@ import java.util.concurrent.TimeUnit;
  * DateUtils default parse-format:{yyyy-MM-dd HH:mm:ss}
  *
  * @version 1.0
- * Date: 2020-02-21
  */
 public class DateUtils {
 
@@ -201,6 +200,10 @@ public class DateUtils {
                         return date;
                     }
                 }
+            }
+            // 带毫秒的时间戳
+            if (date == null && trimDate.length() == 13) {
+                date = new Date(Long.parseLong(trimDate));
             }
             return date;
         }
@@ -1175,6 +1178,38 @@ public class DateUtils {
                 return dateTime;
             }
         }
+    }
+
+    /**
+     * Date 转 LocalDateTime，使用系统默认ZoneId
+     *
+     * @param date Date
+     */
+    public static LocalDateTime toLocalDateTime(Date date) {
+        return toLocalDateTime(date, null);
+    }
+
+    /**
+     * Date 转 LocalDateTime
+     *
+     * @param date   Date
+     * @param zoneId ZoneId
+     */
+    public static LocalDateTime toLocalDateTime(Date date, ZoneId zoneId) {
+        return date == null ? null : date.toInstant()
+                .atZone(zoneId == null ? ZoneId.systemDefault() : zoneId)
+                .toLocalDateTime();
+    }
+
+    /**
+     * 使用于本工具里定义的几种格式的字符串转换成日期，无法转换时使用传入的补充格式转换
+     *
+     * @param dateStr              时间字符串
+     * @param supplementaryFormats 补充的格式
+     */
+    public static LocalDateTime smartParseLocalDateTime(String dateStr, String... supplementaryFormats) {
+        final Date date = smartParse(dateStr, supplementaryFormats);
+        return toLocalDateTime(date);
     }
 
 }

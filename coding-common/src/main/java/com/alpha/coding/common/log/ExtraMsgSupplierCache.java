@@ -1,8 +1,8 @@
 package com.alpha.coding.common.log;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 import com.alpha.coding.common.utils.ClassUtils;
 
@@ -14,13 +14,14 @@ import com.alpha.coding.common.utils.ClassUtils;
  */
 public class ExtraMsgSupplierCache {
 
-    private static ConcurrentMap<Class<? extends ExtraMsgSupplier>, ExtraMsgSupplier> CACHE = new ConcurrentHashMap<>();
+    private static final Map<Class<? extends ExtraMsgSupplier>, ExtraMsgSupplier> CACHE = new ConcurrentHashMap<>();
 
     public static ExtraMsgSupplier getDefault(Class<? extends ExtraMsgSupplier> cls) {
         return CACHE.computeIfAbsent(cls, k -> {
             try {
                 return ClassUtils.newInstance(k);
-            } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
+            } catch (InstantiationException | IllegalAccessException | NoSuchMethodException |
+                     InvocationTargetException e) {
                 throw new RuntimeException(e);
             }
         });

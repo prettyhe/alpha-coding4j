@@ -1,50 +1,48 @@
 package com.alpha.coding.common.mybatis.dynamic;
 
 import java.math.BigDecimal;
-import java.sql.JDBCType;
 import java.util.Date;
+import java.util.Objects;
 import java.util.Optional;
 
 import org.mybatis.dynamic.sql.BindableColumn;
-import org.mybatis.dynamic.sql.render.TableAliasCalculator;
+import org.mybatis.dynamic.sql.render.RenderingContext;
+import org.mybatis.dynamic.sql.util.FragmentAndParameters;
 
 /**
- * CustomColumn 自定义BindableColumn
+ * CustomColumn 自定义 BindableColumn
  *
  * @version 1.0
  * Date: 2020/4/18
+ * @see org.mybatis.dynamic.sql.Constant
  */
 public class CustomColumn<T> implements BindableColumn<T> {
 
     private final String name;
+    private final String alias;
 
     private CustomColumn(String name) {
-        this.name = name;
+        this(name, null);
+    }
+
+    private CustomColumn(String name, String alias) {
+        this.name = Objects.requireNonNull(name, "column name must not null!");
+        this.alias = alias;
     }
 
     @Override
     public Optional<String> alias() {
-        return Optional.empty();
+        return Optional.ofNullable(alias);
     }
 
     @Override
     public BindableColumn<T> as(String alias) {
-        return of(alias);
+        return new CustomColumn<>(name, alias);
     }
 
     @Override
-    public String renderWithTableAlias(TableAliasCalculator tableAliasCalculator) {
-        return name;
-    }
-
-    @Override
-    public Optional<JDBCType> jdbcType() {
-        return Optional.empty();
-    }
-
-    @Override
-    public Optional<String> typeHandler() {
-        return Optional.empty();
+    public FragmentAndParameters render(RenderingContext renderingContext) {
+        return FragmentAndParameters.fromFragment(name);
     }
 
     public static <T> CustomColumn<T> of(String name) {
@@ -71,7 +69,7 @@ public class CustomColumn<T> implements BindableColumn<T> {
         return of(name);
     }
 
-    public static CustomColumn<String> ofSring(String name) {
+    public static CustomColumn<String> ofString(String name) {
         return of(name);
     }
 

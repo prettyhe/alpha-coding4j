@@ -22,7 +22,6 @@ import lombok.experimental.Accessors;
  * LogEnvAspect
  *
  * @version 1.0
- * Date: 2020-02-21
  */
 @Data
 @Accessors(chain = true)
@@ -66,7 +65,7 @@ public class LogEnvAspect {
         final Map<String, Boolean> keysExistMap = Maps.newHashMap();
         context.fluentPut(KEYS_EXIST_MAP_KEY, keysExistMap);
         final List<String> keys = getKeys();
-        if (keys == null || keys.size() == 0) {
+        if (keys == null || keys.isEmpty()) {
             return;
         }
         for (String key : keys) {

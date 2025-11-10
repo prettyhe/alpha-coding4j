@@ -11,6 +11,17 @@ import java.lang.reflect.Method;
 public interface FailCallback {
 
     /**
+     * 请求阻断回调
+     *
+     * @param method      当前调用的方法
+     * @param args        当前调用的参数
+     * @param blockedText 当前阻断文案
+     */
+    default Object onBlocked(Method method, Object[] args, String blockedText) {
+        return null;
+    }
+
+    /**
      * 本地请求竞争(一般是加锁)失败回调
      *
      * @param method      当前调用的方法

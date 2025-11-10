@@ -1,14 +1,12 @@
 package com.alpha.coding.common.mybatis.dynamic;
 
-import java.util.List;
-import java.util.function.Function;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Objects;
 
-import org.mybatis.dynamic.sql.BindableColumn;
 import org.mybatis.dynamic.sql.SqlBuilder;
-import org.mybatis.dynamic.sql.SqlCriterion;
-import org.mybatis.dynamic.sql.VisitableCondition;
 import org.mybatis.dynamic.sql.where.WhereApplier;
-import org.mybatis.dynamic.sql.where.condition.IsLikeWhenPresent;
+import org.mybatis.dynamic.sql.where.condition.IsLike;
 
 import com.alpha.coding.common.utils.StringUtils;
 
@@ -20,43 +18,51 @@ import com.alpha.coding.common.utils.StringUtils;
  */
 public interface SqlBuilderExtension {
 
-    static SqlCriterion<?> sqlCriterion(String connector) {
-        return sqlCriterion(connector, CustomColumn.of(""), IsIdentity.of(Function.identity()));
+    WhereApplier EMPTY_WHERE_APPLIER = dsl -> {
+    };
+
+    static WhereApplier emptyWhereApplier() {
+        return EMPTY_WHERE_APPLIER;
     }
 
-    static <T> SqlCriterion<T> sqlCriterion(String connector, BindableColumn<T> column,
-                                            VisitableCondition<T> condition) {
-        return new SqlCriterion.Builder<T>()
-                .withColumn(column)
-                .withConnector(connector)
-                .withCondition(condition)
-                .build();
+    static WhereApplier compose(WhereApplier... whereAppliers) {
+        return dsl -> Arrays.stream(whereAppliers).filter(Objects::nonNull).forEach(w -> w.accept(dsl));
     }
 
-    static <T> SqlCriterion<T> sqlCriterion(String connector, BindableColumn<T> column,
-                                            VisitableCondition<T> condition, List<SqlCriterion<?>> subCriteria) {
-        return new SqlCriterion.Builder<T>()
-                .withColumn(column)
-                .withConnector(connector)
-                .withCondition(condition)
-                .withSubCriteria(subCriteria)
-                .build();
-    }
-
-    static <T> SqlCriterion.Builder<T> sqlCriterionBuilder(String connector, BindableColumn<T> column) {
-        return new SqlCriterion.Builder<T>().withColumn(column).withConnector(connector);
-    }
-
-    static WhereApplier compose(WhereApplier w1, WhereApplier w2) {
-        return dsl -> dsl.applyWhere(w1).applyWhere(w2);
-    }
-
-    static IsLikeWhenPresent<String> isFullLikeWhenPresent(String value) {
+    static IsLike<String> isFullLikeWhenPresent(String value) {
         return SqlBuilder.isLikeWhenPresent(() -> StringUtils.isBlank(value) ? null : ("%" + value.trim() + "%"));
     }
 
-    static IsLikeWhenPresent<String> isPrefixLikeWhenPresent(String value) {
+    static IsLike<String> isPrefixLikeWhenPresent(String value) {
         return SqlBuilder.isLikeWhenPresent(() -> StringUtils.isBlank(value) ? null : (value.trim() + "%"));
+    }
+
+    /**
+     * 构建 IsIn 条件，集合为null时忽略，为空时阻断
+     *
+     * @param values 集合值：如果为null则忽略该条件，即该条件恒定通过；如果为空则阻断该条件，即该条件不通过
+     */
+    static <T> IsInSafely<T> isInNullIgnoredAndEmptyBlocked(Collection<T> values) {
+        return values == null ? IsInSafely.empty(IsInSafely.EmptyStrategy.IGNORE) :
+                IsInSafely.of(IsInSafely.EmptyStrategy.BLOCK, values);
+    }
+
+    /**
+     * 构建 IsIn 条件，集合为null或空时都忽略
+     *
+     * @param values 集合值：为null或空时都忽略，即该条件恒定通过
+     */
+    static <T> IsInSafely<T> isInNullOrEmptyBothIgnored(Collection<T> values) {
+        return IsInSafely.of(IsInSafely.EmptyStrategy.IGNORE, values);
+    }
+
+    /**
+     * 构建 IsIn 条件，集合为null或空时都阻断
+     *
+     * @param values 集合值：为null或空时都阻断，即该条件不通过
+     */
+    static <T> IsInSafely<T> isInNullOrEmptyBothBlocked(Collection<T> values) {
+        return IsInSafely.of(IsInSafely.EmptyStrategy.BLOCK, values);
     }
 
 }

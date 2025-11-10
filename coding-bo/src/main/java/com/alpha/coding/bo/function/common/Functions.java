@@ -20,6 +20,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -247,5 +248,16 @@ public interface Functions {
     BiFunction<String, int[], String> safeSubstringFromTo =
             (s, l) -> s == null ? null : (l[0] > l[1] ? "" : s.substring(Math.min(Math.max(0, l[0]), s.length()),
                     Math.min(s.length(), Math.max(0, l[1]))));
+
+    /**
+     * 空的消费者
+     */
+    Consumer<?> EMPTY_CONSUMER = t -> {
+    };
+
+    @SuppressWarnings("unchecked")
+    static <T> Consumer<T> emptyConsumer() {
+        return (Consumer<T>) EMPTY_CONSUMER;
+    }
 
 }

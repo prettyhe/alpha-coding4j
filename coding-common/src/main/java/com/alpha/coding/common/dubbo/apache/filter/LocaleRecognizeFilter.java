@@ -1,17 +1,17 @@
-package com.alpha.coding.common.dubbo.filter;
+package com.alpha.coding.common.dubbo.apache.filter;
 
 import java.util.Locale;
 
-import com.alibaba.dubbo.common.Constants;
-import com.alibaba.dubbo.common.extension.Activate;
-import com.alibaba.dubbo.rpc.Filter;
-import com.alibaba.dubbo.rpc.Invocation;
-import com.alibaba.dubbo.rpc.Invoker;
-import com.alibaba.dubbo.rpc.Result;
-import com.alibaba.dubbo.rpc.RpcException;
+import org.apache.dubbo.common.constants.CommonConstants;
+import org.apache.dubbo.common.extension.Activate;
+import org.apache.dubbo.rpc.Filter;
+import org.apache.dubbo.rpc.Invocation;
+import org.apache.dubbo.rpc.Invoker;
+import org.apache.dubbo.rpc.Result;
+import org.apache.dubbo.rpc.RpcException;
+
 import com.alpha.coding.bo.base.MapThreadLocalAdaptor;
 import com.alpha.coding.bo.constant.Keys;
-import com.alpha.coding.common.dubbo.DubboContextTool;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -19,19 +19,16 @@ import lombok.extern.slf4j.Slf4j;
  * LocaleRecognizeFilter
  *
  * @version 1.0
- * Date: 2020/4/11
+ * @date 2025年04月27日
  */
 @Slf4j
-@Activate(group = Constants.PROVIDER, order = -181)
+@Activate(group = CommonConstants.PROVIDER, order = -180)
 public class LocaleRecognizeFilter implements Filter {
 
     private static final String LOCALE_KEY = "locale";
 
     @Override
     public Result invoke(Invoker<?> invoker, Invocation invocation) throws RpcException {
-        if (DubboContextTool.useApacheDubbo()) {
-            return invoker.invoke(invocation);
-        }
         final String localeName = invocation.getAttachment(LOCALE_KEY);
         final Locale locale = lookupLocale(localeName);
         try {

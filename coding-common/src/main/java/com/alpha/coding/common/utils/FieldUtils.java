@@ -3,14 +3,18 @@ package com.alpha.coding.common.utils;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * FieldUtils
  *
  * @version 1.0
- * Date: 2020-02-21
  */
+@Slf4j
 public class FieldUtils {
 
     /**
@@ -67,7 +71,7 @@ public class FieldUtils {
         try {
             field.set(t, value);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.warn("setField fail for name={}, value={}", name, value, e);
         }
     }
 
@@ -113,6 +117,57 @@ public class FieldUtils {
             searchType = searchType.getSuperclass();
         }
         return null;
+    }
+
+    /**
+     * 判断是否为基本类型的包装类
+     */
+    private static boolean isWrapperType(Class<?> clazz) {
+        return clazz == Boolean.class ||
+                clazz == Character.class ||
+                clazz == Byte.class ||
+                clazz == Short.class ||
+                clazz == Integer.class ||
+                clazz == Long.class ||
+                clazz == Float.class ||
+                clazz == Double.class ||
+                clazz == Void.class;
+    }
+
+    /**
+     * 判断字段类型是否：不是基础类型、不是包装类、不是集合、不是数组
+     * 即：只保留普通类（如 String、自定义类、枚举等）
+     */
+    public static boolean isNeitherPrimitiveNorCollectionNorArray(Field field) {
+        Class<?> fieldType = field.getType();
+
+        // 1. 是否是基础类型（int, boolean, char...）
+        if (fieldType.isPrimitive()) {
+            return false;
+        }
+
+        // 2. 是否是包装类（Integer, Boolean, Double...）
+        if (isWrapperType(fieldType)) {
+            return false;
+        }
+
+        // 3. 是否是数组（int[], String[], User[], List[] 等）
+        if (fieldType.isArray()) {
+            return false;
+        }
+
+        // 4. 是否是集合（List, Set, Collection, Queue 等）
+        if (Collection.class.isAssignableFrom(fieldType)) {
+            return false;
+        }
+
+        // 5. 是否是 Map（通常也视为集合类结构）
+        if (Map.class.isAssignableFrom(fieldType)) {
+            return false;
+        }
+
+        // 所有条件都不满足 → 是普通对象类型（如 String、User、Address 等）
+        return true;
     }
 
 }

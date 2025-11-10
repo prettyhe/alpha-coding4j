@@ -35,7 +35,6 @@ import lombok.extern.slf4j.Slf4j;
  * ApplicationEnv
  *
  * @version 1.0
- * Date: 2020-02-21
  */
 @Slf4j
 @Data
@@ -74,7 +73,7 @@ public class ApplicationEnv implements InitializingBean, ApplicationListener<Con
             MBeanServer beanServer = ManagementFactory.getPlatformMBeanServer();
             Set<ObjectName> objectNames = beanServer.queryNames(new ObjectName("*:type=Connector,*"),
                     Query.match(Query.attr("protocol"), Query.value("HTTP/1.1")));
-            if (objectNames == null || objectNames.size() == 0) {
+            if (objectNames == null || objectNames.isEmpty()) {
                 return null;
             }
             return objectNames.iterator().next().getKeyProperty("port");
@@ -85,42 +84,7 @@ public class ApplicationEnv implements InitializingBean, ApplicationListener<Con
     }
 
     private static String getLocalDubboPort(ApplicationContext applicationContext) {
-        try {
-            Integer port = null;
-            if (ClassUtils.isPresent("com.alibaba.dubbo.config.ProtocolConfig", null)) {
-                final Map<String, ProtocolConfig> beans = applicationContext.getBeansOfType(ProtocolConfig.class);
-                if (beans != null && !beans.isEmpty()) {
-                    for (Map.Entry<String, ProtocolConfig> entry : beans.entrySet()) {
-                        if (entry.getValue().getPort() != null) {
-                            port = entry.getValue().getPort();
-                            break;
-                        }
-                    }
-                }
-            }
-            if (port != null && port > 0) {
-                return String.valueOf(port);
-            }
-            if (ClassUtils.isPresent("com.alibaba.dubbo.config.ServiceConfig", null)) {
-                final Map<String, ServiceConfig> beans = applicationContext.getBeansOfType(ServiceConfig.class);
-                if (beans != null && !beans.isEmpty()) {
-                    for (Map.Entry<String, ServiceConfig> entry : beans.entrySet()) {
-                        final List<URL> exportedUrls = entry.getValue().getExportedUrls();
-                        if (exportedUrls == null) {
-                            continue;
-                        }
-                        for (URL exportedUrl : exportedUrls) {
-                            port = exportedUrl.getPort();
-                            if (port > 0) {
-                                return String.valueOf(port);
-                            }
-                        }
-                    }
-                }
-            }
-        } catch (Throwable ex) {
-            log.warn("find Alibaba Dubbo Port fail, {}", ex.getMessage());
-        }
+        // port for apache dubbo
         try {
             Integer port = null;
             if (ClassUtils.isPresent("org.apache.dubbo.config.ProtocolConfig", null)) {
@@ -158,6 +122,43 @@ public class ApplicationEnv implements InitializingBean, ApplicationListener<Con
             }
         } catch (Throwable ex) {
             log.warn("find Apache Dubbo Port fail, {}", ex.getMessage());
+        }
+        // port for alibaba dubbo
+        try {
+            Integer port = null;
+            if (ClassUtils.isPresent("com.alibaba.dubbo.config.ProtocolConfig", null)) {
+                final Map<String, ProtocolConfig> beans = applicationContext.getBeansOfType(ProtocolConfig.class);
+                if (beans != null && !beans.isEmpty()) {
+                    for (Map.Entry<String, ProtocolConfig> entry : beans.entrySet()) {
+                        if (entry.getValue().getPort() != null) {
+                            port = entry.getValue().getPort();
+                            break;
+                        }
+                    }
+                }
+            }
+            if (port != null && port > 0) {
+                return String.valueOf(port);
+            }
+            if (ClassUtils.isPresent("com.alibaba.dubbo.config.ServiceConfig", null)) {
+                final Map<String, ServiceConfig> beans = applicationContext.getBeansOfType(ServiceConfig.class);
+                if (beans != null && !beans.isEmpty()) {
+                    for (Map.Entry<String, ServiceConfig> entry : beans.entrySet()) {
+                        final List<URL> exportedUrls = entry.getValue().getExportedUrls();
+                        if (exportedUrls == null) {
+                            continue;
+                        }
+                        for (URL exportedUrl : exportedUrls) {
+                            port = exportedUrl.getPort();
+                            if (port > 0) {
+                                return String.valueOf(port);
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Throwable ex) {
+            log.warn("find Alibaba Dubbo Port fail, {}", ex.getMessage());
         }
         return null;
     }

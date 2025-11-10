@@ -77,7 +77,7 @@ public class EnableLogMonitorHandler implements ConfigurationRegisterHandler {
                     .setAopAdviceMethod("doMonitor")
                     .setAopPointcut(Arrays.stream(attributes.getStringArray("pointcut"))
                             .filter(StringUtils::isNotEmpty)
-                            .reduce((x, y) -> x + " " + y).get());
+                            .reduce((x, y) -> x + " " + y).orElse(""));
             try {
                 AopBeanDefinitionRegistry.loadBeanDefinitions(context.getRegistry(), params);
             } catch (IOException e) {

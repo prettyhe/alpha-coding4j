@@ -61,7 +61,7 @@ public interface ExtraMsgSupplier {
      */
     default Consumer<String> aheadAppender() {
         return s -> {
-            // 签章扩展消息实现
+            // 前置扩展消息实现
         };
     }
 

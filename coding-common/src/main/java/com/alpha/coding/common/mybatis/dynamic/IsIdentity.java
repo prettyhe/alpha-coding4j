@@ -2,6 +2,7 @@ package com.alpha.coding.common.mybatis.dynamic;
 
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.Objects;
 import java.util.function.Function;
 
 import org.mybatis.dynamic.sql.AbstractNoValueCondition;
@@ -14,18 +15,19 @@ import org.mybatis.dynamic.sql.AbstractNoValueCondition;
  */
 public class IsIdentity<T> extends AbstractNoValueCondition<T> {
 
-    private Function<String, String> function = Function.identity();
+    private final Function<String, String> function;
 
     public IsIdentity() {
+        this(Function.identity());
     }
 
     public IsIdentity(Function<String, String> function) {
-        this.function = function;
+        this.function = Objects.requireNonNull(function, "function must not null!");
     }
 
     @Override
-    public String renderCondition(String columnName) {
-        return function.apply(columnName);
+    public String operator() {
+        return function.apply("");
     }
 
     public static <T> IsIdentity<T> of(Function<String, String> function) {
@@ -56,7 +58,7 @@ public class IsIdentity<T> extends AbstractNoValueCondition<T> {
         return of();
     }
 
-    public static IsIdentity<String> ofSring() {
+    public static IsIdentity<String> ofString() {
         return of();
     }
 

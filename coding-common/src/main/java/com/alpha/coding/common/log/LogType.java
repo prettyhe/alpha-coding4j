@@ -1,11 +1,15 @@
 package com.alpha.coding.common.log;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
 /**
  * LogType
  *
  * @version 1.0
- * Date: 2020-02-21
  */
+@Getter
+@AllArgsConstructor
 public enum LogType {
 
     SERV_OUT("servOut"), // 对外提供服务
@@ -18,13 +22,6 @@ public enum LogType {
     BIZ("biz"), // 业务
     OTHER("other"); // 其它
 
-    private String type;
+    private final String type;
 
-    LogType(String type) {
-        this.type = type;
-    }
-
-    public String getType() {
-        return this.type;
-    }
 }

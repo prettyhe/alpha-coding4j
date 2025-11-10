@@ -6,6 +6,7 @@ package com.alpha.coding.bo.function;
  * @version 1.0
  * Date: 2020-02-21
  */
+@FunctionalInterface
 public interface ThrowableSupplier<T> {
 
     /**

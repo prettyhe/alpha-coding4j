@@ -1,14 +1,15 @@
-package com.alpha.coding.common.log.dubbo;
+package com.alpha.coding.common.dubbo.apache.filter;
 
 import java.lang.reflect.Method;
 
-import com.alibaba.dubbo.common.Constants;
-import com.alibaba.dubbo.common.extension.Activate;
-import com.alibaba.dubbo.rpc.Filter;
-import com.alibaba.dubbo.rpc.Invocation;
-import com.alibaba.dubbo.rpc.Invoker;
-import com.alibaba.dubbo.rpc.Result;
-import com.alibaba.dubbo.rpc.RpcException;
+import org.apache.dubbo.common.constants.CommonConstants;
+import org.apache.dubbo.common.extension.Activate;
+import org.apache.dubbo.rpc.Filter;
+import org.apache.dubbo.rpc.Invocation;
+import org.apache.dubbo.rpc.Invoker;
+import org.apache.dubbo.rpc.Result;
+import org.apache.dubbo.rpc.RpcException;
+
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.serializer.SerializerFeature;
 
@@ -20,10 +21,10 @@ import lombok.extern.slf4j.Slf4j;
  * LogMonitorFilter
  *
  * @version 1.0
- * Date: 2020-02-21
+ * Date: 2019年12月04日
  */
 @Slf4j
-@Activate(group = {Constants.CONSUMER, Constants.PROVIDER}, order = -100)
+@Activate(group = {CommonConstants.CONSUMER, CommonConstants.PROVIDER}, order = -100)
 public class LogMonitorFilter implements Filter {
 
     private static final String OK = "200";
@@ -62,7 +63,7 @@ public class LogMonitorFilter implements Filter {
         if (log.isTraceEnabled()) {
             item.setEt(System.currentTimeMillis());
             if (invoker.getUrl() != null) {
-                item.setSide(invoker.getUrl().getParameter(Constants.SIDE_KEY));
+                item.setSide(invoker.getUrl().getParameter(CommonConstants.SIDE_KEY));
             }
             item.setInterfaceName(invoker.getInterface().getSimpleName());
             item.setMethodName(invocation.getMethodName());
@@ -72,7 +73,7 @@ public class LogMonitorFilter implements Filter {
                 item.setRetCode(FAIL);
             } else if (invoker.getUrl() != null
                     && item.getCost() > invoker.getUrl().getMethodParameter(invocation.getMethodName(),
-                    Constants.TIMEOUT_KEY, Integer.MAX_VALUE)) {
+                    CommonConstants.TIMEOUT_KEY, Integer.MAX_VALUE)) {
                 item.setRetCode(TIMEOUT);
             } else {
                 item.setRetCode(OK);

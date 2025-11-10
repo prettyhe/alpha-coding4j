@@ -6,6 +6,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
@@ -25,6 +26,7 @@ import com.alpha.coding.common.utils.convert.NumberConverter;
 public abstract class XLSOperator {
 
     private static final Map<Class<?>, Map<Field, XLSLabelContext>> FIELD_LABEL_MAP_CACHE = new ConcurrentHashMap<>();
+    private static final Map<Class<?>, TreeMap<Integer, Field>> COLUMN_FIELD_MAP_CACHE = new ConcurrentHashMap<>();
 
     static {
         Stream.of(Long.class, Integer.class, BigDecimal.class)
@@ -37,8 +39,8 @@ public abstract class XLSOperator {
     }
 
     public static Map<Field, XLSLabelContext> fieldLabelMap(Class<?> clazz) {
-        return FIELD_LABEL_MAP_CACHE.computeIfAbsent(clazz, k -> {
-            final List<Field> fields = FieldUtils.findMatchedFields(k, null);
+        return FIELD_LABEL_MAP_CACHE.computeIfAbsent(clazz, clz -> {
+            final List<Field> fields = FieldUtils.findMatchedFields(clz, null);
             Map<Field, XLSLabelContext> map = new HashMap<>();
             for (Field field : fields) {
                 final XLSLabel xlsLabel = field.getAnnotation(XLSLabel.class);
@@ -52,6 +54,18 @@ public abstract class XLSOperator {
                 }
             }
             return map;
+        });
+    }
+
+    public static TreeMap<Integer, Field> columnFieldMap(Class<?> clazz) {
+        return COLUMN_FIELD_MAP_CACHE.computeIfAbsent(clazz, clz -> {
+            final TreeMap<Integer, Field> columnFieldMap = new TreeMap<>();
+            final Map<Field, XLSLabelContext> fieldLabelMap = XLSOperator.fieldLabelMap(clazz);
+            fieldLabelMap.forEach((k, v) -> {
+                k.setAccessible(true);
+                columnFieldMap.put(v.getOrder(), k);
+            });
+            return columnFieldMap;
         });
     }
 

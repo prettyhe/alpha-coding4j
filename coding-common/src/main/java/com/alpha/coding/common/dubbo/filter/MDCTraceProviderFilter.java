@@ -1,4 +1,4 @@
-package com.alpha.coding.common.trace.dubbo;
+package com.alpha.coding.common.dubbo.filter;
 
 import java.util.Map;
 
@@ -15,6 +15,7 @@ import com.alpha.coding.bo.constant.Keys;
 import com.alpha.coding.bo.trace.TimestampBase62UUIDTraceIdGenerator;
 import com.alpha.coding.bo.trace.TraceIdGenerator;
 import com.alpha.coding.bo.trace.UUIDTraceIdGenerator;
+import com.alpha.coding.common.dubbo.DubboContextTool;
 
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -23,10 +24,10 @@ import lombok.extern.slf4j.Slf4j;
  * MDCTraceProviderFilter
  *
  * @version 1.0
- * Date: 2020-02-21
+ * Date: 2019年10月28日
  */
 @Slf4j
-@Activate(group = Constants.PROVIDER, order = -200)
+@Activate(group = Constants.PROVIDER, order = -201)
 public class MDCTraceProviderFilter implements Filter {
 
     private static final String metaTraceId = "_trId_";
@@ -37,7 +38,10 @@ public class MDCTraceProviderFilter implements Filter {
 
     @Override
     public Result invoke(Invoker<?> invoker, Invocation invocation) throws RpcException {
-        Map<String, String> attaches = invocation.getAttachments();
+        if (DubboContextTool.useApacheDubbo()) {
+            return invoker.invoke(invocation);
+        }
+        final Map<String, String> attaches = invocation.getAttachments();
         if (attaches == null) {
             return invoker.invoke(invocation);
         }

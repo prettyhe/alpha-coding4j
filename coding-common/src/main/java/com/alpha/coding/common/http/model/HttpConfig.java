@@ -16,6 +16,9 @@ import lombok.experimental.Accessors;
 public class HttpConfig implements Serializable {
 
     private boolean sslTrustAny;
+    private String sslContextType;
+    private String[] supportedProtocols;
+    private String[] supportedCipherSuites;
     private int connTimeout;
     private int soTimeout;
     private int retry;

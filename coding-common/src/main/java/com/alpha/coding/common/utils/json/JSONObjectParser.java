@@ -5,7 +5,6 @@ import java.lang.reflect.InvocationTargetException;
 
 import com.alibaba.fastjson.JSONObject;
 import com.alpha.coding.bo.annotation.JsonPath;
-import com.alpha.coding.bo.function.common.Converter;
 import com.alpha.coding.common.utils.ClassUtils;
 import com.alpha.coding.common.utils.FieldUtils;
 
@@ -19,12 +18,13 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class JSONObjectParser {
 
-    public static <T> T parse(JSONObject jsonObject, Class<T> clz) {
+    public static <T> T parse(JSONObject jsonObject, Class<T> clz)
+            throws IllegalAccessException, InstantiationException {
         return mapper(jsonObject, clz, null);
     }
 
     public static <T> T mapper(JSONObject jsonObject, Class<T> clz)
-            throws IllegalAccessException, InstantiationException, NoSuchMethodException, InvocationTargetException {
+            throws IllegalAccessException, InstantiationException, InvocationTargetException, NoSuchMethodException {
         if (jsonObject == null) {
             return null;
         }
@@ -45,15 +45,14 @@ public class JSONObjectParser {
             JSONObjectPath jsonObjectPath = field.getAnnotation(JSONObjectPath.class);
             if (jsonObjectPath != null) {
                 FieldUtils.setField(instance, field.getName(),
-                        Converter.jsonConvert.apply(JSONObjectUtils.getValue(jsonObject, jsonObjectPath.path(),
-                                jsonObjectPath.sep()), field.getGenericType()));
+                        JSONObjectUtils.getValue(jsonObject, jsonObjectPath.path(),
+                                jsonObjectPath.sep(), field.getGenericType()));
                 continue;
             }
             JsonPath jsonPath = field.getAnnotation(JsonPath.class);
             if (jsonPath != null) {
                 FieldUtils.setField(instance, field.getName(),
-                        Converter.jsonConvert.apply(JSONObjectUtils.getValue(jsonObject, jsonPath.path(),
-                                "\\."), field.getGenericType()));
+                        JSONObjectUtils.getValue(jsonObject, jsonPath.path(), field.getGenericType()));
             }
         }
         return instance;

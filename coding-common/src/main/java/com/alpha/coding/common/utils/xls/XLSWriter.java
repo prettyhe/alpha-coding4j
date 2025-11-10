@@ -126,12 +126,8 @@ public class XLSWriter extends XLSOperator {
     public static <T> void writeSheet(Sheet sheet, List<T> list, Class<T> clazz, boolean withHead)
             throws IllegalAccessException {
         try {
-            final TreeMap<Integer, Field> canToCellFieldMap = new TreeMap<>();
             final Map<Field, XLSLabelContext> fieldLabelMap = XLSOperator.fieldLabelMap(clazz);
-            fieldLabelMap.forEach((k, v) -> {
-                k.setAccessible(true);
-                canToCellFieldMap.put(v.getOrder(), k);
-            });
+            final TreeMap<Integer, Field> canToCellFieldMap = XLSOperator.columnFieldMap(clazz);
             // 表头
             if (withHead) {
                 Row headRow = sheet.createRow(0);
@@ -178,7 +174,7 @@ public class XLSWriter extends XLSOperator {
             try {
                 CELL_STYLE_CACHE.remove(sheet);
             } catch (Exception e) {
-                e.printStackTrace();
+                log.warn("remove sheet from CELL_STYLE_CACHE fail", e);
             }
             MapThreadLocalAdaptor.remove(XLS_CELL_HANDLER_LOCAL_KEY);
         }
@@ -217,7 +213,7 @@ public class XLSWriter extends XLSOperator {
                 try {
                     return ClassUtils.newInstance(c);
                 } catch (InstantiationException | IllegalAccessException | NoSuchMethodException |
-                        InvocationTargetException e) {
+                         InvocationTargetException e) {
                     log.warn("create XLSCellHandler fail for {}", handlerClass.getName(), e);
                 }
                 return null;

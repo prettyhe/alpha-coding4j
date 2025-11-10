@@ -102,5 +102,43 @@ public class ClassUtils {
         return isProxy(clazz) ? clazz.getSuperclass() : clazz;
     }
 
-}
+    /**
+     * get class loader
+     *
+     * @param clazz 类
+     * @return class loader
+     */
+    public static ClassLoader getClassLoader(Class<?> clazz) {
+        ClassLoader cl = null;
+        try {
+            cl = Thread.currentThread().getContextClassLoader();
+        } catch (Throwable ex) {
+            // Cannot access thread context ClassLoader - falling back to system class loader...
+        }
+        if (cl == null) {
+            // No thread context class loader -> use class loader of this class.
+            cl = clazz.getClassLoader();
+            if (cl == null) {
+                // getClassLoader() returning null indicates the bootstrap ClassLoader
+                try {
+                    cl = ClassLoader.getSystemClassLoader();
+                } catch (Throwable ex) {
+                    // Cannot access system ClassLoader - oh well, maybe the caller can live with null...
+                }
+            }
+        }
+        return cl;
+    }
 
+    /**
+     * 按className查找class，找不到返回null
+     */
+    public static Class<?> findClass(String className, boolean initialize, Class<?> loaderFrom) {
+        try {
+            return Class.forName(className, initialize, getClassLoader(loaderFrom));
+        } catch (ClassNotFoundException e) {
+            return null;
+        }
+    }
+
+}

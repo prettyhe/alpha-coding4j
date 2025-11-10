@@ -1,2 +1,6 @@
-MapThreadLocalMirrorConsumerFilter=com.alpha.coding.common.dubbo.apache.filter.MapThreadLocalMirrorConsumerFilter
-MapThreadLocalMirrorProviderFilter=com.alpha.coding.common.dubbo.apache.filter.MapThreadLocalMirrorProviderFilter
+MDCTraceConsumerFilter27=com.alpha.coding.common.dubbo.apache.filter.MDCTraceConsumerFilter
+MDCTraceProviderFilter27=com.alpha.coding.common.dubbo.apache.filter.MDCTraceProviderFilter
+ComLogMonitorFilter27=com.alpha.coding.common.dubbo.apache.filter.LogMonitorFilter
+LocaleRecognizeFilter27=com.alpha.coding.common.dubbo.apache.filter.LocaleRecognizeFilter
+MapThreadLocalMirrorConsumerFilter27=com.alpha.coding.common.dubbo.apache.filter.MapThreadLocalMirrorConsumerFilter
+MapThreadLocalMirrorProviderFilter27=com.alpha.coding.common.dubbo.apache.filter.MapThreadLocalMirrorProviderFilter

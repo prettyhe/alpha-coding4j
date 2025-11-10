@@ -6,12 +6,15 @@ import java.util.function.Supplier;
 
 import com.alpha.coding.bo.base.MapThreadLocalAdaptor;
 
+import lombok.Setter;
+
 /**
  * ThreadLocalExtraMsgSupplier
  *
  * @version 1.0
  * Date: 2020/5/14
  */
+@Setter
 public class ThreadLocalExtraMsgSupplier implements ExtraMsgSupplier {
 
     public static final String KEY = "MonitorLogExtraMsg";

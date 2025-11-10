@@ -1,16 +1,16 @@
-package com.alpha.coding.common.trace.dubbo;
+package com.alpha.coding.common.dubbo.apache.filter;
 
 import java.util.Map;
 
+import org.apache.dubbo.common.constants.CommonConstants;
+import org.apache.dubbo.common.extension.Activate;
+import org.apache.dubbo.rpc.Filter;
+import org.apache.dubbo.rpc.Invocation;
+import org.apache.dubbo.rpc.Invoker;
+import org.apache.dubbo.rpc.Result;
+import org.apache.dubbo.rpc.RpcException;
 import org.slf4j.MDC;
 
-import com.alibaba.dubbo.common.Constants;
-import com.alibaba.dubbo.common.extension.Activate;
-import com.alibaba.dubbo.rpc.Filter;
-import com.alibaba.dubbo.rpc.Invocation;
-import com.alibaba.dubbo.rpc.Invoker;
-import com.alibaba.dubbo.rpc.Result;
-import com.alibaba.dubbo.rpc.RpcException;
 import com.alpha.coding.bo.constant.Keys;
 import com.alpha.coding.bo.trace.TimestampBase62UUIDTraceIdGenerator;
 import com.alpha.coding.bo.trace.TraceIdGenerator;
@@ -22,10 +22,10 @@ import lombok.extern.slf4j.Slf4j;
  * MDCTraceConsumerFilter
  *
  * @version 1.0
- * Date: 2020-02-21
+ * Date: 2019年10月28日
  */
 @Slf4j
-@Activate(group = Constants.CONSUMER, order = -200)
+@Activate(group = CommonConstants.CONSUMER, order = -200)
 public class MDCTraceConsumerFilter implements Filter {
 
     private static final String metaTraceId = "_trId_";
@@ -46,4 +46,5 @@ public class MDCTraceConsumerFilter implements Filter {
         attachments.put(metaTraceId, traceId);
         return invoker.invoke(invocation);
     }
+
 }

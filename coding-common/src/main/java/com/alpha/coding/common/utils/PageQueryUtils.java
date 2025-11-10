@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 import org.mybatis.dynamic.sql.select.CountDSL;
 import org.mybatis.dynamic.sql.select.QueryExpressionDSL;
 import org.mybatis.dynamic.sql.select.SelectModel;
-import org.mybatis.dynamic.sql.where.AbstractWhereDSL;
+import org.mybatis.dynamic.sql.where.AbstractWhereFinisher;
 
 import com.alpha.coding.bo.page.PageRet;
 import com.alpha.coding.bo.response.PageResData;
@@ -72,7 +72,7 @@ public class PageQueryUtils {
     public static <P, T> PageResData<T> pageQuery(Integer pageNo, Integer pageSize,
                                                   Supplier<CountDSL<SelectModel>.CountWhereBuilder> countDSLSup,
                                                   Supplier<QueryExpressionDSL<SelectModel>.QueryExpressionWhereBuilder> queryDSLSup,
-                                                  Consumer<AbstractWhereDSL> whereDSLConsumer,
+                                                  Consumer<AbstractWhereFinisher<?>> whereDSLConsumer,
                                                   Function<CountDSL<SelectModel>.CountWhereBuilder, Long> countFunc,
                                                   Consumer<QueryExpressionDSL<SelectModel>.QueryExpressionWhereBuilder> orderByFunc,
                                                   Function<QueryExpressionDSL<SelectModel>.QueryExpressionWhereBuilder, List<P>> selectListFunc,
@@ -98,7 +98,7 @@ public class PageQueryUtils {
             orderByFunc.accept(queryDSL);
         }
         if (pageNo != null && pageSize != null) {
-            queryDSL.limit(pageSize).offset((pageNo - 1) * pageSize);
+            queryDSL.limit(pageSize).offset((long) (pageNo - 1) * pageSize);
         }
         final List<T> vos = selectListFunc.apply(queryDSL).stream().map(mapper).collect(Collectors.toList());
         return new PageResData<>(pageRet, vos);

@@ -61,7 +61,8 @@ public class DefaultHttpClientSupplier implements Supplier<CloseableHttpClient> 
         final HttpClientBuilder httpClientBuilder;
         try {
             if (useHttps && httpConfig != null && httpConfig.isSslTrustAny()) {
-                httpClientBuilder = SSLClientBuilder.trustAnySSLClientBuilder();
+                httpClientBuilder = SSLClientBuilder.trustAnySSLClientBuilder(httpConfig.getSslContextType(),
+                        httpConfig.getSupportedProtocols(), httpConfig.getSupportedCipherSuites());
             } else if (useHttps) {
                 httpClientBuilder = SSLClientBuilder.trustAllSSLClientBuilder();
             } else {

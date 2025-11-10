@@ -410,16 +410,7 @@ public class IOUtils {
      * @return 新路径
      */
     public static String joinPath(String path1, String path2) {
-        final int length = File.separator.length();
-        if (length > 0) {
-            while (path1.endsWith(File.separator)) {
-                path1 = path1.substring(0, path1.length() - length);
-            }
-            while (path2.startsWith(File.separator)) {
-                path2 = path2.substring(length);
-            }
-        }
-        return path1 + File.separator + path2;
+        return joinPathWithSeparator(File.separator, path1, path2);
     }
 
     /**
@@ -430,6 +421,39 @@ public class IOUtils {
      * @return 新路径
      */
     public static String joinPath(String basePath, String... paths) {
+        return joinPathWithSeparator(File.separator, basePath, paths);
+    }
+
+    /**
+     * 连接路径
+     *
+     * @param separator 路径分隔符
+     * @param path1     路径1
+     * @param path2     路径2
+     * @return 新路径
+     */
+    public static String joinPathWithSeparator(String separator, String path1, String path2) {
+        final int length = separator.length();
+        if (length > 0) {
+            while (path1.endsWith(separator)) {
+                path1 = path1.substring(0, path1.length() - length);
+            }
+            while (path2.startsWith(separator)) {
+                path2 = path2.substring(length);
+            }
+        }
+        return path1 + separator + path2;
+    }
+
+    /**
+     * 连接路径
+     *
+     * @param separator 路径分隔符
+     * @param basePath  基础路径
+     * @param paths     附加路径
+     * @return 新路径
+     */
+    public static String joinPathWithSeparator(String separator, String basePath, String... paths) {
         if (paths == null) {
             return basePath;
         }
@@ -438,7 +462,7 @@ public class IOUtils {
             if (path == null) {
                 continue;
             }
-            result = joinPath(result, path);
+            result = joinPathWithSeparator(separator, result, path);
         }
         return result;
     }

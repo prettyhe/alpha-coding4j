@@ -1,6 +1,5 @@
 package com.alpha.coding.bo.base;
 
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -96,6 +95,14 @@ public class MapThreadLocalAdaptor {
         Map<String, Object> map = INHERITABLE_THREAD_LOCAL.get();
         if (map != null) {
             map.remove(key);
+        }
+    }
+
+    public static void removeOrReplace(String key, Object val, Predicate<Object> removeCondition) {
+        if (removeCondition != null && removeCondition.test(val)) {
+            remove(key);
+        } else {
+            put(key, val);
         }
     }
 

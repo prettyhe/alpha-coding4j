@@ -11,6 +11,7 @@ public interface Keys {
     String TRACE_ID = "traceId";
     String HEADER_TRACE = "HtrH";
     String HEADER_CLIENT_ID = "HClientId";
+    String HEADER_CLIENT_PLATFORM = "X-CLIENT-PLATFORM";
     String COOKIE_KEY_CLIENT_ID = "_CLIENT_ID_";
     String CURRENT_URI = "_CUR_URI_";
     String CLIENT_ID = "_CLIENT_ID_";

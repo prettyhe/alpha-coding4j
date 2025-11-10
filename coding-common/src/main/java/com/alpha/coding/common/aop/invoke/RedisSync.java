@@ -30,7 +30,7 @@ public @interface RedisSync {
     String invokeCountKey() default "";
 
     /**
-     * 最大请求次数，支持外部化配置，如"${invoke.sync.maxInvokeTimes:5}"
+     * 计数区间内最大请求次数，支持外部化配置，如"${invoke.sync.maxInvokeTimes:5}"
      */
     String maxInvokeTimes() default "-1";
 
@@ -42,12 +42,12 @@ public @interface RedisSync {
     String invokeCountTimeRange() default "";
 
     /**
-     * 过期时间(秒)
+     * 加锁过期时间(秒)，即预期锁定时长
      */
     long expireSeconds() default 5;
 
     /**
-     * 快速失败
+     * 是否快速失败，即未获取到锁时不阻塞等待，直接回调处理
      */
     boolean failFast() default true;
 

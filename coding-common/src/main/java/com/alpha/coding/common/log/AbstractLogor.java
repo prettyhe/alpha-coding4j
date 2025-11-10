@@ -9,6 +9,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -29,8 +30,8 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * AbstractLogor
  *
+ * @author js on 2017年8月9日
  * @version 1.0
- * Date: 2020-02-21
  */
 @Slf4j
 public abstract class AbstractLogor implements Logor {
@@ -69,7 +70,7 @@ public abstract class AbstractLogor implements Logor {
     /**
      * JsonPath使用的配置
      *
-     * @see com.jayway.jsonpath.Configuration
+     * @see Configuration
      * @see <a href="https://github.com/json-path/JsonPath">https://github.com/json-path/JsonPath</a>
      */
     private static final Configuration JSON_CONFIGURATION = new Configuration.ConfigurationBuilder()
@@ -132,12 +133,15 @@ public abstract class AbstractLogor implements Logor {
                 if (context.getExceptionMsg() != null) {
                     extraData.put(EXCEPTION_MSG_KEY, context.getExceptionMsg());
                 }
+                final Throwable cause = ((ProceedThrowable) context.getResponse()).getCause();
                 MonitorLog.logService(context.getLog(), context.getThreadName(),
                         context.getLogId(), logTypeStr,
                         context.getStartTime(), context.getEndTime(),
                         context.getInterfaceName(), context.getMethodName(),
                         (context.getEndTime() - context.getStartTime()),
-                        SYSTEM_ERROR, extraData, context.getCondition());
+                        Optional.ofNullable(getResponseCode(cause.getClass(), cause))
+                                .map(String::valueOf).filter(StringUtils::isNotBlank).orElse(SYSTEM_ERROR),
+                        extraData, context.getCondition());
                 return;
             }
             if (context.getResponse() == null) {
@@ -276,7 +280,7 @@ public abstract class AbstractLogor implements Logor {
                 }
             }
             if (param == null) {
-                paramStr.append(param).append("|");
+                paramStr.append((Object) null).append("|");
                 continue;
             }
             final String parameterName = paramNames != null && paramNames.length > i ? paramNames[i] : null;
@@ -287,7 +291,7 @@ public abstract class AbstractLogor implements Logor {
                 // 配置中的删除path
                 if (ignoreJsonPathMap != null) {
                     final List<String> list = ignoreJsonPathMap.get(i);
-                    if (list != null && list.size() > 0) {
+                    if (list != null && !list.isEmpty()) {
                         if (list.stream().anyMatch(x -> "*".equals(x) || "$".equals(x))) {
                             ignoreThisParam = true;
                         } else {
@@ -319,7 +323,7 @@ public abstract class AbstractLogor implements Logor {
                 // 配置中的保留path
                 if (retainJsonPathMap != null) {
                     final List<String> list = retainJsonPathMap.get(i);
-                    if (list != null && list.size() > 0) {
+                    if (list != null && !list.isEmpty()) {
                         final StringBuilder retainJson = new StringBuilder();
                         for (String path : list) {
                             try {

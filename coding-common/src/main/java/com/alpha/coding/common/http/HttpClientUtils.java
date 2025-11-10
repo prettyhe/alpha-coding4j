@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -28,6 +29,8 @@ import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
+import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.entity.StringEntity;
@@ -39,12 +42,12 @@ import org.slf4j.Logger;
 import org.slf4j.MDC;
 
 import com.alibaba.fastjson.JSON;
-import com.alpha.coding.bo.function.common.Functions;
 import com.alpha.coding.common.http.model.HttpConfig;
 import com.alpha.coding.common.http.model.MultipartFileItem;
 import com.alpha.coding.common.utils.StringUtils;
 
 import lombok.Data;
+import lombok.Setter;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 
@@ -99,6 +102,50 @@ public class HttpClientUtils {
         }
         post.setEntity(new UrlEncodedFormEntity(pairs, DEFAULT_CHARSET_STR));
         return post;
+    }
+
+    /**
+     * 关闭资源
+     */
+    private static void close(Closeable... closeableObj) {
+        for (Closeable closeable : closeableObj) {
+            try {
+                if (closeable != null) {
+                    closeable.close();
+                }
+            } catch (Exception e) {
+                // nothing
+            }
+        }
+    }
+
+    // @Data
+    @Setter
+    @Accessors(chain = true)
+    private static class HttpRequestContext {
+        private HttpRequestTypeEnum requestType;
+        private CloseableHttpClient httpClient;
+        private CloseableHttpResponse response;
+        private String url;
+        private String charset;
+        private HttpConfig httpConfig;
+        private Supplier<CloseableHttpClient> clientSupplier;
+        private Consumer<RequestConfig.Builder> requestConfigConsumer;
+        private Consumer<HttpRequestBase> httpRequestConsumer;
+    }
+
+    /**
+     * 转换对HttpRequestBase的Consumer
+     */
+    public static <T extends HttpRequestBase> Consumer<HttpRequestBase> transformHttpRequestConsumer(
+            Consumer<T> consumer, Class<T> requestType) {
+        return consumer == null ? null : p -> {
+            if (requestType.isInstance(p)) {
+                consumer.accept(requestType.cast(p)); // 安全转换
+            } else {
+                log.warn("requestType is not instance of {}", requestType.getName());
+            }
+        };
     }
 
     /**
@@ -279,22 +326,26 @@ public class HttpClientUtils {
     public static String get(String url, String charset, HttpConfig httpConfig,
                              Supplier<CloseableHttpClient> clientSupplier, Consumer<HttpGet> getConsumer)
             throws IOException {
-        final long startTime = System.nanoTime();
-        final HttpGetContext httpGetContext = new HttpGetContext()
-                .setUrl(url).setCharset(charset).setHttpConfig(httpConfig)
-                .setClientSupplier(clientSupplier).setGetConsumer(getConsumer);
-        String ret = null;
-        try {
-            doGet(httpGetContext);
-            ret = parseResponse(httpGetContext.response, charset);
-        } finally {
-            close(httpGetContext.httpClient, httpGetContext.response);
-            final long endTime = System.nanoTime();
-            log.debug("http-get: connTo={},soTo={},retry={},url={},res={},elapsed={}",
-                    httpConfig.getConnTimeout(), httpConfig.getSoTimeout(), httpConfig.getRetry(), url, ret,
-                    Functions.formatNanos.apply(endTime - startTime));
+        final String[] resRef = new String[1];
+        final IOException[] exceptions = new IOException[1];
+        request(HttpRequestTypeEnum.GET, url, charset, httpConfig, clientSupplier, null,
+                transformHttpRequestConsumer(getConsumer, HttpGet.class),
+                (response, httpExecRes) -> {
+                    try {
+                        resRef[0] = parseResponse(response, charset == null ? DEFAULT_CHARSET_STR : charset);
+                        httpExecRes.setRes(resRef[0]);
+                    } catch (IOException e) {
+                        exceptions[0] = e;
+                    }
+                },
+                (logger, httpExecRes) -> logger
+                        .debug("http-get: connTo={},soTo={},retry={},url={},res={},elapsed={}ms",
+                                httpConfig.getConnTimeout(), httpConfig.getSoTimeout(), httpConfig.getRetry(), url,
+                                httpExecRes.getRes(), httpExecRes.getElapsedMillis()));
+        if (exceptions[0] != null) {
+            throw exceptions[0];
         }
-        return ret;
+        return resRef[0];
     }
 
     /**
@@ -310,75 +361,13 @@ public class HttpClientUtils {
     public static void get(String url, String charset, HttpConfig httpConfig,
                            Supplier<CloseableHttpClient> clientSupplier, Consumer<HttpGet> getConsumer,
                            Consumer<HttpResponse> httpResponseConsumer) throws IOException {
-        final long startTime = System.nanoTime();
-        final HttpGetContext httpGetContext = new HttpGetContext()
-                .setUrl(url).setCharset(charset).setHttpConfig(httpConfig)
-                .setClientSupplier(clientSupplier).setGetConsumer(getConsumer);
-        try {
-            doGet(httpGetContext);
-            if (httpResponseConsumer != null) {
-                httpResponseConsumer.accept(httpGetContext.response);
-            }
-        } finally {
-            close(httpGetContext.httpClient, httpGetContext.response);
-            final long endTime = System.nanoTime();
-            log.debug("http-get: connTo={},soTo={},retry={},url={},res={},elapsed={}",
-                    httpConfig.getConnTimeout(), httpConfig.getSoTimeout(), httpConfig.getRetry(), url, null,
-                    Functions.formatNanos.apply(endTime - startTime));
-        }
-    }
-
-    /**
-     * 构建并执行post请求
-     */
-    private static void doGet(HttpGetContext context) throws IOException {
-        context.httpClient = context.clientSupplier != null ? context.clientSupplier.get()
-                : DefaultHttpClientSupplier.create().setHttpConfig(context.httpConfig)
-                        .setUseHttps(context.url.startsWith("https://")).get();
-        final RequestConfig.Builder configBuilder = RequestConfig.custom();
-        configBuilder.setSocketTimeout(context.httpConfig.getSoTimeout());
-        configBuilder.setConnectTimeout(context.httpConfig.getConnTimeout());
-        configBuilder.setConnectionRequestTimeout(context.httpConfig.getConnTimeout());
-        if (StringUtils.isNotBlank(context.httpConfig.getHttpProxyHost())
-                && context.httpConfig.getHttpProxyPort() > 0) {
-            configBuilder.setProxy(new HttpHost(context.httpConfig.getHttpProxyHost(),
-                    context.httpConfig.getHttpProxyPort()));
-        }
-        if (context.requestConfigConsumer != null) {
-            context.requestConfigConsumer.accept(configBuilder);
-        }
-        final RequestConfig requestConfig = configBuilder.build();
-        final HttpGet httpGet = new HttpGet(context.url);
-        httpGet.setConfig(requestConfig);
-        if (context.getConsumer != null) {
-            context.getConsumer.accept(httpGet);
-        }
-        context.response = context.httpClient.execute(httpGet);
-    }
-
-    @Data
-    @Accessors(chain = true)
-    private static class HttpGetContext {
-        private CloseableHttpClient httpClient;
-        private CloseableHttpResponse response;
-        private String url;
-        private String charset;
-        private HttpConfig httpConfig;
-        private Supplier<CloseableHttpClient> clientSupplier;
-        private Consumer<RequestConfig.Builder> requestConfigConsumer;
-        private Consumer<HttpGet> getConsumer;
-    }
-
-    private static void close(Closeable... closeableObj) {
-        for (Closeable closeable : closeableObj) {
-            try {
-                if (closeable != null) {
-                    closeable.close();
-                }
-            } catch (Exception e) {
-                // nothing
-            }
-        }
+        request(HttpRequestTypeEnum.GET, url, charset, httpConfig, clientSupplier, null,
+                transformHttpRequestConsumer(getConsumer, HttpGet.class),
+                httpResponseConsumer == null ? null : (p, r) -> httpResponseConsumer.accept(p),
+                (logger, httpExecRes) -> logger
+                        .debug("http-get: connTo={},soTo={},retry={},url={},res={},elapsed={}ms",
+                                httpConfig.getConnTimeout(), httpConfig.getSoTimeout(), httpConfig.getRetry(), url,
+                                httpExecRes.getRes(), httpExecRes.getElapsedMillis()));
     }
 
     /**
@@ -772,24 +761,23 @@ public class HttpClientUtils {
                               Consumer<RequestConfig.Builder> requestConfigConsumer,
                               Consumer<HttpPost> postConsumer,
                               BiConsumer<Logger, HttpExecRes> finalLogConsumer) throws IOException {
-        final long startTime = System.nanoTime();
-        final HttpPostContext httpPostContext = new HttpPostContext()
-                .setUrl(url).setCharset(charset).setHttpConfig(httpConfig)
-                .setClientSupplier(clientSupplier).setRequestConfigConsumer(requestConfigConsumer)
-                .setPostConsumer(postConsumer);
-        String ret = null;
-        try {
-            doPost(httpPostContext);
-            ret = parseResponse(httpPostContext.response, charset == null ? DEFAULT_CHARSET_STR : charset);
-        } finally {
-            close(httpPostContext.httpClient, httpPostContext.response);
-            final long endTime = System.nanoTime();
-            if (finalLogConsumer != null) {
-                finalLogConsumer.accept(log,
-                        new HttpExecRes(TimeUnit.NANOSECONDS.toMillis(endTime - startTime), ret));
-            }
+        final String[] resRef = new String[1];
+        final IOException[] exceptions = new IOException[1];
+        request(HttpRequestTypeEnum.POST,
+                url, charset, httpConfig, clientSupplier, requestConfigConsumer,
+                transformHttpRequestConsumer(postConsumer, HttpPost.class),
+                (response, httpExecRes) -> {
+                    try {
+                        resRef[0] = parseResponse(response, charset == null ? DEFAULT_CHARSET_STR : charset);
+                        httpExecRes.setRes(resRef[0]);
+                    } catch (IOException e) {
+                        exceptions[0] = e;
+                    }
+                }, finalLogConsumer);
+        if (exceptions[0] != null) {
+            throw exceptions[0];
         }
-        return ret;
+        return resRef[0];
     }
 
     /**
@@ -811,30 +799,61 @@ public class HttpClientUtils {
                             Consumer<HttpPost> postConsumer,
                             Consumer<HttpResponse> httpResponseConsumer,
                             BiConsumer<Logger, HttpExecRes> finalLogConsumer) throws IOException {
+        request(HttpRequestTypeEnum.POST, url, charset, httpConfig, clientSupplier, requestConfigConsumer,
+                transformHttpRequestConsumer(postConsumer, HttpPost.class),
+                httpResponseConsumer == null ? null : (p, r) -> httpResponseConsumer.accept(p),
+                finalLogConsumer);
+    }
+
+    /**
+     * http 请求
+     *
+     * @param url                   请求
+     * @param charset               编码
+     * @param httpConfig            请求配置(须非空)
+     * @param clientSupplier        CloseableHttpClient提供者
+     * @param requestConfigConsumer 配置回调
+     * @param httpRequestConsumer   请求回调
+     * @param httpResponseConsumer  响应体消费
+     * @param finalLogConsumer      执行完log回调
+     * @throws IOException IOException
+     */
+    public static void request(HttpRequestTypeEnum requestType,
+                               String url, String charset, HttpConfig httpConfig,
+                               Supplier<CloseableHttpClient> clientSupplier,
+                               Consumer<RequestConfig.Builder> requestConfigConsumer,
+                               Consumer<HttpRequestBase> httpRequestConsumer,
+                               BiConsumer<HttpResponse, HttpExecRes> httpResponseConsumer,
+                               BiConsumer<Logger, HttpExecRes> finalLogConsumer)
+            throws IOException {
+        Objects.requireNonNull(requestType, "requestType is null");
+        Objects.requireNonNull(url, "url is null");
+        Objects.requireNonNull(httpConfig, "httpConfig is null");
         final long startTime = System.nanoTime();
-        final HttpPostContext httpPostContext = new HttpPostContext()
-                .setUrl(url).setCharset(charset).setHttpConfig(httpConfig)
+        final HttpRequestContext httpRequestContext = new HttpRequestContext()
+                .setRequestType(requestType).setUrl(url).setCharset(charset).setHttpConfig(httpConfig)
                 .setClientSupplier(clientSupplier).setRequestConfigConsumer(requestConfigConsumer)
-                .setPostConsumer(postConsumer);
+                .setHttpRequestConsumer(httpRequestConsumer);
+        final HttpExecRes httpExecRes = new HttpExecRes(0, null);
         try {
-            doPost(httpPostContext);
+            doRequest(httpRequestContext);
             if (httpResponseConsumer != null) {
-                httpResponseConsumer.accept(httpPostContext.response);
+                httpResponseConsumer.accept(httpRequestContext.response, httpExecRes);
             }
         } finally {
-            close(httpPostContext.httpClient, httpPostContext.response);
+            close(httpRequestContext.httpClient, httpRequestContext.response);
             final long endTime = System.nanoTime();
+            httpExecRes.setElapsedMillis(TimeUnit.NANOSECONDS.toMillis(endTime - startTime));
             if (finalLogConsumer != null) {
-                finalLogConsumer.accept(log,
-                        new HttpExecRes(TimeUnit.NANOSECONDS.toMillis(endTime - startTime), null));
+                finalLogConsumer.accept(log, httpExecRes);
             }
         }
     }
 
     /**
-     * 构建并执行post请求
+     * 构建并执行请求
      */
-    private static void doPost(HttpPostContext context) throws IOException {
+    private static void doRequest(HttpRequestContext context) throws IOException {
         context.httpClient = context.clientSupplier != null ? context.clientSupplier.get()
                 : DefaultHttpClientSupplier.create().setHttpConfig(context.httpConfig)
                         .setUseHttps(context.url.startsWith("https://")).get();
@@ -850,25 +869,12 @@ public class HttpClientUtils {
         if (context.requestConfigConsumer != null) {
             context.requestConfigConsumer.accept(configBuilder);
         }
-        final HttpPost httpPost = new HttpPost(context.url);
-        httpPost.setConfig(configBuilder.build());
-        if (context.postConsumer != null) {
-            context.postConsumer.accept(httpPost);
+        final HttpRequestBase httpRequest = context.requestType.makeHttpRequest(context.url);
+        httpRequest.setConfig(configBuilder.build());
+        if (context.httpRequestConsumer != null) {
+            context.httpRequestConsumer.accept(httpRequest);
         }
-        context.response = context.httpClient.execute(httpPost);
-    }
-
-    @Data
-    @Accessors(chain = true)
-    private static class HttpPostContext {
-        private CloseableHttpClient httpClient;
-        private CloseableHttpResponse response;
-        private String url;
-        private String charset;
-        private HttpConfig httpConfig;
-        private Supplier<CloseableHttpClient> clientSupplier;
-        private Consumer<RequestConfig.Builder> requestConfigConsumer;
-        private Consumer<HttpPost> postConsumer;
+        context.response = context.httpClient.execute(httpRequest);
     }
 
     @Data
@@ -930,6 +936,102 @@ public class HttpClientUtils {
                         .debug("http-upload: charset={},retry={},url={},res={},elapsed={}ms",
                                 charset, httpConfig.getRetry(), url, httpExecRes.getRes(),
                                 httpExecRes.getElapsedMillis()));
+    }
+
+    /**
+     * http put 请求
+     *
+     * @param url         请求
+     * @param charset     编码
+     * @param httpConfig  请求配置(须非空)
+     * @param putConsumer post回调
+     * @return 成功返回结果，失败返回null
+     * @throws IOException IOException
+     */
+    public static String put(String url, String charset, HttpConfig httpConfig, Consumer<HttpPut> putConsumer)
+            throws IOException {
+        return put(url, charset, httpConfig, putConsumer,
+                (logger, httpExecRes) -> logger
+                        .debug("http-put: charset={},retry={},url={},res={},elapsed={}ms",
+                                charset, httpConfig.getRetry(), url, httpExecRes.getRes(),
+                                httpExecRes.getElapsedMillis()));
+    }
+
+    /**
+     * http put 请求
+     *
+     * @param url         请求
+     * @param charset     编码
+     * @param httpConfig  请求配置(须非空)
+     * @param putConsumer post回调
+     * @return 成功返回结果，失败返回null
+     * @throws IOException IOException
+     */
+    public static String put(String url, String charset, HttpConfig httpConfig, Consumer<HttpPut> putConsumer,
+                             BiConsumer<Logger, HttpExecRes> finalLogConsumer) throws IOException {
+        return put(url, charset, httpConfig, null, null, putConsumer, finalLogConsumer);
+    }
+
+    /**
+     * http put 请求
+     *
+     * @param url                   请求
+     * @param charset               编码
+     * @param httpConfig            请求配置(须非空)
+     * @param clientSupplier        CloseableHttpClient提供者
+     * @param requestConfigConsumer 配置回调
+     * @param putConsumer           post回调
+     * @param finalLogConsumer      执行完log回调
+     * @return 成功返回结果，失败返回null
+     * @throws IOException IOException
+     */
+    public static String put(String url, String charset, HttpConfig httpConfig,
+                             Supplier<CloseableHttpClient> clientSupplier,
+                             Consumer<RequestConfig.Builder> requestConfigConsumer,
+                             Consumer<HttpPut> putConsumer,
+                             BiConsumer<Logger, HttpExecRes> finalLogConsumer) throws IOException {
+        final String[] resRef = new String[1];
+        final IOException[] exceptions = new IOException[1];
+        request(HttpRequestTypeEnum.PUT,
+                url, charset, httpConfig, clientSupplier, requestConfigConsumer,
+                transformHttpRequestConsumer(putConsumer, HttpPut.class),
+                (response, httpExecRes) -> {
+                    try {
+                        resRef[0] = parseResponse(response, charset == null ? DEFAULT_CHARSET_STR : charset);
+                        httpExecRes.setRes(resRef[0]);
+                    } catch (IOException e) {
+                        exceptions[0] = e;
+                    }
+                }, finalLogConsumer);
+        if (exceptions[0] != null) {
+            throw exceptions[0];
+        }
+        return resRef[0];
+    }
+
+    /**
+     * http put 请求
+     *
+     * @param url                   请求
+     * @param charset               编码
+     * @param httpConfig            请求配置(须非空)
+     * @param clientSupplier        CloseableHttpClient提供者
+     * @param requestConfigConsumer 配置回调
+     * @param putConsumer           post回调
+     * @param httpResponseConsumer  响应体消费
+     * @param finalLogConsumer      执行完log回调
+     * @throws IOException IOException
+     */
+    public static void put(String url, String charset, HttpConfig httpConfig,
+                           Supplier<CloseableHttpClient> clientSupplier,
+                           Consumer<RequestConfig.Builder> requestConfigConsumer,
+                           Consumer<HttpPut> putConsumer,
+                           Consumer<HttpResponse> httpResponseConsumer,
+                           BiConsumer<Logger, HttpExecRes> finalLogConsumer) throws IOException {
+        request(HttpRequestTypeEnum.PUT, url, charset, httpConfig, clientSupplier, requestConfigConsumer,
+                transformHttpRequestConsumer(putConsumer, HttpPut.class),
+                httpResponseConsumer == null ? null : (p, r) -> httpResponseConsumer.accept(p),
+                finalLogConsumer);
     }
 
 }

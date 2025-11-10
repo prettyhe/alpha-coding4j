@@ -58,15 +58,34 @@ public interface ThrowableFunction<T, R> {
         return (T t) -> after.apply(apply(t));
     }
 
+    static <T, V> ThrowableFunction<T, V> empty() {
+        return t -> null;
+    }
+
     static <T, V> ThrowableFunction<T, V> of(ThrowableSupplier<V> supplier) {
-        return supplier == null ? null : t -> supplier.get();
+        return t -> supplier == null ? null : supplier.get();
     }
 
     static <T, V> ThrowableFunction<T, V> of(ThrowableConsumer<T> consumer) {
-        return consumer == null ? null : t -> {
-            consumer.accept(t);
+        return t -> {
+            if (consumer != null) {
+                consumer.accept(t);
+            }
             return null;
         };
+    }
+
+    static <T, V> ThrowableFunction<T, V> of(Runnable runnable) {
+        return t -> {
+            if (runnable != null) {
+                runnable.run();
+            }
+            return null;
+        };
+    }
+
+    static <T, V> ThrowableFunction<T, V> of(java.util.concurrent.Callable<V> callable) {
+        return t -> callable == null ? null : callable.call();
     }
 
 }

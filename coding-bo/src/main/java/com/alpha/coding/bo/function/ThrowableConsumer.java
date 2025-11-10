@@ -39,7 +39,11 @@ public interface ThrowableConsumer<T> {
     }
 
     static <T, V> ThrowableConsumer<T> of(ThrowableFunction<T, V> function) {
-        return function == null ? null : function::apply;
+        return t -> {
+            if (function != null) {
+                function.apply(t);
+            }
+        };
     }
 
 }

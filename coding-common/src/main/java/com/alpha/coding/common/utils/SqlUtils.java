@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 import javax.persistence.Column;
 import javax.persistence.Id;
@@ -89,10 +90,10 @@ public class SqlUtils {
         if (condition == null || condition.isEmpty()) {
             return " ";
         }
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         sb.append(condition.get(0));
         for (int i = 1; i < condition.size(); i++) {
-            sb.append(" and " + condition.get(i));
+            sb.append(" and ").append(condition.get(i));
         }
         return sb.toString();
     }
@@ -263,8 +264,11 @@ public class SqlUtils {
      */
     public static String formatSQLExecResult(Object returnValue) {
         Object target = returnValue;
-        if (returnValue instanceof Collection && ((Collection) returnValue).size() == 1) {
-            target = ((Collection) returnValue).iterator().next();
+        if (returnValue instanceof Collection && ((Collection<?>) returnValue).size() == 1) {
+            target = ((Collection<?>) returnValue).iterator().next();
+        }
+        if (target instanceof Map && ((Map<?, ?>) target).size() == 1) {
+            target = ((Map<?, ?>) target).values().iterator().next();
         }
         if (target == null) {
             return null;
@@ -272,7 +276,15 @@ public class SqlUtils {
         if (target instanceof Number || PRINT_RESULT_VALUE_TYPES.contains(target.getClass())) {
             return target.toString();
         }
-        return tryFormatDateForSQL(target);
+        final String formatDateForSQL = tryFormatDateForSQL(target);
+        if (formatDateForSQL == null) {
+            if (returnValue instanceof Collection) {
+                return "list.size=" + ((Collection<?>) returnValue).size();
+            } else if (returnValue instanceof Map) {
+                return "map.size=" + ((Map<?, ?>) returnValue).size();
+            }
+        }
+        return formatDateForSQL;
     }
 
 }

@@ -107,6 +107,7 @@ public class InvokeUtils {
                 return new InvokeResult().setWinLock(false).setData(lock.value);
             } else {
                 lock.waitCnt.incrementAndGet();
+                boolean lockReleased = false;
                 try {
                     if (awaitMillis == null || awaitMillis < 0) {
                         lock.queue.put(Thread.currentThread());
@@ -117,6 +118,7 @@ public class InvokeUtils {
                 } catch (InterruptedException e) {
                     log.warn("invoke wait interrupted for {}", key);
                     lock.waitCnt.decrementAndGet();
+                    lockReleased = true;
                     if (failFastWhenWaitInterrupted) {
                         return new InvokeResult().setWinLock(false).setInterrupted(true).setData(lock.value);
                     }
@@ -127,9 +129,12 @@ public class InvokeUtils {
                         valueConsumer.accept(result);
                     }
                     return new InvokeResult().setWinLock(false).setInterrupted(true).setData(result);
+                } finally {
+                    if (!lockReleased) {
+                        lock.waitCnt.decrementAndGet();
+                    }
                 }
                 // 等待结束处理
-                lock.waitCnt.decrementAndGet();
                 if (addToQueue) {
                     // 等待成功
                     Object result = valueSupplier.get();

@@ -322,7 +322,7 @@ public class ShowSqlInterceptor implements Interceptor {
 
         private final PreparedStatement target;
         @Getter
-        private final Map<Integer, Object> paramsAfterSet = new HashMap<>();
+        private final Map<Integer, Object> paramsAfterSet = new LinkedHashMap<>();
 
         public ParamHolderPreparedStatementInvocationHandler(PreparedStatement ps) {
             this.target = ps;
@@ -332,7 +332,11 @@ public class ShowSqlInterceptor implements Interceptor {
         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
             String name = method.getName();
             if (name.startsWith("set") && args.length >= 2 && args[0] instanceof Integer) {
-                paramsAfterSet.put((Integer) args[0] - 1, args[1]);
+                if (name.equals("setNull")) {
+                    paramsAfterSet.put((Integer) args[0] - 1, null);
+                } else {
+                    paramsAfterSet.put((Integer) args[0] - 1, args[1]);
+                }
             }
             return method.invoke(target, args);
         }

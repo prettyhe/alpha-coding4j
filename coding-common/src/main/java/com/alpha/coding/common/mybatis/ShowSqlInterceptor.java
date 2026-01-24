@@ -7,8 +7,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,8 +33,11 @@ import org.apache.ibatis.session.ResultHandler;
 import org.apache.ibatis.session.RowBounds;
 import org.apache.ibatis.type.TypeHandlerRegistry;
 
+import com.alpha.coding.bo.base.Tuple;
+import com.alpha.coding.common.mybatis.common.DbType;
 import com.alpha.coding.common.mybatis.common.MybatisParameterConvertor;
 import com.alpha.coding.common.mybatis.common.TableNameParser;
+import com.alpha.coding.common.utils.PropertiesUtils;
 import com.alpha.coding.common.utils.SqlUtils;
 import com.alpha.coding.common.utils.StringUtils;
 
@@ -65,9 +67,10 @@ import lombok.extern.slf4j.Slf4j;
 })
 public class ShowSqlInterceptor implements Interceptor {
 
-    private static final String PLACEHOLDER = "%s";
     private static final String CONF_SQL_ID_ABBR = "sqlIdAbbreviated";
     private static final String ENABLE_SHOW_DATABASE_NAME = "enableShowDatabaseName";
+    private static final String THREAD_LOCAL_LEAK_CHECK_THRESHOLD = "threadLocalLeakCheckThreshold";
+    private static final String DB_TYPE = "dbType";
 
     /**
      * 属性配置
@@ -89,82 +92,129 @@ public class ShowSqlInterceptor implements Interceptor {
         /**
          * 当前版本号
          */
-        private static final InheritableThreadLocal<Integer> VERSION_LOCAL = new InheritableThreadLocal<>();
+        private static final ThreadLocal<Integer> VERSION_LOCAL = new ThreadLocal<>();
         /**
          * 版本对应的值
          */
-        private static final InheritableThreadLocal<Map<Integer, Map<String, Object>>> THREAD_LOCAL =
-                new InheritableThreadLocal<Map<Integer, Map<String, Object>>>() {
-                    @Override
-                    protected Map<Integer, Map<String, Object>> childValue(
-                            Map<Integer, Map<String, Object>> parentValue) {
-                        if (parentValue == null) {
-                            return null;
-                        }
-                        return new LinkedHashMap<>(parentValue);
-                    }
-                };
+        private static final ThreadLocal<Map<Integer, Map<String, Object>>> VERSION_DATA_LOCAL =
+                ThreadLocal.withInitial(LinkedHashMap::new);
+
+        /**
+         * 获取当前版本号，非正数时为空，触发一次清理
+         *
+         * @return 当前版本号
+         */
+        public static Integer currentVersion() {
+            Integer version = VERSION_LOCAL.get();
+            if (version == null || version <= 0) {
+                VERSION_DATA_LOCAL.remove();
+                VERSION_LOCAL.remove();
+                return null;
+            }
+            return version;
+        }
+
+        /**
+         * 当前所有版本数据
+         *
+         * @return 所有版本数据
+         */
+        public static Map<Integer, Map<String, Object>> allVersionData() {
+            return VERSION_DATA_LOCAL.get();
+        }
 
         /**
          * 版本号增加，适用于最外层方法起始
+         *
+         * @return 操作之后的当前版本
          */
-        public static void incrVersion() {
-            Integer version = VERSION_LOCAL.get();
-            if (version == null || version <= 0) {
-                THREAD_LOCAL.remove();
+        public static Integer incrVersion() {
+            Integer version = currentVersion();
+            if (version == null) {
                 version = 0;
             }
             version++;
             VERSION_LOCAL.set(version);
+            return version;
         }
 
         /**
          * 版本号减小，适用于最外层方法结束
+         *
+         * @return 操作之后的当前版本
          */
-        public static void decrVersion() {
-            Integer version = VERSION_LOCAL.get();
-            if (version != null) {
-                version--;
+        public static Integer decrVersion() {
+            Integer version = currentVersion();
+            if (version == null) {
+                return null;
             }
-            if (version == null || version <= 0) {
-                THREAD_LOCAL.remove();
-                VERSION_LOCAL.remove();
+            Map<Integer, Map<String, Object>> map = allVersionData();
+            if (map != null) {
+                map.remove(version);
             }
+            version--;
+            VERSION_LOCAL.set(version);
+            return currentVersion();
         }
 
-        private static Map<String, Object> currentMap() {
-            Integer version = VERSION_LOCAL.get();
-            if (version == null || version == 0) {
-                incrVersion();
+        /**
+         * 获取当前版本数据，版本非空时才有
+         */
+        public static Map<String, Object> currentVersionDataMap() {
+            Integer version = currentVersion();
+            if (version == null) {
+                return null;
             }
-            Map<Integer, Map<String, Object>> map = THREAD_LOCAL.get();
+            Map<Integer, Map<String, Object>> map = allVersionData();
             if (map == null) {
-                synchronized(MapThreadLocal.class) {
-                    map = THREAD_LOCAL.get();
-                    if (map == null) {
-                        map = new HashMap<>();
-                        THREAD_LOCAL.set(map);
-                    }
-                }
+                map = new LinkedHashMap<>();
+                VERSION_DATA_LOCAL.set(map);
             }
             return map.computeIfAbsent(version, k -> new LinkedHashMap<>());
         }
 
+        /**
+         * 更新版本数据
+         */
         public static void put(String key, Object val) {
             if (key == null) {
                 throw new IllegalArgumentException("key cannot be null");
             }
-            currentMap().put(key, val);
+            final Map<String, Object> map = currentVersionDataMap();
+            if (map == null) {
+                throw new UnsupportedOperationException("请先调用incrVersion初始化版本号");
+            }
+            map.put(key, val);
         }
 
+        /**
+         * 取出版本数据
+         */
         public static Object get(String key) {
-            return currentMap().get(key);
+            final Map<String, Object> map = currentVersionDataMap();
+            if (map != null) {
+                return map.get(key);
+            }
+            return null;
         }
 
+        /**
+         * 移除版本数据
+         */
         public static void remove(String key) {
-            currentMap().remove(key);
+            Map<String, Object> map = currentVersionDataMap();
+            if (map != null) {
+                map.remove(key);
+            }
         }
 
+        /**
+         * 清空所有数据
+         */
+        public static void clearAll() {
+            VERSION_DATA_LOCAL.remove();
+            VERSION_LOCAL.remove();
+        }
     }
 
     /**
@@ -194,6 +244,35 @@ public class ShowSqlInterceptor implements Interceptor {
 
     @Override
     public Object intercept(Invocation invocation) throws Throwable {
+        boolean isOutermost = false;
+        try {
+            if (MapThreadLocal.currentVersion() == null) {
+                isOutermost = true; // 最外层调用
+                MapThreadLocal.incrVersion(); // 初始版本
+            }
+            return doIntercept(invocation);
+        } finally {
+            // 检测version值，默认超过10则怀疑是ThreadLocal内存泄漏
+            final String threshold = PropertiesUtils.getProperty(this.properties,
+                    THREAD_LOCAL_LEAK_CHECK_THRESHOLD, "10");
+            Integer version;
+            if (StringUtils.isNumeric(threshold)
+                    && (version = MapThreadLocal.currentVersion()) != null
+                    && version >= Integer.parseInt(threshold)) {
+                log.warn("Possible ThreadLocal leak detected for version {}>={}, please check！", version, threshold);
+            }
+            if (isOutermost) {
+                try {
+                    // 强制清理，无视当前版本号
+                    MapThreadLocal.clearAll();
+                } catch (Exception e) {
+                    log.warn("ThreadLocal cleanup failed", e);
+                }
+            }
+        }
+    }
+
+    private Object doIntercept(Invocation invocation) throws Throwable {
         final Object target = invocation.getTarget();
         final boolean enableShowDatabaseName = enableShowDatabaseName();
         if (target instanceof Executor) {
@@ -207,7 +286,8 @@ public class ShowSqlInterceptor implements Interceptor {
                 returnValue = invocation.proceed();
                 return returnValue;
             } catch (Throwable throwable) {
-                log.warn("execute-sql {} fail, msg: {}", sqlId, throwable.getMessage());
+                log.warn("execute-sql {} fail, error: {}:{}", sqlId,
+                        throwable.getClass().getName(), throwable.getMessage());
                 throw throwable;
             } finally {
                 BoundSql boundSql = null;
@@ -235,7 +315,8 @@ public class ShowSqlInterceptor implements Interceptor {
                         }
                         sql = getSql(configuration, boundSql, sqlId,
                                 (String) MapThreadLocal.get(sqlId + "_DatabaseName"),
-                                (Map<Integer, Object>) MapThreadLocal.get(sqlId + "_ParamsAfterSet"));
+                                (Object[]) MapThreadLocal.get(sqlId + "_ParamsAfterSet"),
+                                (DbType) MapThreadLocal.get(sqlId + "_DbType"));
                     }
                     if (sql != null) {
                         String sqlResultStr = Optional.ofNullable(SqlUtils.formatSQLExecResult(returnValue))
@@ -243,10 +324,10 @@ public class ShowSqlInterceptor implements Interceptor {
                         log.info("{} cost {}ms{}", sql, time, sqlResultStr);
                     }
                 } catch (Throwable e) {
-                    log.warn("parse sql from Executor fail for {}, msg is {}",
+                    log.warn("parse sql from Executor fail for {}, error is {}:{}",
                             Optional.ofNullable(boundSql).map(BoundSql::getSql)
                                     .map(s -> s.replaceAll("\\s+", " ")).orElse(null),
-                            e.getMessage());
+                            e.getClass().getName(), e.getMessage());
                 } finally {
                     MapThreadLocal.decrVersion();
                 }
@@ -270,11 +351,12 @@ public class ShowSqlInterceptor implements Interceptor {
                     }
                     MapThreadLocal.put(sqlId + "_Configuration", handler.configuration());
                     MapThreadLocal.put(sqlId + "_BoundSql", handler.boundSql());
+                    MapThreadLocal.put(sqlId + "_DbType", resolveDbType((Connection) invocation.getArgs()[0]));
                 } catch (Throwable e) {
-                    log.warn("resolve Configuration and BoundSql from StatementHandler fail for {}, msg is {}",
+                    log.warn("resolve Configuration and BoundSql from StatementHandler fail for {}, error is {}:{}",
                             Optional.ofNullable(statementHandler.getBoundSql()).map(BoundSql::getSql)
                                     .map(s -> s.replaceAll("\\s+", " ")).orElse(null),
-                            e.getMessage());
+                            e.getClass().getName(), e.getMessage());
                 }
             }
         } else if (target instanceof ParameterHandler) {
@@ -301,13 +383,16 @@ public class ShowSqlInterceptor implements Interceptor {
                             metaObject.hasGetter("mappedStatement") ? metaObject.getValue("mappedStatement") : null;
                     if (mappedStatementValue instanceof MappedStatement) {
                         final String sqlId = ((MappedStatement) mappedStatementValue).getId();
-                        MapThreadLocal.put(sqlId + "_ParamsAfterSet", invocationHandler.getParamsAfterSet());
+                        final Object[] params = invocationHandler.resolveParams();
+                        MapThreadLocal.put(sqlId + "_ParamsAfterSet", params);
                     }
                 } catch (Throwable e) {
-                    log.warn("resolve parameterValues from ParameterHandler fail for {}, msg is {}",
+                    log.warn("resolve parameterValues from ParameterHandler fail for {}, error is {}:{}",
                             Optional.ofNullable(boundSql).map(BoundSql::getSql)
                                     .map(s -> s.replaceAll("\\s+", " ")).orElse(null),
-                            e.getMessage());
+                            e.getClass().getName(), e.getMessage());
+                } finally {
+                    invocationHandler.clear();
                 }
             }
         } else {
@@ -322,7 +407,7 @@ public class ShowSqlInterceptor implements Interceptor {
 
         private final PreparedStatement target;
         @Getter
-        private final Map<Integer, Object> paramsAfterSet = new LinkedHashMap<>();
+        private final List<Tuple<Integer, Object>> paramsAfterSet = new ArrayList<>(64);
 
         public ParamHolderPreparedStatementInvocationHandler(PreparedStatement ps) {
             this.target = ps;
@@ -333,20 +418,31 @@ public class ShowSqlInterceptor implements Interceptor {
             String name = method.getName();
             if (name.startsWith("set") && args.length >= 2 && args[0] instanceof Integer) {
                 if (name.equals("setNull")) {
-                    paramsAfterSet.put((Integer) args[0] - 1, null);
+                    paramsAfterSet.add(Tuple.of((Integer) args[0] - 1, null));
                 } else {
-                    paramsAfterSet.put((Integer) args[0] - 1, args[1]);
+                    paramsAfterSet.add(Tuple.of((Integer) args[0] - 1, args[1]));
                 }
             }
             return method.invoke(target, args);
         }
 
+        public Object[] resolveParams() {
+            Object[] params = new Object[paramsAfterSet.size()];
+            paramsAfterSet.sort(Comparator.comparing(Tuple::getF));
+            paramsAfterSet.forEach(p -> params[p.getF()] = p.getS());
+            return params;
+        }
+
+        public void clear() {
+            paramsAfterSet.clear();
+        }
+
     }
 
-    public String getSql(Configuration configuration, BoundSql boundSql, String sqlId, String databaseName,
-                         Map<Integer, Object> paramsAfterSet) {
+    public String getSql(Configuration configuration, BoundSql boundSql, String sqlId,
+                         String databaseName, Object[] params, DbType dbType) {
         try {
-            String sql = showSql(configuration, boundSql, databaseName, paramsAfterSet);
+            String sql = showSql(configuration, boundSql, databaseName, params, dbType);
             return (enableAbbreviateSqlId() ? StringUtils.abbreviateDotSplit(sqlId, 1) : sqlId)
                     + ": " + sql + ";";
         } catch (Throwable t) {
@@ -361,36 +457,34 @@ public class ShowSqlInterceptor implements Interceptor {
         return null;
     }
 
-    private String getParameterValue(Object obj) {
+    private Object getParameterValue(Object obj) {
         Object target = obj;
         if (parameterConvertor != null) {
             target = parameterConvertor.convert(obj);
         }
-        return SqlUtils.formatValueToSQLString(target);
+        return target;
     }
 
     public String showSql(Configuration configuration, BoundSql boundSql) {
-        return showSql(configuration, boundSql, null, null);
+        return showSql(configuration, boundSql, null, null, null);
     }
 
     public String showSql(Configuration configuration, BoundSql boundSql, String databaseName,
-                          Map<Integer, Object> paramsAfterSet) {
+                          Object[] params, DbType dbType) {
         final Object parameterObject = boundSql.getParameterObject();
         List<ParameterMapping> parameterMappings = boundSql.getParameterMappings();
-        final Map<Integer, Object> paramIndexValueMap =
-                Optional.ofNullable(paramsAfterSet).orElse(Collections.emptyMap());
         String sql = boundSql.getSql().replaceAll("\\s+", " ");
         sql = joinDatabaseName(sql, databaseName);
         if (parameterMappings != null && !parameterMappings.isEmpty() && parameterObject != null) {
             TypeHandlerRegistry typeHandlerRegistry = configuration.getTypeHandlerRegistry();
             if (typeHandlerRegistry.hasTypeHandler(parameterObject.getClass())) {
-                sql = sql.replaceFirst("\\?", getParameterValue(parameterObject));
+                sql = sql.replaceFirst("\\?", SqlUtils.formatValueToSQLString(getParameterValue(parameterObject)));
             } else {
                 Object[] objects = new Object[parameterMappings.size()];
                 MetaObject metaObject = configuration.newMetaObject(parameterObject);
                 for (int i = 0; i < parameterMappings.size(); i++) {
                     // 优先取set到 PreparedStatement 中的值进行打印
-                    objects[i] = paramIndexValueMap.get(i);
+                    objects[i] = params == null || params.length <= i ? null : params[i];
                     if (objects[i] != null) {
                         objects[i] = getParameterValue(objects[i]);
                         continue;
@@ -411,50 +505,25 @@ public class ShowSqlInterceptor implements Interceptor {
                         objects[i] = getParameterValue(obj);
                     } catch (Exception e) {
                         if (log.isDebugEnabled()) {
-                            log.debug("getParameterValue for {}", propertyName, e);
+                            log.debug("getParameterValue failed for {}", propertyName, e);
                         }
                     }
                 }
                 // assemble final sql
-                if (sql.contains("%")) {
-                    String[] tokens = sql.split("%", -1);
-                    int j = 0;
-                    for (int k = 0; k < tokens.length; k++) {
-                        while (tokens[k].contains("?")) {
-                            tokens[k] = tokens[k].replaceFirst("\\?", PLACEHOLDER);
-                            tokens[k] = String.format(tokens[k], objects[j++]);
-                        }
-                    }
-                    sql = StringUtils.join(tokens, "%");
-                } else {
-                    sql = sql.replaceAll("\\?", PLACEHOLDER);
-                    sql = String.format(sql, objects);
-                }
+                // sql = SqlUtils.printSQL(sql, objects);
+                sql = SqlUtils.replacePlaceholders(sql, objects, dbType);
             }
         }
         return sql;
     }
 
-    private String getProperty(String key) {
-        if (this.properties == null) {
-            return null;
-        }
-        if (this.properties.getProperty(key) != null) {
-            return this.properties.getProperty(key);
-        }
-        if (this.properties.get(key) != null) {
-            return String.valueOf(this.properties.get(key));
-        }
-        return null;
-    }
-
     private boolean enableAbbreviateSqlId() {
-        final String prop = getProperty(CONF_SQL_ID_ABBR);
+        final String prop = PropertiesUtils.getProperty(this.properties, CONF_SQL_ID_ABBR, null);
         return prop != null && Boolean.parseBoolean(prop.trim());
     }
 
     private boolean enableShowDatabaseName() {
-        final String prop = getProperty(ENABLE_SHOW_DATABASE_NAME);
+        final String prop = PropertiesUtils.getProperty(this.properties, ENABLE_SHOW_DATABASE_NAME, null);
         return prop != null && Boolean.parseBoolean(prop.trim());
     }
 
@@ -517,6 +586,24 @@ public class ShowSqlInterceptor implements Interceptor {
             }
         }
         return databaseName;
+    }
+
+    private DbType resolveDbType(Connection connection) {
+        DbType dbType = null;
+        // 优先从配置中获取
+        final String property = PropertiesUtils.getProperty(this.properties, DB_TYPE, null);
+        if (StringUtils.isNotBlank(property)) {
+            dbType = DbType.resolveDbType(property);
+        }
+        // 其次从JDBC的url中获取
+        if (dbType == null) {
+            try {
+                dbType = DbType.resolveDbType(connection.getMetaData().getURL());
+            } catch (Exception e) {
+                log.warn("resolve database type by Connection.getMetaData() fail, msg is: {}", e.getMessage());
+            }
+        }
+        return dbType;
     }
 
 }

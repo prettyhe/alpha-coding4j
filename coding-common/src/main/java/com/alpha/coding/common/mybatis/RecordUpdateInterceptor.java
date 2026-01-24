@@ -31,8 +31,11 @@ import com.alpha.coding.common.mybatis.callback.TableUpdateListener;
 import com.alpha.coding.common.mybatis.common.TableNameParser;
 import com.alpha.coding.common.mybatis.common.TableUpdateBeforeControl;
 import com.alpha.coding.common.mybatis.common.TableUpdateDto;
+import com.alpha.coding.common.utils.FieldUtils;
+import com.alpha.coding.common.utils.PropertiesUtils;
 import com.alpha.coding.common.utils.StringUtils;
 
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -64,32 +67,16 @@ public class RecordUpdateInterceptor extends ShowSqlInterceptor {
             "org.mybatis.dynamic.sql.insert.render.InsertStatementProvider";
 
     private Properties properties;
+    @Setter
     private TableUpdateListener listener;
+    @Setter
     private Map<String, String> keyColumnMap;
+    @Setter
     private Map<String, String> keyPropertyMap;
+    @Setter
     private Map<String, RecordUpdateStub> recordUpdateStubMap;
+    @Setter
     private Map<String, RecordUpdateStub> recordBeforeUpdateStubMap;
-
-    public void setListener(TableUpdateListener listener) {
-        this.listener = listener;
-    }
-
-    public void setKeyColumnMap(Map<String, String> keyColumnMap) {
-        this.keyColumnMap = keyColumnMap;
-    }
-
-    public void setKeyPropertyMap(Map<String, String> keyPropertyMap) {
-        this.keyPropertyMap = keyPropertyMap;
-    }
-
-    public void setRecordUpdateStubMap(Map<String, RecordUpdateStub> recordUpdateStubMap) {
-        this.recordUpdateStubMap = recordUpdateStubMap;
-    }
-
-    public void setRecordBeforeUpdateStubMap(
-            Map<String, RecordUpdateStub> recordBeforeUpdateStubMap) {
-        this.recordBeforeUpdateStubMap = recordBeforeUpdateStubMap;
-    }
 
     @Override
     public Object intercept(Invocation invocation) throws Throwable {
@@ -204,22 +191,9 @@ public class RecordUpdateInterceptor extends ShowSqlInterceptor {
     }
 
     private Set<String> parseIncludeTables() {
-        final String prop = getProperty("includeTables");
+        final String prop = PropertiesUtils.getProperty(this.properties, "includeTables", null);
         return prop == null ? Collections.emptySet() : Arrays.stream(prop.split(",")).map(String::trim)
                 .filter(x -> !x.isEmpty()).collect(Collectors.toSet());
-    }
-
-    private String getProperty(String key) {
-        if (this.properties == null) {
-            return null;
-        }
-        if (this.properties.getProperty(key) != null) {
-            return this.properties.getProperty(key);
-        }
-        if (this.properties.get(key) != null) {
-            return String.valueOf(this.properties.get(key));
-        }
-        return null;
     }
 
     private Long parseKey(String tableName, String sql) {
@@ -299,7 +273,7 @@ public class RecordUpdateInterceptor extends ShowSqlInterceptor {
     private Long doParseKeyFromField(Class<?> targetClass, Object parameterObject, String keyProperty)
             throws IllegalAccessException {
         while (targetClass != Object.class) {
-            for (Field field : targetClass.getDeclaredFields()) {
+            for (Field field : FieldUtils.getDeclaredFieldsWithCache(targetClass)) {
                 if (keyProperty.equals(field.getName())) {
                     field.setAccessible(true);
                     final Object val = field.get(parameterObject);

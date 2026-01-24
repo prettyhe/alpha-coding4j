@@ -65,4 +65,19 @@ public class PropertiesUtils {
         return props;
     }
 
+    public static String getProperty(Properties properties, String key, String defaultValue) {
+        if (properties == null) {
+            return defaultValue;
+        }
+        String value;
+        if ((value = properties.getProperty(key)) != null) {
+            return value;
+        }
+        Object obj;
+        if ((obj = properties.get(key)) != null) {
+            return String.valueOf(obj);
+        }
+        return defaultValue;
+    }
+
 }

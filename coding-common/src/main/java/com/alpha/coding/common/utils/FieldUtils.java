@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -16,6 +17,12 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class FieldUtils {
+
+    private static final Map<Class<?>, Field[]> FIELD_CACHE = new ConcurrentHashMap<>();
+
+    public static void removeCache(Class<?> clazz) {
+        FIELD_CACHE.remove(clazz);
+    }
 
     /**
      * To find out matched {@link Field} marked as {@code ann} annotation
@@ -35,14 +42,14 @@ public class FieldUtils {
         do {
             // Copy each field declared on this class unless it's static or file.
             Field[] fields = targetClass.getDeclaredFields();
-            for (int i = 0; i < fields.length; i++) {
+            for (Field field : fields) {
                 if (ann != null) {
-                    Annotation annotation = fields[i].getAnnotation(ann);
+                    Annotation annotation = field.getAnnotation(ann);
                     if (annotation != null) {
-                        ret.add(fields[i]);
+                        ret.add(field);
                     }
                 } else {
-                    ret.add(fields[i]);
+                    ret.add(field);
                 }
             }
             targetClass = targetClass.getSuperclass();
@@ -107,8 +114,7 @@ public class FieldUtils {
         Class searchType = clazz;
         while (!Object.class.equals(searchType) && searchType != null) {
             Field[] fields = searchType.getDeclaredFields();
-            for (int i = 0; i < fields.length; i++) {
-                Field field = fields[i];
+            for (Field field : fields) {
                 if ((name == null || name.equals(field.getName()))
                         && (type == null || type.equals(field.getType()))) {
                     return field;
@@ -168,6 +174,13 @@ public class FieldUtils {
 
         // 所有条件都不满足 → 是普通对象类型（如 String、User、Address 等）
         return true;
+    }
+
+    /**
+     * 获取对象类型的声明字段
+     */
+    public static Field[] getDeclaredFieldsWithCache(Class<?> clazz) {
+        return FIELD_CACHE.computeIfAbsent(clazz, Class::getDeclaredFields);
     }
 
 }

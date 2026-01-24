@@ -79,7 +79,8 @@ public @interface EnableMybatisAutoConfig {
      */
     String[] showSqlInterceptorProperties() default {
             "sqlIdAbbreviated=${mybatis.plugins.ShowSqlInterceptor.sqlIdAbbreviated:true}",
-            "enableShowDatabaseName=${mybatis.plugins.ShowSqlInterceptor.enableShowDatabaseName:false}"};
+            "enableShowDatabaseName=${mybatis.plugins.ShowSqlInterceptor.enableShowDatabaseName:false}",
+            "threadLocalLeakCheckThreshold=${mybatis.plugins.ShowSqlInterceptor.threadLocalLeakCheckThreshold:10}"};
 
     /**
      * 其它扩展插件(org.apache.ibatis.plugin.Interceptor)beanName
